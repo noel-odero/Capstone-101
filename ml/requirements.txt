@@ -1,0 +1,9 @@
+numpy
+pandas
+scipy
+gymnasium
+stable-baselines3
+torch
+pytest
+jupyter
+matplotlib

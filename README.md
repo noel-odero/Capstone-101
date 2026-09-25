@@ -47,3 +47,11 @@ backend/      ASP.NET Core API
 frontend/     React frontend
 docs/         Project and technical documentation
 experiments/  Experiment configurations and results
+
+
+
+Python 3.11.9
+→ create .venv
+→ activate .venv
+→ pip install -r ml/requirements.txt
+→ run ml/test_environment.py
