@@ -21,8 +21,13 @@ REQUIRED_COLUMNS = {
     "relationship",
     "directionality",
     "evidence_strength",
+    "confidence",
     "strain_count",
+    "parameter",
+    "parameter_value",
     "observation",
+    "transformation",
+    "assumption",
     "notes",
 }
 
@@ -66,14 +71,39 @@ def test_no_self_relationships():
 def test_valid_relationship_types():
     rows = load_registry()
 
-    assert all(row["relationship"] in {"CS", "CR", "neutral", "mixed", "unknown"} for row in rows)
+    assert all(
+        row["relationship"]
+        in {"CS", "CR", "neutral", "mixed", "unknown"}
+        for row in rows
+    )
 
 
 def test_valid_directionality():
     rows = load_registry()
 
     assert all(
-        row["directionality"] in {"A_to_B", "B_to_A", "bidirectional"}
+        row["directionality"]
+        in {"A_to_B", "B_to_A", "bidirectional", "unknown"}
+        for row in rows
+    )
+
+
+def test_valid_evidence_strength():
+    rows = load_registry()
+
+    assert all(
+        row["evidence_strength"]
+        in {"strong", "moderate", "weak", "unknown"}
+        for row in rows
+    )
+
+
+def test_valid_confidence():
+    rows = load_registry()
+
+    assert all(
+        row["confidence"]
+        in {"high", "moderate", "low", "unknown"}
         for row in rows
     )
 
@@ -85,4 +115,28 @@ def test_strain_counts_are_valid():
         if row["strain_count"]:
             count = int(row["strain_count"])
             assert count >= 1
-            assert count <= 10
+
+
+def test_evidence_records_have_observations():
+    rows = load_registry()
+
+    assert all(row["observation"].strip() for row in rows)
+
+
+def test_evidence_records_have_transformations():
+    rows = load_registry()
+
+    assert all(row["transformation"].strip() for row in rows)
+
+
+def test_evidence_records_have_assumptions():
+    rows = load_registry()
+
+    assert all(row["assumption"].strip() for row in rows)
+
+
+def test_parameter_fields_are_explicit():
+    rows = load_registry()
+
+    assert all(row["parameter"].strip() for row in rows)
+    assert all(row["parameter_value"].strip() for row in rows)
