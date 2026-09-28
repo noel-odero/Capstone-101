@@ -1,0 +1,26 @@
+﻿source_id,from_drug,to_drug,relationship,evidence_strength,confidence,directionality,uncertainty_type,probability_status,notes
+POD2018,ciprofloxacin,gentamicin,CS,strong,high,A_to_B,probability_unresolved,unresolved,Observed collateral sensitivity does not establish an episode-level transition probability.
+POD2018,ciprofloxacin,fosfomycin,CS,strong,high,A_to_B,probability_unresolved,unresolved,Observed collateral sensitivity does not establish an episode-level transition probability.
+POD2018,ciprofloxacin,ceftazidime,CR,strong,high,A_to_B,probability_unresolved,unresolved,Observed cross-resistance does not establish an episode-level transition probability.
+POD2018,ciprofloxacin,trimethoprim,CR,strong,high,A_to_B,probability_unresolved,unresolved,Observed cross-resistance does not establish an episode-level transition probability.
+POD2018,ciprofloxacin,mecillinam,CR,strong,high,A_to_B,probability_unresolved,unresolved,Observed cross-resistance does not establish an episode-level transition probability.
+POD2018,mecillinam,trimethoprim,CR,strong,high,A_to_B,probability_unresolved,unresolved,Observed cross-resistance does not establish an episode-level transition probability.
+POD2018,mecillinam,gentamicin,CS,strong,high,A_to_B,probability_unresolved,unresolved,Observed collateral sensitivity does not establish an episode-level transition probability.
+POD2018,nitrofurantoin,ciprofloxacin,CR,strong,high,A_to_B,probability_unresolved,unresolved,Observed cross-resistance does not establish an episode-level transition probability.
+JAMES2024,trimethoprim,nitrofurantoin,CR,moderate,medium,A_to_B,probability_unresolved,unresolved,Clinical UPEC evidence supports the relationship but does not provide a transition probability for this simulator.
+JAMES2024,trimethoprim,fosfomycin,neutral,moderate,medium,A_to_B,context_dependent,unresolved,Neutral interaction was observed in the reported experimental context and should not be generalized as a universal transition probability.
+SAK2025,CEFTAZIDIME,CIPROFLOXACIN,CR,strong,medium,unknown,directionality_unknown,unresolved,Sakenova reports an interaction relationship but does not establish sequential directionality.
+SAK2025,CEFTAZIDIME,NITROFURANTOIN,CS,strong,medium,unknown,directionality_unknown,unresolved,Sakenova reports an interaction relationship but does not establish sequential directionality.
+SAK2025,CEFTAZIDIME,GENTAMICIN,CS,strong,medium,unknown,directionality_unknown,unresolved,Sakenova reports an interaction relationship but does not establish sequential directionality.
+SAK2025,NITROFURANTOIN,GENTAMICIN,CR,strong,medium,unknown,directionality_unknown,unresolved,Sakenova reports an interaction relationship but does not establish sequential directionality.
+SAK2025,CEFTAZIDIME,TRIMETHOPRIM,CR,strong,medium,unknown,directionality_unknown,unresolved,Sakenova reports an interaction relationship but does not establish sequential directionality.
+SAK2025,CEFTAZIDIME,FOSFOMYCIN,CR,strong,medium,unknown,directionality_unknown,unresolved,Sakenova reports an interaction relationship but does not establish sequential directionality.
+SAK2025,NITROFURANTOIN,FOSFOMYCIN,CR,strong,medium,unknown,directionality_unknown,unresolved,Sakenova reports an interaction relationship but does not establish sequential directionality.
+SAK2025,GENTAMICIN,FOSFOMYCIN,CS,strong,medium,unknown,directionality_unknown,unresolved,Sakenova reports an interaction relationship but does not establish sequential directionality.
+SAK2025,TRIMETHOPRIM,FOSFOMYCIN,CS,strong,medium,unknown,directionality_unknown,unresolved,Sakenova reports an interaction relationship but does not establish sequential directionality.
+SAK2025,CEFTAZIDIME,MECILLINAM,CR,strong,medium,unknown,directionality_unknown,unresolved,Sakenova reports an interaction relationship but does not establish sequential directionality.
+SAK2025,CIPROFLOXACIN,MECILLINAM,CR,strong,medium,unknown,directionality_unknown,unresolved,Sakenova reports an interaction relationship but does not establish sequential directionality.
+SAK2025,NITROFURANTOIN,MECILLINAM,CS,strong,medium,unknown,directionality_unknown,unresolved,Sakenova reports an interaction relationship but does not establish sequential directionality.
+SAK2025,GENTAMICIN,MECILLINAM,neutral,strong,medium,unknown,directionality_unknown,unresolved,Sakenova reports an interaction relationship but does not establish sequential directionality.
+SAK2025,TRIMETHOPRIM,MECILLINAM,CR,strong,medium,unknown,directionality_unknown,unresolved,Sakenova reports an interaction relationship but does not establish sequential directionality.
+SAK2025,FOSFOMYCIN,MECILLINAM,CR,strong,medium,unknown,directionality_unknown,unresolved,Sakenova reports an interaction relationship but does not establish sequential directionality.
