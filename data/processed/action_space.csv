@@ -1,8 +1,8 @@
-drug,drug_class,role,clinical_scope,evolutionary_evidence,action_space_status,notes
-CIPROFLOXACIN,Fluoroquinolone,antibiotic_action,E_coli_UTI,strong,core,Multiple documented resistance-interaction relationships
-NITROFURANTOIN,Nitrofuran,antibiotic_action,E_coli_UTI,strong,core,Direct UTI relevance and documented evolutionary relationships
-FOSFOMYCIN,Phosphonic acid derivative,antibiotic_action,E_coli_UTI,moderate,core,Direct UPEC evidence and additional evolutionary evidence
-TRIMETHOPRIM,Diaminopyrimidine,antibiotic_action,E_coli_UTI,strong,core,Multiple documented resistance-interaction relationships
-GENTAMICIN,Aminoglycoside,antibiotic_action,E_coli_UTI,moderate,core,Documented collateral-sensitivity relationships; context-dependent clinical use
-MECILLINAM,Beta-lactam (penicillin),antibiotic_action,E_coli_UTI,moderate,core,Documented evolutionary relationships and UTI relevance
-CEFTAZIDIME,Beta-lactam (cephalosporin),antibiotic_action,E_coli_UTI,moderate,core,Documented evolutionary relationship and relevance to resistant E_coli infections
+﻿action_id,drug,drug_class,role,clinical_scope,evolutionary_evidence,action_space_status,notes
+0,CIPROFLOXACIN,Fluoroquinolone,antibiotic_action,E_coli_UTI,strong,core,Multiple documented resistance-interaction relationships
+1,NITROFURANTOIN,Nitrofuran,antibiotic_action,E_coli_UTI,strong,core,Direct UTI relevance and documented evolutionary relationships
+2,FOSFOMYCIN,Phosphonic acid derivative,antibiotic_action,E_coli_UTI,moderate,core,Direct UPEC evidence and additional evolutionary evidence
+3,TRIMETHOPRIM,Diaminopyrimidine,antibiotic_action,E_coli_UTI,strong,core,Multiple documented resistance-interaction relationships
+4,GENTAMICIN,Aminoglycoside,antibiotic_action,E_coli_UTI,moderate,core,Documented collateral-sensitivity relationships; context-dependent clinical use
+5,MECILLINAM,Beta-lactam (penicillin),antibiotic_action,E_coli_UTI,moderate,core,Documented evolutionary relationships and UTI relevance
+6,CEFTAZIDIME,Beta-lactam (cephalosporin),antibiotic_action,E_coli_UTI,moderate,core,Documented evolutionary relationship and relevance to resistant E_coli infections
