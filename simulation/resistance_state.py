@@ -1,4 +1,4 @@
-from dataclasses import dataclass
+﻿from dataclasses import dataclass
 
 ANTIBIOTICS = (
     "CIPROFLOXACIN",
@@ -42,3 +42,12 @@ class ResistanceState:
             for antibiotic, value in zip(ANTIBIOTICS, self.resistance)
             if value == 1
         )
+
+    def to_dict(self) -> dict:
+        return {
+            "resistance": list(self.resistance),
+        }
+
+    @classmethod
+    def from_dict(cls, data: dict) -> "ResistanceState":
+        return cls(tuple(data["resistance"]))

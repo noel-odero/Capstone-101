@@ -56,3 +56,17 @@ def test_antibiotic_order_is_fixed():
         "MECILLINAM",
         "CEFTAZIDIME",
     )
+def test_state_serializes_to_dict():
+    state = ResistanceState((0, 1, 0, 1, 0, 0, 1))
+
+    assert state.to_dict() == {
+        "resistance": [0, 1, 0, 1, 0, 0, 1]
+    }
+
+
+def test_state_can_be_restored_from_dict():
+    original = ResistanceState((0, 1, 0, 1, 0, 0, 1))
+
+    restored = ResistanceState.from_dict(original.to_dict())
+
+    assert restored == original
