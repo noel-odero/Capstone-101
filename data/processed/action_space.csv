@@ -1,0 +1,8 @@
+drug,role,clinical_scope,evolutionary_evidence,action_space_status,notes
+CIPROFLOXACIN,antibiotic_action,E_coli_UTI,strong,core,"Multiple documented resistance-interaction relationships"
+NITROFURANTOIN,antibiotic_action,E_coli_UTI,strong,core,"Direct UTI relevance and documented evolutionary relationships"
+FOSFOMYCIN,antibiotic_action,E_coli_UTI,moderate,core,"Direct UPEC evidence and additional evolutionary evidence"
+TRIMETHOPRIM,antibiotic_action,E_coli_UTI,strong,core,"Multiple documented resistance-interaction relationships"
+GENTAMICIN,antibiotic_action,E_coli_UTI,moderate,core,"Documented collateral-sensitivity relationships; context-dependent clinical use"
+MECILLINAM,antibiotic_action,E_coli_UTI,moderate,core,"Documented evolutionary relationships and UTI relevance"
+CEFTAZIDIME,antibiotic_action,E_coli_UTI,moderate,core,"Documented evolutionary relationship and relevance to resistant E_coli infections"
