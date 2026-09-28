@@ -1,0 +1,7 @@
+﻿scenario_id,scenario_type,description,initial_state,action,expected_effective,expected_outcome,expected_next_state,evidence_source,scenario_purpose
+REF001,effective_treatment,Selected antibiotic is susceptible,0000000,CIPROFLOXACIN,1,no_change,0000000,simulation_fixture,Verify susceptible treatment is recognized as effective and leaves the reference state unchanged.
+REF002,ineffective_treatment,Selected antibiotic is resistant,1000000,CIPROFLOXACIN,0,no_change,1000000,simulation_fixture,Verify resistant treatment is recognized as ineffective.
+REF003,cross_resistance,Ciprofloxacin-to-gentamicin cross-resistance fixture,0000000,CIPROFLOXACIN,1,cross_resistance,0000100,POD2018,Verify a configured cross-resistance relationship can increase resistance in the target drug.
+REF004,collateral_sensitivity,Ciprofloxacin-to-gentamicin collateral-sensitivity fixture,0000100,CIPROFLOXACIN,1,collateral_sensitivity,0000000,POD2018,Verify a configured collateral-sensitivity relationship can decrease resistance in the target drug.
+REF005,neutral_interaction,Trimethoprim-to-fosfomycin neutral interaction fixture,0000000,TRIMETHOPRIM,1,neutral,0000000,JAMES2024,Verify a neutral interaction produces no resistance-state change.
+REF006,no_effective_option,All antibiotics are resistant,1111111,CIPROFLOXACIN,0,terminal,1111111,simulation_fixture,Verify the episode terminates when no effective antibiotic remains.
