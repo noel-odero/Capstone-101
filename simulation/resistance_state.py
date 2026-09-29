@@ -51,3 +51,18 @@ class ResistanceState:
     @classmethod
     def from_dict(cls, data: dict) -> "ResistanceState":
         return cls(tuple(data["resistance"]))
+
+    def with_resistance(
+        self,
+        antibiotic: str,
+        resistant: bool,
+    ) -> "ResistanceState":
+        try:
+            index = ANTIBIOTICS.index(antibiotic)
+        except ValueError:
+            raise ValueError(f"Unknown antibiotic: {antibiotic}")
+
+        updated_resistance = list(self.resistance)
+        updated_resistance[index] = int(resistant)
+
+        return ResistanceState(tuple(updated_resistance))

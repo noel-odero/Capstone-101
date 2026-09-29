@@ -70,3 +70,27 @@ def test_state_can_be_restored_from_dict():
     restored = ResistanceState.from_dict(original.to_dict())
 
     assert restored == original
+
+
+def test_with_resistance_sets_antibiotic_as_resistant():
+    state = ResistanceState((0, 0, 0, 0, 0, 0, 0))
+
+    updated = state.with_resistance("GENTAMICIN", True)
+
+    assert updated == ResistanceState((0, 0, 0, 0, 1, 0, 0))
+    assert state == ResistanceState((0, 0, 0, 0, 0, 0, 0))
+
+
+def test_with_resistance_sets_antibiotic_as_susceptible():
+    state = ResistanceState((0, 0, 0, 0, 1, 0, 0))
+
+    updated = state.with_resistance("GENTAMICIN", False)
+
+    assert updated == ResistanceState((0, 0, 0, 0, 0, 0, 0))
+
+
+def test_with_resistance_rejects_unknown_antibiotic():
+    state = ResistanceState((0, 0, 0, 0, 0, 0, 0))
+
+    with pytest.raises(ValueError):
+        state.with_resistance("UNKNOWN", True)
