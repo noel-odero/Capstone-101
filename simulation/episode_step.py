@@ -1,4 +1,5 @@
 from dataclasses import dataclass
+import random
 
 from simulation.action_space import ActionSpace
 from simulation.observation import Observation
@@ -47,7 +48,13 @@ class EpisodeStep:
         action: int,
         treatment_step: int,
         seed: int | None = None,
+        rng: random.Random | None = None,
     ) -> EpisodeStepResult:
+        if seed is not None and rng is not None:
+            raise ValueError(
+                "Provide either seed or rng, not both."
+            )
+
         treatment = self.treatment_executor.execute(
             state,
             action,
@@ -57,6 +64,7 @@ class EpisodeStep:
             state,
             action,
             seed=seed,
+            rng=rng,
         )
 
         reward = self.reward_function.calculate(

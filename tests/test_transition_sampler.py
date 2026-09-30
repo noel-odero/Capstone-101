@@ -1,3 +1,5 @@
+import random
+
 import pytest
 
 from simulation.candidate_transition import CandidateTransition
@@ -225,3 +227,55 @@ def test_source_ids_are_sorted_after_merging():
         "A_SOURCE",
         "Z_SOURCE",
     )
+
+
+def test_persistent_rng_produces_reproducible_sequence():
+    candidate_one = CandidateTransition(
+        target_drug="GENTAMICIN",
+        outcome="cross_resistance",
+        source_ids=("POD2018",),
+    )
+
+    candidate_two = CandidateTransition(
+        target_drug="FOSFOMYCIN",
+        outcome="collateral_sensitivity",
+        source_ids=("POD2018",),
+    )
+
+    rng_one = random.Random(42)
+    rng_two = random.Random(42)
+
+    sampler = TransitionSampler()
+
+    sequence_one = tuple(
+        sampler.sample(
+            (candidate_one, candidate_two),
+            rng=rng_one,
+        ).candidate
+        for _ in range(10)
+    )
+
+    sequence_two = tuple(
+        sampler.sample(
+            (candidate_one, candidate_two),
+            rng=rng_two,
+        ).candidate
+        for _ in range(10)
+    )
+
+    assert sequence_one == sequence_two
+
+
+def test_seed_and_rng_cannot_be_used_together():
+    candidate = CandidateTransition(
+        target_drug="GENTAMICIN",
+        outcome="cross_resistance",
+        source_ids=("POD2018",),
+    )
+
+    with pytest.raises(ValueError):
+        TransitionSampler().sample(
+            (candidate,),
+            seed=42,
+            rng=random.Random(42),
+        )

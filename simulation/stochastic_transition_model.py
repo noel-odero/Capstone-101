@@ -1,3 +1,5 @@
+import random
+
 from simulation.candidate_transition import CandidateTransition
 from simulation.resistance_state import ResistanceState
 from simulation.transition_function import ResistanceTransitionFunction
@@ -28,6 +30,7 @@ class StochasticTransitionModel:
         state: ResistanceState,
         action: int,
         seed: int | None = None,
+        rng: random.Random | None = None,
     ) -> tuple[ResistanceState, SampledTransition]:
         candidates = self.candidate_generator.generate(
             state,
@@ -49,6 +52,7 @@ class StochasticTransitionModel:
         sampled = self.sampler.sample(
             candidates,
             seed=seed,
+            rng=rng,
         )
 
         next_state = self.transition_function.apply(

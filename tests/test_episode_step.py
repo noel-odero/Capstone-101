@@ -1,3 +1,5 @@
+import random
+
 from simulation.episode_step import EpisodeStep
 from simulation.resistance_state import ResistanceState
 
@@ -112,3 +114,45 @@ def test_episode_step_is_reproducible_with_same_seed():
     assert result_1.sampled_transition == result_2.sampled_transition
     assert result_1.reward == result_2.reward
     assert result_1.observation == result_2.observation
+
+
+def test_persistent_rng_reproduces_sequence_of_episode_steps():
+    episode_step = EpisodeStep()
+
+    initial_state = ResistanceState(
+        (0, 0, 0, 0, 0, 0, 0)
+    )
+
+    actions = (0, 1, 2, 3, 4)
+
+    rng_one = random.Random(42)
+    rng_two = random.Random(42)
+
+    state_one = initial_state
+    state_two = initial_state
+
+    results_one = []
+    results_two = []
+
+    for treatment_step, action in enumerate(actions):
+        result_one = episode_step.execute(
+            state=state_one,
+            action=action,
+            treatment_step=treatment_step,
+            rng=rng_one,
+        )
+
+        result_two = episode_step.execute(
+            state=state_two,
+            action=action,
+            treatment_step=treatment_step,
+            rng=rng_two,
+        )
+
+        results_one.append(result_one)
+        results_two.append(result_two)
+
+        state_one = result_one.next_state
+        state_two = result_two.next_state
+
+    assert results_one == results_two

@@ -20,17 +20,25 @@ class TransitionSampler:
         self,
         candidates: tuple[CandidateTransition, ...],
         seed: int | None = None,
+        rng: random.Random | None = None,
     ) -> SampledTransition:
         if not candidates:
             raise ValueError(
                 "Cannot sample from an empty candidate set."
             )
 
+        if seed is not None and rng is not None:
+            raise ValueError(
+                "Provide either seed or rng, not both."
+            )
+
         unique_candidates = self._deduplicate(candidates)
 
         probability = 1.0 / len(unique_candidates)
 
-        rng = random.Random(seed)
+        if rng is None:
+            rng = random.Random(seed)
+
         selected_candidate = rng.choice(unique_candidates)
 
         return SampledTransition(
