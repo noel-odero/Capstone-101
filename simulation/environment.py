@@ -124,10 +124,17 @@ class AntibioticEnvironment(gym.Env):
 
         previous_state = self.episode.resistance_state
 
+        step_seed = int(
+            self.np_random.integers(
+                0,
+                2**32 - 1,
+            )
+        )
+
         next_episode = self.episode_progression.step(
             self.episode,
             action,
-            seed=self.np_random.integers(0, 2**32 - 1),
+            seed=step_seed,
         )
 
         reward = self.reward_function.calculate(
