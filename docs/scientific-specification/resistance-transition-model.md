@@ -8,9 +8,15 @@ The model supports sequential treatment by allowing the resistance state at time
 
 The transition is represented as:
 
-`S_t + A_t -> S_(t+1)`
+\[
+S_t + A_t \rightarrow S_{t+1}
+\]
 
 where `S_t` is the current resistance state and `A_t` is the selected antibiotic action.
+
+The model is intended to represent plausible resistance-state dynamics within the simulation. It does not claim to reproduce patient-level bacterial evolution or to predict the exact evolutionary response of an individual infection.
+
+---
 
 ## Transition Types
 
@@ -22,25 +28,35 @@ The resistance state may remain unchanged following antibiotic exposure.
 
 This transition is required because antibiotic exposure does not necessarily produce an observable change in the simulated resistance profile.
 
+An unchanged transition preserves the complete current resistance state.
+
 ### 2. Cross-Resistance
 
 A treatment exposure may be associated with increased resistance to another antibiotic.
 
-A cross-resistance transition changes one or more previously susceptible resistance-state components from susceptible to resistant.
+A cross-resistance transition changes a previously susceptible resistance-state component from susceptible to resistant.
+
+The transition is represented as a candidate evolutionary outcome supported by experimental evidence. The existence of a documented cross-resistance relationship does not imply that the transition occurs after every exposure.
 
 ### 3. Collateral Sensitivity
 
 A treatment exposure may be associated with increased susceptibility to another antibiotic.
 
-A collateral-sensitivity transition may change a previously resistant component from resistant to susceptible.
+A collateral-sensitivity transition changes a previously resistant resistance-state component from resistant to susceptible.
+
+As with cross-resistance, collateral sensitivity is treated as a possible transition outcome rather than a deterministic consequence of treatment.
 
 ### 4. Heterogeneous Outcomes
 
 The same treatment exposure may produce different resistance outcomes across simulated trajectories.
 
-Experimental evolution studies in E. coli demonstrate that bacterial populations can follow divergent evolutionary trajectories and exhibit different cross-resistance or collateral-sensitivity outcomes.
+Experimental evolution studies in *E. coli* demonstrate that bacterial populations can follow divergent evolutionary trajectories and exhibit different cross-resistance or collateral-sensitivity outcomes.
 
 The simulator therefore does not treat every documented interaction as a deterministic transition.
+
+Instead, evidence-supported interactions may define multiple candidate outcomes from which the simulation can sample under an explicitly defined uncertainty scenario.
+
+---
 
 ## Evidence Sources
 
@@ -51,9 +67,13 @@ Relevant evidence includes:
 - Podnecky et al. (2018), experimental collateral-resistance and collateral-sensitivity relationships in clinical UPEC isolates.
 - Nichol et al. (2019), repeated cefotaxime evolution experiments demonstrating divergent evolutionary trajectories.
 - James et al. (2024), experimental collateral responses in clinical UPEC isolates.
-- Sakenova et al. (2025), systematic E. coli chemical-genetic mapping of cross-resistance and collateral-sensitivity relationships.
+- Sakenova et al. (2025), systematic *E. coli* chemical-genetic mapping of cross-resistance and collateral-sensitivity relationships.
 
 These sources provide evidence for possible resistance interactions but do not automatically provide clinical transition probabilities.
+
+The evidence layer therefore constrains which transition relationships may be represented by the simulator without being treated as a direct source of episode-level probability estimates.
+
+---
 
 ## Evidence Interpretation
 
@@ -63,11 +83,15 @@ The presence of an interaction does not imply that:
 
 - the transition occurs in every exposure;
 - the transition is deterministic;
-- the relationship applies to every E. coli strain;
+- the relationship applies to every *E. coli* strain;
 - the transition probability is known;
 - the relationship is clinically guaranteed.
 
 The simulator therefore distinguishes between evidence for an interaction and quantitative evidence for its probability.
+
+Evidence source information is retained as provenance so that simulated transitions can be traced back to the experimental observations that support them.
+
+---
 
 ## Transition Probability Representation
 
@@ -75,17 +99,266 @@ Transition probabilities must be represented computationally so that stochastic 
 
 However, the MVP does not assign empirical probabilities directly from the existence of a published cross-resistance or collateral-sensitivity relationship.
 
-Instead, each transition candidate records its uncertainty and supporting evidence.
+The current evidence audit found no directly defensible episode-level transition probabilities for the seven-antibiotic binary resistance-state model.
 
-The transition model must therefore support:
+In particular, strain-level observations such as 8/10 or 7/10 cannot automatically be interpreted as:
 
-- candidate transitions;
-- configurable transition probabilities;
-- uncertainty metadata;
-- supporting evidence sources;
-- stochastic sampling using the configured probabilities.
+\[
+P(S_{t+1}\mid S_t,A_t)=0.8
+\]
 
-The probability parameterisation will be documented separately from the evidence registry.
+or:
+
+\[
+P(S_{t+1}\mid S_t,A_t)=0.7
+\]
+
+because those observations describe experimental outcomes across strains or replicates under particular experimental conditions rather than repeated observations of the same episode-level state-action transition.
+
+The transition model therefore separates:
+
+1. empirical evidence about possible interactions;
+2. uncertainty about how those interactions should be parameterised;
+3. computational probability assumptions used by a particular simulation scenario.
+
+---
+
+## Reference Uncertainty Scenario
+
+### `REF_UNIFORM_SUPPORTED`
+
+Because empirical episode-level transition probabilities remain unresolved, the initial simulator uses a predefined reference uncertainty scenario called `REF_UNIFORM_SUPPORTED`.
+
+The purpose of this scenario is to provide a transparent and reproducible computational parameterisation of unresolved uncertainty.
+
+The probabilities generated by this scenario are **reference-scenario assumptions**. They are not interpreted as empirical biological probabilities.
+
+The formal pipeline is:
+
+```text
+Empirical evidence
+       ↓
+Possible transition outcomes
+       ↓
+Reference uncertainty scenario
+       ↓
+Probability distribution
+       ↓
+Sampled candidate transition
+       ↓
+Next resistance state
+````
+
+### Candidate Generation
+
+For a given resistance state and selected antibiotic, the simulator first generates all evidence-supported candidate transitions that are applicable to the current state.
+
+For cross-resistance:
+
+* the selected antibiotic must match the documented source antibiotic;
+* the target antibiotic must currently be susceptible;
+* the candidate outcome changes the target antibiotic to resistant.
+
+For collateral sensitivity:
+
+* the selected antibiotic must match the documented source antibiotic;
+* the target antibiotic must currently be resistant;
+* the candidate outcome changes the target antibiotic to susceptible.
+
+For neutral relationships:
+
+* the relationship may be represented as an applicable candidate;
+* applying the candidate does not change the resistance state.
+
+Only currently supported directionality is used by the MVP transition generator. Relationships for which directionality remains unknown are not silently converted into directional transitions.
+
+### Candidate Deduplication
+
+Candidate transitions are deduplicated by:
+
+* target antibiotic;
+* transition outcome.
+
+Multiple evidence sources supporting the same candidate do not create additional probability mass.
+
+Instead, all supporting source identifiers are retained as provenance.
+
+For example, if multiple sources support:
+
+```text
+CIPROFLOXACIN → GENTAMICIN = collateral sensitivity
+```
+
+the simulator represents this as one candidate transition with multiple supporting evidence sources.
+
+The number of supporting sources therefore does not determine the probability of a candidate.
+
+If different sources support different outcomes for the same relationship, those outcomes remain distinct competing candidates.
+
+The simulator does not assign probabilities based on the number of papers supporting each outcome.
+
+---
+
+## Uniform Candidate Sampling
+
+When multiple distinct applicable candidate transitions exist, `REF_UNIFORM_SUPPORTED` assigns equal computational probability to each candidate.
+
+For `N` applicable candidates:
+
+$$
+P(C_i)=\frac{1}{N}
+$$
+
+where `C_i` is an applicable candidate transition.
+
+For example, if three distinct candidate transitions are applicable:
+
+```text
+Candidate 1 → 1/3
+Candidate 2 → 1/3
+Candidate 3 → 1/3
+```
+
+These probabilities are introduced by the reference scenario.
+
+They do **not** mean that the biological outcomes are equally likely.
+
+The scenario is intentionally used as a transparent reference configuration in the absence of defensible empirical probability estimates.
+
+---
+
+## Single Candidate Application
+
+The MVP applies exactly one sampled candidate transition per environment step.
+
+This is a computational representation constraint rather than a biological claim that evolution changes only one resistance phenotype at a time.
+
+Longitudinal experimental evolution data demonstrate that multiple resistance phenotypes can change during an evolutionary trajectory.
+
+However, the available pairwise evidence does not establish a defensible joint probability distribution for simultaneous changes across the seven-antibiotic resistance state.
+
+Therefore, the initial reference scenario does not independently sample multiple target antibiotics within a single environment transition.
+
+This constraint keeps the MVP transition process explicit and reproducible while avoiding unsupported assumptions about joint evolutionary probabilities.
+
+---
+
+## No Applicable Candidate
+
+If no evidence-supported candidate transition is applicable to the current state and selected action, the simulator retains the current resistance state.
+
+This event means:
+
+```text
+no modeled evidence-supported transition
+```
+
+It does **not** mean:
+
+```text
+biological evolution did not occur
+```
+
+The distinction is important because the absence of a modeled transition does not establish the absence of biological evolutionary change.
+
+The simulator should record this event explicitly so that the assumption remains visible during simulation analysis.
+
+The corresponding computational status may be recorded as:
+
+```text
+unsupported_no_candidate
+```
+
+---
+
+## Probability Provenance
+
+Probability provenance must distinguish empirical evidence from computational assumptions.
+
+The following probability-source categories are used:
+
+* `empirical` — probability directly estimated from sufficiently comparable experimental data;
+* `calibrated` — probability obtained through an explicitly documented calibration procedure;
+* `model_assumption` — probability introduced as a modeling assumption;
+* `reference_scenario` — probability introduced by a predefined reference uncertainty scenario;
+* `unresolved` — no probability has been established.
+
+`REF_UNIFORM_SUPPORTED` therefore uses:
+
+```text
+probability_source = reference_scenario
+```
+
+It must not label its probabilities as empirical.
+
+This distinction is required for reproducibility and scientific interpretation.
+
+---
+
+## Stochasticity
+
+The simulation supports stochastic resistance transitions.
+
+Under the `REF_UNIFORM_SUPPORTED` scenario:
+
+1. the current resistance state and selected antibiotic determine which candidate transitions are applicable;
+2. duplicate candidates are removed while preserving evidence provenance;
+3. one candidate is selected according to the scenario's probability distribution;
+4. the selected candidate is applied to the current resistance state;
+5. the resulting state becomes the next simulation state.
+
+When only one candidate is applicable, that candidate is selected deterministically.
+
+When multiple distinct candidates are applicable, each candidate receives equal computational probability under the reference scenario.
+
+When no applicable candidate exists, the resistance state is retained unchanged and the event is recorded as an unsupported-no-candidate transition.
+
+Random seeds are recorded to support reproducible experiments and multi-seed evaluation.
+
+The same state, action, scenario and seed should produce the same sampled transition.
+
+Different seeds may produce different outcomes when multiple candidates are available.
+
+---
+
+## Reproducibility and Transition Metadata
+
+Each sampled transition should preserve sufficient metadata to reconstruct and audit the computational decision.
+
+Where applicable, the transition record should contain:
+
+* scenario identifier;
+* random seed;
+* current resistance state;
+* selected antibiotic;
+* applicable candidate set;
+* candidate probabilities;
+* selected candidate;
+* transition outcome;
+* evidence source identifiers;
+* transition status.
+
+This metadata supports debugging, experiment reproducibility, scientific auditability and later inspection of why a simulated resistance state changed.
+
+---
+
+## Explicit Exclusions
+
+`REF_UNIFORM_SUPPORTED` does not:
+
+* infer episode-level transition probabilities from strain frequencies;
+* interpret observations such as 8/10 or 7/10 as episode-level transition probabilities;
+* treat the number of supporting papers as probability mass;
+* treat confidence scores as probabilities;
+* assume unsupported biological outcomes are impossible;
+* independently sample each candidate target;
+* infer joint transition probabilities from pairwise evidence;
+* convert continuous IC50 trajectories directly into binary transition probabilities;
+* claim that one resistance-state component is the only component that can biologically change during an evolutionary episode.
+
+The reference scenario is therefore a controlled computational abstraction for evaluating sequential treatment policies under unresolved evolutionary uncertainty.
+
+---
 
 ## Impossible Transitions
 
@@ -93,14 +366,18 @@ The simulation excludes transitions that violate the defined binary resistance r
 
 For example:
 
-- resistance values may only be `0` or `1`;
-- a resistance state must contain exactly seven antibiotic dimensions;
-- an antibiotic cannot transition to an undefined action-space drug;
-- an unchanged state must preserve the current resistance profile;
-- collateral sensitivity cannot change a susceptible state into another value;
-- cross-resistance cannot change a resistant state into another value.
+* resistance values may only be `0` or `1`;
+* a resistance state must contain exactly seven antibiotic dimensions;
+* an antibiotic cannot transition to an undefined action-space drug;
+* an unchanged state must preserve the current resistance profile;
+* collateral sensitivity cannot change a susceptible state into another value;
+* cross-resistance cannot change a resistant state into another value.
 
 Transitions unsupported by the evidence model or explicit simulation assumptions are not treated as evidence-based biological transitions.
+
+The absence of an evidence-supported transition should not be interpreted as proof that the corresponding biological event is impossible.
+
+---
 
 ## True State and Observation
 
@@ -110,15 +387,15 @@ The RL agent does not directly observe the true future state.
 
 After a transition occurs, the environment generates the corresponding observation according to the observation model.
 
-This preserves the distinction between the simulated biological state and the information available to the decision-making agent.
+This preserves the distinction between:
 
-## Stochasticity
+* the simulated biological state;
+* the state transition process;
+* the information available to the decision-making agent.
 
-The simulation supports stochastic transitions.
+The current MVP observation representation may expose susceptibility information directly. Future observation extensions may introduce unknown, noisy or delayed susceptibility information without changing the underlying distinction between state and observation.
 
-When multiple transition outcomes are possible, the environment samples a next state according to the configured transition probabilities.
-
-Random seeds are recorded to support reproducible experiments and multi-seed evaluation.
+---
 
 ## Scope and Limitations
 
@@ -130,15 +407,43 @@ Experimental evidence is used to constrain plausible transition relationships, w
 
 Clinical surveillance data may be used to define plausible initial resistance states and scenario distributions, but are not assumed to identify causal within-treatment evolutionary transition probabilities.
 
+The binary seven-antibiotic representation is a computational abstraction of a more complex biological system.
+
+The reference uncertainty scenario is therefore intended for simulation-based evaluation of sequential treatment policies rather than direct clinical prediction.
+
+---
+
 ## Relationship to Later Components
 
 The resistance transition model provides the state dynamics used by:
 
-- the simulation environment;
-- the treatment sequence evaluator;
-- the reinforcement-learning environment;
-- the reward function;
-- resistance-emergence metrics;
-- future-treatment-option metrics.
+* the simulation environment;
+* the treatment sequence evaluator;
+* the reinforcement-learning environment;
+* the reward function;
+* resistance-emergence metrics;
+* future-treatment-option metrics.
 
 The transition model therefore forms the core biological-dynamics component of the sequential treatment simulation.
+
+Its separation from the evidence registry, uncertainty configuration and reinforcement-learning policy allows each component to be evaluated independently.
+
+The resulting architecture is:
+
+```text
+Evidence Registry
+       ↓
+Empirical Interactions
+       ↓
+Transition Candidates
+       ↓
+Uncertainty / Reference Scenario
+       ↓
+Transition Sampling
+       ↓
+Next Resistance State
+       ↓
+Observation
+       ↓
+RL Policy
+```
