@@ -1,40 +1,19 @@
+import random
+
 from simulation.action_space import ActionSpace
 from simulation.episode import EpisodeState
-from simulation.treatment_action_executor import TreatmentActionExecutor
-from simulation.transition_function import ResistanceTransitionFunction
-from simulation.transition_generator import CandidateTransitionGenerator
-from simulation.transition_sampler import TransitionSampler
+from simulation.episode_step import EpisodeStep
 
 
 class EpisodeProgression:
     def __init__(
         self,
         action_space: ActionSpace | None = None,
-        treatment_executor: TreatmentActionExecutor | None = None,
-        transition_generator: CandidateTransitionGenerator | None = None,
-        transition_sampler: TransitionSampler | None = None,
-        transition_function: ResistanceTransitionFunction | None = None,
+        episode_step: EpisodeStep | None = None,
     ):
         self.action_space = action_space or ActionSpace()
-
-        self.treatment_executor = (
-            treatment_executor
-            or TreatmentActionExecutor(self.action_space)
-        )
-
-        self.transition_generator = (
-            transition_generator
-            or CandidateTransitionGenerator(self.action_space)
-        )
-
-        self.transition_sampler = (
-            transition_sampler
-            or TransitionSampler()
-        )
-
-        self.transition_function = (
-            transition_function
-            or ResistanceTransitionFunction()
+        self.episode_step = episode_step or EpisodeStep(
+            action_space=self.action_space,
         )
 
     def step(
@@ -42,25 +21,14 @@ class EpisodeProgression:
         episode: EpisodeState,
         action: int,
         seed: int | None = None,
+        rng: random.Random | None = None,
     ) -> EpisodeState:
-        self.treatment_executor.execute(
-            episode.resistance_state,
-            action,
-        )
-
-        candidates = self.transition_generator.generate(
-            episode.resistance_state,
-            action,
-        )
-
-        sampled = self.transition_sampler.sample(
-            candidates,
+        result = self.episode_step.execute(
+            state=episode.resistance_state,
+            action=action,
+            treatment_step=episode.treatment_step,
             seed=seed,
+            rng=rng,
         )
 
-        next_state = self.transition_function.apply(
-            episode.resistance_state,
-            sampled.candidate,
-        )
-
-        return episode.advance(next_state)
+        return episode.advance(result.next_state)

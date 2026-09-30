@@ -1,46 +1,35 @@
-from simulation.candidate_transition import CandidateTransition
 from simulation.episode import EpisodeState
 from simulation.episode_progression import EpisodeProgression
+from simulation.episode_step import EpisodeStep
 from simulation.resistance_state import ResistanceState
-from simulation.transition_sampler import SampledTransition
+from simulation.stochastic_transition_model import (
+    SampledTransition,
+)
 
 
-class StubTreatmentExecutor:
-    def execute(self, state, action):
-        return None
+class StubEpisodeStep:
+    def __init__(self, next_state):
+        self.next_state = next_state
 
+    def execute(
+        self,
+        state,
+        action,
+        treatment_step,
+        seed=None,
+        rng=None,
+    ):
+        class Result:
+            pass
 
-class StubTransitionGenerator:
-    def __init__(self, candidate):
-        self.candidate = candidate
-
-    def generate(self, state, action):
-        return (self.candidate,)
-
-
-class StubTransitionSampler:
-    def __init__(self, candidate):
-        self.candidate = candidate
-
-    def sample(self, candidates, seed=None):
-        return SampledTransition(
-            candidate=self.candidate
-        )
-
-
-def build_progression(candidate):
-    return EpisodeProgression(
-        treatment_executor=StubTreatmentExecutor(),
-        transition_generator=StubTransitionGenerator(candidate),
-        transition_sampler=StubTransitionSampler(candidate),
-    )
+        result = Result()
+        result.next_state = self.next_state
+        return result
 
 
 def test_episode_progression_increments_treatment_step():
-    candidate = CandidateTransition(
-        target_drug="GENTAMICIN",
-        outcome="neutral",
-        source_ids=("TEST",),
+    next_state = ResistanceState(
+        (0, 0, 0, 0, 0, 0, 0)
     )
 
     episode = EpisodeState(
@@ -49,7 +38,11 @@ def test_episode_progression_increments_treatment_step():
         )
     )
 
-    next_episode = build_progression(candidate).step(
+    progression = EpisodeProgression(
+        episode_step=StubEpisodeStep(next_state)
+    )
+
+    next_episode = progression.step(
         episode,
         action=0,
     )
@@ -57,11 +50,9 @@ def test_episode_progression_increments_treatment_step():
     assert next_episode.treatment_step == 1
 
 
-def test_episode_progression_applies_sampled_transition():
-    candidate = CandidateTransition(
-        target_drug="GENTAMICIN",
-        outcome="cross_resistance",
-        source_ids=("TEST",),
+def test_episode_progression_uses_episode_step_next_state():
+    next_state = ResistanceState(
+        (0, 0, 0, 0, 1, 0, 0)
     )
 
     episode = EpisodeState(
@@ -70,21 +61,21 @@ def test_episode_progression_applies_sampled_transition():
         )
     )
 
-    next_episode = build_progression(candidate).step(
+    progression = EpisodeProgression(
+        episode_step=StubEpisodeStep(next_state)
+    )
+
+    next_episode = progression.step(
         episode,
         action=0,
     )
 
-    assert next_episode.resistance_state == ResistanceState(
-        (0, 0, 0, 0, 1, 0, 0)
-    )
+    assert next_episode.resistance_state == next_state
 
 
 def test_episode_progression_preserves_original_episode():
-    candidate = CandidateTransition(
-        target_drug="GENTAMICIN",
-        outcome="cross_resistance",
-        source_ids=("TEST",),
+    next_state = ResistanceState(
+        (0, 0, 0, 0, 1, 0, 0)
     )
 
     episode = EpisodeState(
@@ -93,7 +84,11 @@ def test_episode_progression_preserves_original_episode():
         )
     )
 
-    build_progression(candidate).step(
+    progression = EpisodeProgression(
+        episode_step=StubEpisodeStep(next_state)
+    )
+
+    progression.step(
         episode,
         action=0,
     )
