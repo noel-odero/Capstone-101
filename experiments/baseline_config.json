@@ -1,0 +1,20 @@
+{
+  "run_count": 20,
+  "initial_profile_design": "all_binary",
+  "horizon": 8,
+  "gamma": 1.0,
+  "environment_seed_start": 1000,
+  "policy_seed_start": 100000,
+  "confidence_level": 0.95,
+  "bootstrap_resamples": 10000,
+  "bootstrap_seed": 31415,
+  "permutation_seed": 27182,
+  "independent_runs_assumed": true,
+  "symmetric_differences_assumed": false,
+  "scenarios": [
+    "REF_UNIFORM_SUPPORTED",
+    "SENSITIVITY_Q_025",
+    "SENSITIVITY_Q_050",
+    "SENSITIVITY_Q_075"
+  ]
+}
