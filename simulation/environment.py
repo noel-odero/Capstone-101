@@ -5,6 +5,7 @@ from gymnasium import spaces
 from simulation.action_space import ActionSpace
 from simulation.episode import EpisodeState
 from simulation.episode_progression import EpisodeProgression
+from simulation.episode_step import EpisodeStep
 from simulation.episode_termination import EpisodeTermination
 from simulation.encoder import encode_observation
 from simulation.observation import Observation
@@ -29,11 +30,6 @@ class AntibioticEnvironment(gym.Env):
             action_space_config or ActionSpace()
         )
 
-        self.episode_progression = (
-            episode_progression
-            or EpisodeProgression(self.action_space_config)
-        )
-
         self.episode_termination = (
             episode_termination
             or EpisodeTermination(
@@ -47,6 +43,14 @@ class AntibioticEnvironment(gym.Env):
             or RewardFunction(
                 action_space=self.action_space_config
             )
+        )
+
+        self.episode_progression = episode_progression or EpisodeProgression(
+            action_space=self.action_space_config,
+            episode_step=EpisodeStep(
+                reward_function=self.reward_function,
+                action_space=self.action_space_config,
+            ),
         )
 
         self.action_space = spaces.Discrete(
@@ -63,7 +67,7 @@ class AntibioticEnvironment(gym.Env):
             high=np.array(
                 [1] * self.action_space_config.size
                 + [1] * self.action_space_config.size
-                + [max_steps],
+                + [self.episode_termination.max_steps],
                 dtype=np.float32,
             ),
             dtype=np.float32,
@@ -102,10 +106,31 @@ class AntibioticEnvironment(gym.Env):
     def reset(self, *, seed=None, options=None):
         super().reset(seed=seed)
 
-        self.episode = EpisodeState(
-            resistance_state=ResistanceState(
-                (0, 0, 0, 0, 0, 0, 0)
+        if options is None:
+            options = {}
+        if not isinstance(options, dict):
+            raise TypeError("Reset options must be a dictionary.")
+
+        unknown_options = set(options) - {"initial_resistance_state"}
+        if unknown_options:
+            raise ValueError(
+                f"Unsupported reset options: {sorted(unknown_options)}"
             )
+
+        initial_state = options.get(
+            "initial_resistance_state",
+            (0, 0, 0, 0, 0, 0, 0),
+        )
+        if not isinstance(initial_state, ResistanceState):
+            if not isinstance(initial_state, (tuple, list)):
+                raise TypeError(
+                    "initial_resistance_state must be a ResistanceState, "
+                    "tuple, or list."
+                )
+            initial_state = ResistanceState(tuple(initial_state))
+
+        self.episode = EpisodeState(
+            resistance_state=initial_state
         )
 
         self.last_action = tuple(
@@ -120,9 +145,15 @@ class AntibioticEnvironment(gym.Env):
                 "Environment must be reset before calling step()."
             )
 
-        action = int(action)
+        if isinstance(action, (bool, np.bool_)) or not isinstance(
+            action,
+            (int, np.integer),
+        ):
+            raise TypeError("Action must be an integer.")
 
-        previous_state = self.episode.resistance_state
+        action = int(action)
+        if not self.action_space.contains(action):
+            raise ValueError(f"Invalid action: {action}")
 
         step_seed = int(
             self.np_random.integers(
@@ -131,19 +162,13 @@ class AntibioticEnvironment(gym.Env):
             )
         )
 
-        next_episode = self.episode_progression.step(
+        step_result = self.episode_progression.step(
             self.episode,
             action,
             seed=step_seed,
         )
 
-        reward = self.reward_function.calculate(
-            previous_state,
-            next_episode.resistance_state,
-            action,
-        )
-
-        self.episode = next_episode
+        self.episode = self.episode.advance(step_result.next_state)
 
         self.last_action = tuple(
             1 if index == action else 0
@@ -156,20 +181,56 @@ class AntibioticEnvironment(gym.Env):
 
         truncated = False
 
-        antibiotic = self.action_space_config.antibiotic_for(
-            action
-        )
+        sampled = step_result.sampled_transition
+        selected_candidate = sampled.candidate
+        candidate_details = [
+            {
+                "target_drug": candidate.target_drug,
+                "outcome": candidate.outcome,
+                "source_ids": list(candidate.source_ids),
+                "scenario_probability": probability,
+            }
+            for candidate, probability in zip(
+                sampled.candidates,
+                sampled.candidate_probabilities,
+            )
+        ]
 
         info = {
-            "antibiotic": antibiotic,
-            "effective": previous_state.is_susceptible(
-                antibiotic
+            "antibiotic": step_result.treatment.antibiotic,
+            "effective": step_result.treatment.effective,
+            "scenario_id": sampled.scenario_id,
+            "transition_status": sampled.status,
+            "selected_outcome": (
+                selected_candidate.outcome
+                if selected_candidate is not None
+                else None
             ),
+            "selected_target_drug": (
+                selected_candidate.target_drug
+                if selected_candidate is not None
+                else None
+            ),
+            "source_ids": (
+                list(selected_candidate.source_ids)
+                if selected_candidate is not None
+                else []
+            ),
+            "selected_candidate_probability": sampled.probability,
+            "candidate_scenario_probabilities": candidate_details,
+            "no_transition_probability": sampled.no_transition_probability,
+            "occurrence_probability_assumption": sampled.occurrence_probability,
+            "transition_seed": sampled.seed,
         }
 
+        observation = np.array(
+            encode_observation(step_result.observation),
+            dtype=np.float32,
+        )
+
         return (
-            self._observation(),
-            float(reward),
+            observation,
+            float(step_result.reward),
             terminated,
             truncated,
             info,

@@ -1,13 +1,9 @@
 import random
 
-from simulation.candidate_transition import CandidateTransition
 from simulation.resistance_state import ResistanceState
 from simulation.transition_function import ResistanceTransitionFunction
 from simulation.transition_generator import CandidateTransitionGenerator
 from simulation.transition_sampler import SampledTransition, TransitionSampler
-
-
-REFERENCE_SCENARIO_ID = "REF_UNIFORM_SUPPORTED"
 
 
 class StochasticTransitionModel:
@@ -37,23 +33,14 @@ class StochasticTransitionModel:
             action,
         )
 
-        if not candidates:
-            return state, SampledTransition(
-                candidate=CandidateTransition(
-                    target_drug="",
-                    outcome="no_change",
-                    source_ids=(),
-                ),
-                probability=1.0,
-                scenario_id=REFERENCE_SCENARIO_ID,
-                candidates=(),
-            )
-
         sampled = self.sampler.sample(
             candidates,
             seed=seed,
             rng=rng,
         )
+
+        if sampled.candidate is None:
+            return state, sampled
 
         next_state = self.transition_function.apply(
             state,

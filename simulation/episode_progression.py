@@ -2,7 +2,7 @@ import random
 
 from simulation.action_space import ActionSpace
 from simulation.episode import EpisodeState
-from simulation.episode_step import EpisodeStep
+from simulation.episode_step import EpisodeStep, EpisodeStepResult
 
 
 class EpisodeProgression:
@@ -22,13 +22,11 @@ class EpisodeProgression:
         action: int,
         seed: int | None = None,
         rng: random.Random | None = None,
-    ) -> EpisodeState:
-        result = self.episode_step.execute(
+    ) -> EpisodeStepResult:
+        return self.episode_step.execute(
             state=episode.resistance_state,
             action=action,
             treatment_step=episode.treatment_step,
             seed=seed,
             rng=rng,
         )
-
-        return episode.advance(result.next_state)

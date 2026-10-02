@@ -6,6 +6,7 @@ ROOT = Path(__file__).resolve().parents[1]
 
 UNCERTAINTY_FILE = ROOT / "data" / "processed" / "transition_uncertainty.csv"
 EMPIRICAL_FILE = ROOT / "data" / "processed" / "empirical_interactions.csv"
+EVIDENCE_REGISTRY_FILE = ROOT / "data" / "processed" / "evidence_registry.csv"
 
 
 REQUIRED_COLUMNS = {
@@ -30,6 +31,7 @@ ALLOWED_EVIDENCE_STRENGTHS = {
 ALLOWED_CONFIDENCE = {
     "high",
     "medium",
+    "moderate",
     "low",
 }
 
@@ -106,6 +108,47 @@ def test_every_uncertainty_record_references_empirical_observation():
         )
 
         assert key in empirical_keys
+
+
+def test_uncertainty_classifications_match_empirical_and_registry_records():
+    uncertainty = load_csv(UNCERTAINTY_FILE)
+    empirical = load_csv(EMPIRICAL_FILE)
+    evidence_registry = load_csv(EVIDENCE_REGISTRY_FILE)
+
+    def record_key(row):
+        return (
+            row["source_id"],
+            normalize_drug(row["from_drug"]),
+            normalize_drug(row["to_drug"]),
+            row["relationship"].strip().casefold(),
+            row["directionality"].strip().casefold(),
+        )
+
+    empirical_by_key = {record_key(row): row for row in empirical}
+    registry_by_key = {record_key(row): row for row in evidence_registry}
+    uncertainty_by_key = {record_key(row): row for row in uncertainty}
+
+    assert len(empirical_by_key) == len(empirical)
+    assert len(uncertainty_by_key) == len(uncertainty)
+    assert set(empirical_by_key).issubset(registry_by_key)
+    assert set(uncertainty_by_key) == set(empirical_by_key)
+
+    for key, uncertainty_row in uncertainty_by_key.items():
+        empirical_row = empirical_by_key[key]
+        registry_row = registry_by_key[key]
+
+        for field in (
+            "evidence_strength",
+            "confidence",
+            "relationship",
+            "directionality",
+        ):
+            assert uncertainty_row[field].strip().casefold() == (
+                empirical_row[field].strip().casefold()
+            )
+            assert empirical_row[field].strip().casefold() == (
+                registry_row[field].strip().casefold()
+            )
 
 
 def test_empirical_relationships_are_preserved():

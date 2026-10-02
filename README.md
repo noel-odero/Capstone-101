@@ -42,16 +42,28 @@ The system is a research and decision-support prototype. It is not intended to:
 ## Project Structure
 
 ```text
-ml/           Machine learning, simulation and experiments
-backend/      ASP.NET Core API
-frontend/     React frontend
-docs/         Project and technical documentation
-experiments/  Experiment configurations and results
+simulation/   Resistance simulation and Gymnasium environment
+ml/           Machine-learning environment and future policy code
+data/         Raw sources and processed evidence/configuration
+experiments/  Simulation inspection and exploratory analyses
+docs/         Scientific specifications and research notes
+tests/        Simulation and evidence-pipeline tests
+backend/      ASP.NET Core API placeholder
+frontend/     React frontend placeholder
+```
 
-
+`REF_UNIFORM_SUPPORTED` is a computational reference scenario: it uniformly
+selects among applicable, deduplicated candidates, and selects a candidate
+whenever at least one is applicable. It is not an empirical estimate of the
+chance of resistance change. Named sensitivity scenarios use illustrative
+transition-occurrence assumptions (`q = 0.25`, `0.50`, and `0.75`); these are
+not biological probabilities.
 
 Python 3.11.9
-→ create .venv
-→ activate .venv
-→ pip install -r ml/requirements.txt
-→ run ml/test_environment.py
+1. Create and activate `.venv` with Python 3.11.
+2. Install dependencies with `pip install -r ml/requirements.txt`.
+3. Run the test suite from the repository root with `python -m pytest`.
+4. Check installed ML packages with `python ml/environment_check.py`.
+
+Sprint 4 baselines and evaluation infrastructure, PPO training, backend, and
+frontend implementations are not yet present.

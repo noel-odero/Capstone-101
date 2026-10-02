@@ -201,7 +201,7 @@ The simulator does not assign probabilities based on the number of papers suppor
 
 ## Uniform Candidate Sampling
 
-When multiple distinct applicable candidate transitions exist, `REF_UNIFORM_SUPPORTED` assigns equal computational probability to each candidate.
+When multiple distinct applicable candidate transitions exist, `REF_UNIFORM_SUPPORTED` assigns equal computational probability to each candidate and selects one on every step where the set is nonempty. The scenario therefore forces one supported candidate outcome per such step. It is a computational reference, not an estimate of the chance that a biological resistance transition occurs after exposure.
 
 For `N` applicable candidates:
 
@@ -224,6 +224,16 @@ These probabilities are introduced by the reference scenario.
 They do **not** mean that the biological outcomes are equally likely.
 
 The scenario is intentionally used as a transparent reference configuration in the absence of defensible empirical probability estimates.
+
+Under this primary scenario, applicable neutral candidates compete uniformly with resistance-changing candidates, preserving the current reference behavior. The sampler reports the conditional candidate-selection probability; that value is not a biological resistance-emergence probability.
+
+### Transition-Occurrence Sensitivity Scenarios
+
+Sensitivity scenarios make the transition-occurrence assumption explicit using `SENSITIVITY_Q_025`, `SENSITIVITY_Q_050`, and `SENSITIVITY_Q_075`, with occurrence weights 0.25, 0.50, and 0.75. Boundary settings `SENSITIVITY_Q_000` and `SENSITIVITY_Q_100` are also supported for implementation validation. These are illustrative computational assumptions, not empirical estimates or claims about bacterial biology.
+
+For a sensitivity scenario with at least one applicable resistance-changing candidate, the no-transition outcome has probability `1 - q`. Conditional on a transition, each of the `N` deduplicated applicable resistance-changing candidates has probability `1/N`, so each has full scenario probability `q/N`. Neutral candidates are excluded from this resistance-changing distribution and receive zero probability while resistance-changing candidates are applicable. If only neutral candidates are applicable, one is selected uniformly as a supported neutral outcome; the occurrence weight does not apply. If no candidate of any kind is applicable, the state remains unchanged with status `unsupported_no_candidate`, distinct from both a neutral outcome and a sensitivity-gate `no_transition`.
+
+For every sensitivity distribution with resistance-changing candidates, the candidate probabilities and no-transition probability sum to one. The primary reference scenario retains its existing behavior, including neutral candidates in its uniform candidate set. Results under the reference and sensitivity scenarios are outcomes under different computational assumptions and must not be interpreted as biological transition estimates.
 
 ---
 
@@ -312,6 +322,8 @@ When only one candidate is applicable, that candidate is selected deterministica
 When multiple distinct candidates are applicable, each candidate receives equal computational probability under the reference scenario.
 
 When no applicable candidate exists, the resistance state is retained unchanged and the event is recorded as an unsupported-no-candidate transition.
+
+The transition result distinguishes a selected neutral candidate, an occurrence-gate `no_transition` result in a sensitivity scenario, and `unsupported_no_candidate`. A result without a selected candidate has no candidate-selection probability. The gate's `no_transition_probability` is only defined when resistance-changing candidates exist; an unsupported candidate set uses the deterministic unchanged-state fallback and reports `unsupported_no_candidate` instead.
 
 Random seeds are recorded to support reproducible experiments and multi-seed evaluation.
 

@@ -3,7 +3,7 @@ from simulation.stochastic_transition_model import StochasticTransitionModel
 
 
 class EmptyCandidateGenerator:
-    def generate(self, state, action):
+    def generate(self, _state, _action):
         return ()
 
 
@@ -63,6 +63,44 @@ def test_no_candidates_preserve_state():
     )
 
     assert next_state == state
-    assert sampled.candidate.outcome == "no_change"
+    assert sampled.candidate is None
+    assert sampled.status == "unsupported_no_candidate"
     assert sampled.candidates == ()
-    assert sampled.probability == 1.0
+    assert sampled.probability is None
+    assert sampled.no_transition_probability is None
+
+
+def test_sensitivity_no_transition_preserves_state_and_status():
+    from simulation.transition_sampler import TransitionSampler
+
+    model = StochasticTransitionModel(
+        candidate_generator=EmptyCandidateGenerator(),
+        sampler=TransitionSampler("SENSITIVITY_Q_050"),
+    )
+    state = ResistanceState((0, 0, 0, 0, 0, 0, 0))
+
+    next_state, sampled = model.step(state, action=0, seed=42)
+
+    assert next_state == state
+    assert sampled.status == "unsupported_no_candidate"
+
+
+def test_sensitivity_gate_no_transition_is_distinct_from_neutral():
+    from simulation.candidate_transition import CandidateTransition
+    from simulation.transition_sampler import TransitionSampler
+
+    class OneResistanceCandidateGenerator:
+        def generate(self, _state, _action):
+            return (CandidateTransition("GENTAMICIN", "cross_resistance", ("A",)),)
+
+    model = StochasticTransitionModel(
+        candidate_generator=OneResistanceCandidateGenerator(),
+        sampler=TransitionSampler("SENSITIVITY_Q_000"),
+    )
+    state = ResistanceState((0, 0, 0, 0, 0, 0, 0))
+
+    next_state, sampled = model.step(state, action=0, seed=42)
+
+    assert next_state == state
+    assert sampled.status == "no_transition"
+    assert sampled.candidate is None
