@@ -64,12 +64,7 @@ def test_episode_step_observation_matches_next_state():
         seed=1,
     )
 
-    expected_susceptibility = tuple(
-        0 if value == 1 else 1
-        for value in result.next_state.resistance
-    )
-
-    assert result.observation.susceptibility == expected_susceptibility
+    assert result.observation.susceptibility == result.next_state.resistance
 
 
 def test_episode_step_calculates_reward():

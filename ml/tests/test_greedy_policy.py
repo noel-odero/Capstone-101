@@ -118,6 +118,24 @@ def test_observation_only_policy_works_without_environment_reference():
     assert policy.select_action(encoded_observation((1, 1, 0, 1, 1, 1, 1))) == 2
 
 
+@pytest.mark.parametrize("first_action", [1, 2])
+def test_greedy_treatment_is_effective_from_corrected_stochastic_observation(
+    first_action,
+):
+    environment = AntibioticEnvironment()
+    environment.reset(seed=42)
+    observation, _, terminated, _, _ = environment.step(first_action)
+    assert not terminated
+
+    policy = GreedyPolicy(environment.action_space, seed=18)
+    action = policy.select_action(observation)
+
+    assert observation[action] == 0
+    _, _, _, _, info = environment.step(action)
+    assert info["effective"] is True
+    environment.close()
+
+
 def test_complete_episode_collects_public_results_and_reproduces():
     trajectories = []
 
@@ -135,6 +153,7 @@ def test_complete_episode_collects_public_results_and_reproduces():
             assert observation[action] == 0
             assert environment.action_space.contains(action)
             next_observation, reward, terminated, truncated, info = environment.step(action)
+            assert info["effective"] is True
             assert environment.observation_space.contains(next_observation)
             assert isinstance(reward, float)
             assert "transition_status" in info

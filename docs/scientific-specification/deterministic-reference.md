@@ -5,7 +5,8 @@
 Sprint 4 Card 4.3 provides a finite, deterministic reference problem for later
 exact policy computation. It is not a claim that bacterial evolution is
 deterministic. The stochastic environment and completed policies are unchanged.
-No value-iteration solver or policy evaluator is implemented by this card.
+Card 4.4 adds an exact finite-horizon value-iteration solver. No policy evaluator
+or policy-comparison pipeline is implemented here.
 
 ## Transition Rule
 
@@ -55,11 +56,42 @@ Markov property. The existing reward function and its default weights are reused
 terminal flag, and scenario metadata without mutating the running episode.
 This supplies a complete known transition/reward table for Card 4.4.
 
-An optimal policy can be computed by finite-horizon backward induction (or
-time-indexed value iteration): terminal values are zero; at each earlier time,
-maximize immediate reward plus the next-state value over the seven actions.
-There is no need to estimate transition probabilities or assume an infinite
-horizon. Any later discount factor must be explicit in Card 4.4.
+## Solver Contract (Card 4.4)
+
+`ml/src/value_iteration.py` exposes `value_iteration(environment, gamma=1.0)`.
+It accepts the deterministic reference environment and a finite real discount
+factor in `[0, 1]`. Booleans and nonnumeric values raise `TypeError`; nonfinite
+or out-of-range values raise `ValueError`. The approved default `gamma = 1`
+optimizes undiscounted cumulative episode reward.
+
+The solver enumerates planning states and processes them in descending treatment
+step order. Every nonterminal transition advances time, so a single reverse-time
+pass suffices; no convergence tolerance or iterative stopping criterion is needed.
+For each nonterminal state/action, the Bellman backup is:
+
+$$
+Q(s,a) = R(s,a) + \gamma\,\mathbf{1}_{\text{not terminal}} V(T(s,a)),
+\qquad V(s) = \max_a Q(s,a).
+$$
+
+The reward for entering a terminal state is retained, but its continuation value
+is zero. Terminal states have zero state and action values and no policy action.
+Exact maximizing ties select the lowest action ID. Near-equal floating-point
+values are not converted into ties by a numerical tolerance.
+
+`ValueIterationResult` contains `state_values[state]`,
+`action_values[state][action]`, `policy[state]`, and the validated `gamma`.
+All enumerated states and seven actions are present in the value tables;
+`policy[state]` is `None` for terminal states and an integer otherwise. Keys
+are immutable `EpisodeState` objects. Solving does not reset, step, or mutate
+the interactive environment and does not consume any random generator.
+
+This is exact planning under the known reference dynamics, up to floating-point
+arithmetic. It is not an optimal policy for the stochastic environment or a
+clinical recommendation. Values depend on the reference selection rule, processed
+evidence snapshot, reward weights, horizon, and discount factor. The solver relies
+on this model's complete finite enumeration and strictly advancing nonterminal
+time; it is not a general cyclic or infinite-horizon solver.
 
 ## Validation
 
@@ -68,3 +100,8 @@ unsupported actions, seed independence, reward and observation conventions,
 termination, and Gymnasium compatibility. The full state/action table is checked
 for deterministic repeatability, probability 1, closure within the enumerated
 space, absorbing terminal states, and absence of mutation during planning.
+
+Solver tests additionally verify all-state Bellman consistency, terminal values,
+immediate rewards and continuation, lowest-ID ties, discount validation,
+reproducibility, no episode/RNG mutation, and agreement with exhaustive action
+sequences for a two-step horizon.

@@ -33,6 +33,41 @@ class FixedCandidateGenerator:
         return (self.candidate,)
 
 
+@pytest.mark.parametrize(
+    ("initial_state", "action", "status", "resistance_change"),
+    [
+        ((0, 0, 0, 0, 0, 0, 0), 1, "cross_resistance", 1),
+        ((0, 0, 1, 1, 1, 1, 1), 0, "collateral_sensitivity", -1),
+        ((0, 1, 0, 0, 0, 0, 0), 3, "neutral", 0),
+        ((0, 0, 0, 0, 0, 0, 0), 2, "unsupported_no_candidate", 0),
+    ],
+)
+def test_stochastic_observation_matches_true_state_after_transition(
+    initial_state, action, status, resistance_change
+):
+    environment = AntibioticEnvironment()
+    initial_observation, _ = environment.reset(
+        seed=42,
+        options={"initial_resistance_state": initial_state},
+    )
+    assert np.array_equal(initial_observation[:7], initial_state)
+
+    observation, _, terminated, truncated, info = environment.step(action)
+
+    assert environment.episode is not None
+    actual_state = environment.episode.resistance_state
+    assert info["transition_status"] == status
+    assert sum(actual_state.resistance) - sum(initial_state) == resistance_change
+    assert np.array_equal(observation[:7], actual_state.resistance)
+    assert np.array_equal(observation[:7], environment._observation()[:7])
+    assert environment.observation_space.contains(observation)
+    assert observation[14] == 1
+    assert not terminated and not truncated
+    if resistance_change == 0:
+        assert np.array_equal(observation[:7], initial_observation[:7])
+    environment.close()
+
+
 def test_environment_has_correct_action_space():
     environment = AntibioticEnvironment()
 

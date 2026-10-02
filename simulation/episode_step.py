@@ -94,10 +94,7 @@ class EpisodeStep:
         action: int,
         treatment_step: int,
     ) -> Observation:
-        susceptibility = tuple(
-            0 if value == 1 else 1
-            for value in state.resistance
-        )
+        susceptibility = state.resistance
 
         last_action = tuple(
             1 if index == action else 0
