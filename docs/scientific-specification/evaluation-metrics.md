@@ -247,3 +247,65 @@ The metrics do not directly measure:
 
 The metrics therefore evaluate policies within the simulated environment
 rather than establishing clinical effectiveness.
+
+## 10. Metrics Engine Contract (Sprint 4 Card 4.6)
+
+`ml/src/metrics.py` exposes `calculate_episode_metrics(episode, scenario_id=...)`
+for one runner `EpisodeResult` and `calculate_metrics(evaluation)` for an
+`EvaluationResult`. The scenario is supplied explicitly for a single episode
+because initially terminal episodes have no transition metadata. Outputs preserve
+episode ID, environment/policy seeds, policy identity, scenario ID, termination
+flags, and termination reason. Evaluation outputs also preserve horizon and
+reward weights. Input records are not modified.
+
+### Denominators and Zero-Step Episodes
+
+Each recorded step represents one treatment action and one environment
+transition. All recorded transitions count in the RER denominator, including
+neutral, no-candidate, and sensitivity-gate unchanged outcomes. Emergence events
+are determined by comparing the number of resistant components in each step's
+before/after observation profiles, not by transition labels or candidate-selection
+probabilities. A multi-component increase is one emergence event; an equal-count
+redistribution is not an increase under the approved RER definition.
+
+TER uses recorded boolean treatment effectiveness and the number of recorded
+actions. Rewards are summed as recorded, not recalculated. FEA uses the final
+true resistance profile and its change uses the initial profile. Unknown (`-1`)
+susceptibility values, malformed binary profiles, discontinuous trajectories,
+inconsistent endpoints, missing effectiveness metadata, nonfinite rewards, and
+scenario mismatches are rejected rather than silently interpreted or imputed.
+This engine relies on the current fully observed binary simulation contract.
+
+With no recorded steps, TER and RER are undefined and return `None`. Exposure,
+reward, and event counts are zero; FEA and its change remain defined. Initially
+terminal episodes therefore retain their endpoint information and terminal reason
+without being assigned a misleading observed effectiveness or emergence rate.
+
+### Aggregation
+
+Aggregation is restricted to one policy within one evaluation scenario. Mixed
+policy identities and mismatching transition scenarios are rejected rather than
+pooled. Pooled TER/RER divide total event counts by total actions/transitions.
+Mean episode TER/RER average only defined episode rates with equal episode weight;
+their contributor counts are returned explicitly. These quantities are separately
+named because unequal episode lengths produce different pooled and episode means.
+
+Zero-step episodes contribute to episode counts, termination summaries, FEA/change
+means, exposure means, and reward means, but not to rate denominators or mean-rate
+contributor counts. Exposure and reward totals are also returned. Empty evaluations
+have zero totals and counts, empty reason counts, and `None` for all rates and
+means. Policy identity is `None` for an empty evaluation because the runner schema
+stores that identity only in episode records; scenario identity is still retained.
+
+Terminated and truncated episodes are counted separately using their flags, and
+reason counts preserve the runner's classifications. If both flags are true, each
+flag count includes the episode while its single reason is counted once. No
+episode treatment-success or clinical-clearance metric is inferred.
+
+### Export and Boundaries
+
+Frozen result dataclasses contain episode metrics and a summary. Their `to_dict()`
+methods return detached JSON-compatible dictionaries; undefined rates/means
+serialize as JSON `null`. This card calculates no rankings, confidence intervals,
+statistical tests, paired comparisons, or arbitrary overall scores. It adds no VI
+adapter and makes no claim of biological calibration or clinical validity.
