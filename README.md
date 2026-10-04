@@ -1,153 +1,423 @@
-# Antibiotic Stewardship Simulation for MDR *E. coli* UTI
-This repository currently contains a scientific simulation and a reproducible computational baseline pipeline for studying sequential antibiotic selection
-under resistance dynamics.
+# Antibiotic Stewardship Decision-Support System for Multidrug-Resistant *E. coli*
 
-The research question is whether choosing treatment with future resistance options in mind changes simulated outcomes compared with simple current-state strategies. This submission establishes the simulation and baselines before PPO development.
+## 1. Project overview
 
-## Scope and Safety
+### The problem
 
-This is a research prototype, **not a clinical prescribing system**. It does not diagnose infection, identify pathogens, perform susceptibility testing, select dosage, predict clinical cure, replace clinicians, or establish clinical
-effectiveness.
+Antimicrobial resistance (AMR) is a growing global health challenge. Bacteria can develop resistance to antibiotics, making infections harder to treat and reducing the number of effective treatment options available.
 
-## Current Status
+A particularly important challenge is multidrug-resistant (MDR) *Escherichia coli* (*E. coli*), a bacterium associated with urinary tract infections (UTIs) and other infections. When *E. coli* becomes resistant to multiple antibiotics, choosing an effective treatment becomes more difficult. Treatment decisions can also influence which antibiotics remain effective in the future.
 
-### Simulation
+This project focuses on understanding and comparing antibiotic treatment strategies for MDR *E. coli*. Rather than treating each antibiotic choice as an isolated decision, the project explores how a sequence of treatment actions may affect bacterial resistance over time.
 
-- Seven canonical antibiotic actions, shared between the action space and
-	seven-bit resistance state.
-- Gymnasium stochastic environment with encoded observations, treatment
-	effectiveness, reward, episode termination, reproducible seeds, and transition
-	provenance.
-- Cross-resistance, collateral-sensitivity, neutral, and unsupported/no-candidate
-	outcomes are represented explicitly.
-- Reward combines current treatment effectiveness, resistance-count change, and
-	antibiotic exposure. Default weights are `1.0`, `0.5`, and `0.1`.
+### Our approach
 
-### Baselines and Evaluation
+The key idea is to make the possible consequences of different treatment actions easier to inspect and compare.
 
-- Seeded uniform random policy.
-- Observation-based greedy policy that chooses uniformly among currently
-	susceptible antibiotics.
-- Separate deterministic reference environment and finite-horizon value
-	iteration solution. This is an exact computational fixture, not a claim that
-	bacterial evolution is deterministic.
-- Episode runner, raw trajectory records, and metrics for effectiveness,
-	resistance emergence, future effective antibiotics, exposure, reward, and
-	termination.
-- Multi-seed orchestration, run-level confidence intervals, and explicitly
-	assumption-gated paired strategy comparisons.
-- Regenerable Sprint 4 baseline report for random and greedy policies across the
-	primary transition scenario and three sensitivity scenarios, plus a separately
-	labeled exact deterministic-reference result.
+The system models bacterial resistance, simulates how resistance may change following antibiotic exposure, and uses decision-making methods to explore treatment strategies. This allows us to compare not only whether a treatment is currently effective in the simulation, but also how a sequence of actions may affect future treatment options.
 
-The latest full suite recorded **445 passing tests**. Run the test command below
-to verify the current checkout.
+The project has three major components:
 
-## Scientific and Computational Data
+1. **Bacterial resistance simulation:** Represents the resistance profile of an *E. coli* population and simulates possible changes in resistance after treatment actions.
+2. **Decision-making model:** Uses computational policies and reinforcement learning methods to explore and compare sequences of antibiotic choices.
+3. **Decision-support interface:** The planned user-facing component will make simulated treatment strategies, resistance trajectories, and comparisons easier to understand.
 
-The simulator uses curated processed tables rather than reading raw papers at
-runtime:
+The current repository focuses primarily on the scientific simulation and computational decision-making foundations. It is not a clinical prescribing system and does not make recommendations for individual patients.
 
-- `data/processed/action_space.csv`: seven drugs and canonical action order.
-- `data/processed/empirical_interactions.csv`: 25 curated pairwise interaction
-	records used to generate candidates when directionality and state permit.
-- `data/processed/evidence_registry.csv`: source and interpretation provenance.
-- `data/processed/transition_uncertainty.csv` and
-	`transition_parameters.csv`: uncertainty and parameter status; unresolved
-	episode-level probabilities remain blank.
-- `data/processed/transition_sampling_config.csv`: schema only; currently has no
-	configured rows.
-- `data/processed/reference_scenarios.csv`: six software fixtures, not observed
-	biological outcomes or population estimates.
+---
 
-The candidate generator currently uses supported directional records and does
-not convert strain counts, paper counts, evidence strength, or confidence into
-transition probabilities. Unknown-directionality interactions remain in the
-data but are excluded from directional transitions.
+## 2. Development progress by sprint
 
-The primary stochastic scenario, `REF_UNIFORM_SUPPORTED`, selects uniformly
-among deduplicated applicable candidates whenever candidates exist. This forces
-a supported candidate outcome on such steps and is **not** an empirical
-probability of resistance emergence. Sensitivity scenarios use illustrative
-computational occurrence assumptions `q = 0.25`, `0.50`, and `0.75`; these are
-not biological estimates. Scenarios are reported separately.
+The project is being developed incrementally. Each sprint establishes a foundation for the next.
 
-Raw materials include the Sakenova 2025 supplementary spreadsheet and four
-Iwasawa trajectory CSV files. The Iwasawa smoothing script is exploratory and
-does not calibrate the simulator's binary transition probabilities.
+### Sprint 1: Scientific specification
 
-## Baseline Snapshot
+**Goal:** Define what the system represents before implementing the simulation.
 
-The committed plan uses 20 runs per policy and stochastic scenario, all 128
-binary initial resistance profiles with equal computational weight, and an
-eight-step horizon. The profiles are not a clinical prevalence distribution.
-The complete generated Markdown and JSON report is in the local ignored
-`experiments/results/baseline/` directory after regeneration; the JSON includes
-all trajectories and is large, so it is not tracked in Git.
+During this sprint, we established the scientific and computational boundaries of the project.
 
-Selected mean episode metrics from the generated report:
+Key work completed:
 
-| Scenario | Policy | Effectiveness | Resistance emergence | Future effective drugs | Exposure | Cumulative reward |
-|---|---|---:|---:|---:|---:|---:|
-| `REF_UNIFORM_SUPPORTED` | Random | 0.4489 | 0.1869 | 2.6648 | 7.8582 | -1.9499 |
-| `REF_UNIFORM_SUPPORTED` | Greedy | 1.0000 | 0.1079 | 3.0930 | 7.9375 | 6.9402 |
+* Defined the problem scope around MDR *E. coli* urinary tract infections.
+* Selected seven antibiotics for the initial computational action space:
 
-These are simulated outcomes, not clinical estimates. Comparisons are reported
-as separate metrics; no overall score is used. Paired p-values in the current
-report are withheld because symmetry of differences has not been declared.
-Run-level intervals and paired bootstrap intervals describe variation under
-this simulator and its assumptions, not clinical or biological uncertainty.
-No assumption is made that PPO will improve these results.
+  * Ciprofloxacin
+  * Nitrofurantoin
+  * Fosfomycin
+  * Trimethoprim
+  * Gentamicin
+  * Mecillinam
+  * Ceftazidime
+* Defined the bacterial resistance state as a seven-element binary representation.
+* Defined the observable information available to the decision-making model.
+* Established how treatment effectiveness is represented.
+* Specified how resistance transitions should be interpreted and modeled.
+* Created an evidence registry to track scientific sources and the relationships they report.
+* Defined the reward function and evaluation metrics.
+* Established an eight-step simulation horizon and episode termination conditions.
 
-## Repository Map
+**Outcome:** A scientific specification that defines the system's scope, assumptions, state, actions, transitions, rewards, and evaluation goals.
+
+### Sprint 2: Mathematical foundation of the simulation
+
+**Goal:** Translate the scientific specification into a structured mathematical model that can be implemented.
+
+This sprint focused on representing resistance interactions and uncertainty in a form suitable for computation.
+
+Key work completed:
+
+* Organized literature findings into an empirical interaction table.
+* Represented cross-resistance, collateral sensitivity, neutral relationships, and unresolved interactions.
+* Created a transition-parameter layer to distinguish observed evidence from parameters the simulator can actually use.
+* Created a transition-uncertainty layer to record unresolved probabilities, unknown directionality, context dependence, heterogeneous observations, and model abstractions.
+* Defined candidate transition generation from applicable evidence.
+* Specified how candidates are deduplicated and sampled.
+* Established a reference transition scenario and controlled software fixtures for testing transition behavior.
+* Defined how uncertainty and probability provenance should be documented.
+
+A key scientific limitation identified during this work was that the available literature does not directly provide defensible episode-level transition probabilities for our simplified seven-antibiotic binary model.
+
+As a result, the simulator does not invent empirical probabilities. Its reference scenario is an explicit computational assumption, and separate sensitivity scenarios explore how alternative assumptions can affect simulated outcomes.
+
+**Outcome:** A mathematical and data foundation that separates scientific observations, modeling assumptions, and computational transition behavior.
+
+### Sprint 3: Simulation implementation
+
+**Goal:** Implement the mathematical model as a functioning, reproducible simulation environment.
+
+Key work completed:
+
+* Implemented the seven-antibiotic action space.
+* Implemented the bacterial resistance state and its validation.
+* Implemented the observation representation and encoding.
+* Implemented treatment action execution.
+* Implemented cross-resistance, collateral-sensitivity, and neutral transition handling.
+* Implemented candidate generation and stochastic transition sampling.
+* Implemented episode progression and termination.
+* Added reproducible random-seed handling.
+* Built a Gymnasium-compatible environment.
+* Created a simulation inspection notebook to explore and verify the environment's behavior.
+
+The simulation distinguishes the underlying resistance state from the information observed by a decision-making policy. This provides a foundation for later work involving incomplete or delayed observations.
+
+A pre-Sprint-4 validation checkpoint was also completed. It clarified the reference and sensitivity scenario semantics, corrected uncertainty metadata inconsistencies, preserved transition provenance in environment outputs, improved action validation, aligned observation bounds with the configured horizon, and added support for controlled initial resistance states.
+
+**Outcome:** A tested and reproducible simulation environment that can execute treatment actions and generate resistance trajectories under explicitly documented assumptions.
+
+### Sprint 4: Computational baselines and evaluation
+
+**Goal:** Establish baseline decision-making methods and a deterministic reference for evaluating future approaches.
+
+This sprint moved the project from a working simulator toward systematic policy comparison.
+
+Key work completed:
+
+* Implemented a **random policy** that selects uniformly from the available action space without using susceptibility or treatment history.
+* Implemented a **greedy policy** that selects uniformly among antibiotics marked susceptible in the current observation.
+* Created a separate **deterministic reference environment** with explicitly documented computational assumptions.
+* Implemented **value iteration** to calculate optimal values and policies within the deterministic reference environment.
+* Built the baseline evaluation and comparison infrastructure, following the sprint's planned evaluation cards.
+* Established the metrics and reporting process for comparing policy behavior across simulation runs.
+
+The deterministic reference environment contains 1,152 planning states at the default eight-step horizon: 128 resistance profiles across nine time points. It selects the lexicographically first applicable candidate and treats its selected next state as having probability one. This is a computational planning fixture, not a biological prediction.
+
+The random and greedy policies provide comparison points for later reinforcement learning experiments. The deterministic reference and value-iteration solution provide an exact computational benchmark within the reference model's assumptions.
+
+**Outcome:** A baseline and evaluation foundation that makes it possible to compare decision-making approaches systematically before introducing and assessing reinforcement learning.
+
+---
+
+## 3. How the simulation works
+
+### Bacterial resistance state
+
+The simulator represents resistance using a binary vector containing one value for each antibiotic.
+
+* `0` means susceptible.
+* `1` means resistant.
+
+For example:
 
 ```text
-simulation/   State, actions, transition model, reward, and stochastic environment
-ml/src/       Random/greedy policies, evaluation, metrics, inference, report code
-ml/tests/     Tests for ML and evaluation components
-data/raw/     Source supplementary and trajectory files
-data/processed/ Curated action, evidence, interaction, and uncertainty tables
-experiments/  Inspection notebook, report configuration, exploratory analyses
-docs/         Scientific specifications and research interpretation
-tests/        Simulation and processed-data tests
-backend/      ASP.NET API scaffold placeholder
-frontend/     React application scaffold placeholder
+0000000
 ```
 
-Backend and frontend directories are placeholders. PPO training, API integration,
-and user-interface implementation have not begun.
+represents a state susceptible to all seven antibiotics.
 
-## Setup and Validation
+```text
+1000000
+```
 
-Requires Python 3.11. From the repository root in PowerShell:
+represents resistance to ciprofloxacin and susceptibility to the other six antibiotics.
+
+```text
+1111111
+```
+
+represents resistance to all seven antibiotics. This is a terminal state in the current simulation.
+
+The seven positions always follow the canonical antibiotic ordering defined in `data/processed/action_space.csv`.
+
+This representation is deliberately simplified. It models resistance phenotypes rather than full bacterial genomes, minimum inhibitory concentrations, dosage, or detailed pharmacological effects.
+
+### Actions
+
+Each action corresponds to selecting one of the seven antibiotics.
+
+The action space contains seven discrete actions, numbered from `0` to `6`.
+
+| Action ID | Antibiotic     |
+| --------: | -------------- |
+|         0 | Ciprofloxacin  |
+|         1 | Nitrofurantoin |
+|         2 | Fosfomycin     |
+|         3 | Trimethoprim   |
+|         4 | Gentamicin     |
+|         5 | Mecillinam     |
+|         6 | Ceftazidime    |
+
+All seven actions remain available to the computational policies, including antibiotics to which the simulated bacterial state is resistant. This allows the system to represent ineffective choices and compare policy behavior without silently removing actions from the action space.
+
+### Observation
+
+The decision-making model does not receive the resistance state as an arbitrary Python object. It receives an encoded observation.
+
+The observation has 15 values:
+
+* Seven susceptibility indicators.
+* Seven values representing the last selected action in one-hot form.
+* One value representing the treatment step.
+
+Unknown susceptibility can be represented separately in the observation format. The current default environment begins with a fully susceptible state and produces known susceptibility indicators.
+
+This structure provides the basis for future experiments involving partial observability.
+
+### Resistance transitions
+
+After an antibiotic action, the simulator determines whether any evidence-supported transition candidates apply to the current state and action.
+
+The model distinguishes:
+
+* **Cross-resistance:** Resistance to one antibiotic is associated with increased resistance to another.
+* **Collateral sensitivity:** Resistance to one antibiotic is associated with increased susceptibility to another.
+* **Neutral outcomes:** An observed relationship that does not change the modeled resistance state.
+* **No applicable candidate:** No modeled evidence-supported transition is available for the current state and action.
+
+The primary reference scenario, `REF_UNIFORM_SUPPORTED`, uniformly selects among applicable deduplicated candidates whenever at least one is available. This scenario is a computational assumption, not an estimate of the biological probability that resistance will emerge.
+
+Additional sensitivity scenarios use explicit occurrence assumptions to explore how different transition-occurrence settings influence results. Those settings are not empirical biological estimates.
+
+The environment preserves transition provenance, including scenario information, selected outcomes, and supporting evidence identifiers, to make simulated trajectories easier to inspect.
+
+---
+
+## 4. State, reward, and episode design
+
+### Reward function
+
+The reward function encourages effective treatment while penalizing resistance increases and repeated antibiotic exposure.
+
+The default reward is:
+
+$$
+R(s,a,s') =
+E(s,a)
+-0.5\bigl(N_R(s')-N_R(s)\bigr)
+-0.1
+$$
+
+Where:
+
+* \(E(s,a)\) is the treatment-effectiveness reward.
+* \(N_R(s)\) is the number of resistant antibiotics in the current state.
+* \(N_R(s')\) is the number of resistant antibiotics in the next state.
+* The weights `0.5` and `0.1` control the resistance and exposure penalties.
+
+The effectiveness component is:
+
+| Treatment result                   | Reward |
+| ---------------------------------- | -----: |
+| Selected antibiotic is susceptible |     +1 |
+| Selected antibiotic is resistant   |     −1 |
+
+The resistance component is based on the change in the number of resistant antibiotics:
+
+* An increase in resistance is penalized.
+* A decrease in resistance contributes positively.
+* No change contributes zero.
+
+The exposure component applies a penalty of `−0.1` for each treatment action.
+
+For example, if an effective treatment step increases the number of resistant antibiotics by one, the reward is:
+
+$$
+1 - 0.5(1) - 0.1 = 0.4
+$$
+
+If the treatment is effective and resistance does not change, the reward is:
+
+$$
+1 - 0 - 0.1 = 0.9
+$$
+
+These values express the priorities of the computational model. They are not clinical utility scores or measurements of patient outcomes.
+
+### Episode progression
+
+An episode represents a sequence of antibiotic treatment actions and resulting resistance states.
+
+The default maximum episode length is eight treatment actions.
+
+An episode terminates when:
+
+* The maximum number of treatment actions has been reached.
+* All seven antibiotics are resistant in the simulated state.
+
+The simulator does not model clinical clearance, mortality, reinfection, adverse drug reactions, or patient recovery. Therefore, reaching the end of an episode should not be interpreted as a patient being cured.
+
+---
+
+## 5. Repository structure
+
+The repository is organized as a monorepo so that the scientific simulation, data, decision-making code, and future product components can be developed separately.
+
+```text
+Capstone-101/
+├── backend/                 # Planned API and application backend
+├── frontend/                # Planned decision-support interface
+├── ml/
+│   ├── src/                  # Policies, value iteration, and ML components
+│   ├── tests/                # ML and policy tests
+│   └── requirements.txt      # Python dependencies
+├── simulation/
+│   ├── tests/                # Simulation and environment tests
+│   ├── environment.py         # Gymnasium environment
+│   ├── resistance_state.py    # Bacterial resistance state
+│   ├── observation.py         # Observation structure
+│   ├── transition_model.py    # Transition interface
+│   ├── transition_generator.py
+│   ├── transition_sampler.py
+│   ├── episode.py
+│   ├── reward.py
+│   └── deterministic_reference.py
+├── data/
+│   ├── raw/                   # Original literature-derived data
+│   └── processed/             # Structured evidence and model tables
+├── experiments/
+│   ├── iwasawa/               # Supporting trajectory analysis
+│   └── simulation_inspection.ipynb
+├── docs/
+│   └── scientific-specification/
+├── tests/                     # Cross-component tests
+├── README.md
+└── .venv/                     # Local Python virtual environment (not committed)
+```
+
+The tree is a guide to the main components. Consult the live repository for the complete list of files.
+
+---
+
+## 6. Setting up the repository
+
+### Requirements
+
+* Python 3.11
+* Git
+* Windows PowerShell for the commands below
+* A virtual environment for Python dependencies
+
+The current simulation and baseline work uses Python, Gymnasium, NumPy, and the other dependencies listed in `ml/requirements.txt`.
+
+### Clone the repository
+
+```powershell
+git clone <repository-url>
+cd Capstone-101
+```
+
+### Create and activate a virtual environment
 
 ```powershell
 py -3.11 -m venv .venv
 .\.venv\Scripts\Activate.ps1
-python -m pip install -r ml/requirements.txt
-python -m pytest
-python ml/environment_check.py
 ```
 
-The simulation inspection notebook is `experiments/simulation_inspection.ipynb`.
-In VS Code, select the project `.venv` notebook kernel; the notebook changes its
-working directory to the repository root before importing `simulation`.
-
-Regenerate the baseline artifacts with:
+If PowerShell blocks activation, use the Python executable directly for the commands below:
 
 ```powershell
-python -m ml.src.baseline_report --config experiments/baseline_config.json --output-dir experiments/results/baseline
+.\.venv\Scripts\python.exe
 ```
 
-The plan, seed schedules, software versions, configuration/data fingerprints,
-raw trajectories, metrics, and uncertainty are retained in the JSON artifact.
-Repeated runs with the same code, data, plan, and numerical environment are
-expected to reproduce identical artifact hashes.
+### Install dependencies
 
-## Specifications
+```powershell
+python -m pip install --upgrade pip
+python -m pip install -r ml/requirements.txt
+```
 
-Start with [the interaction evidence interpretation](docs/research/antibiotic-interaction-evidence.md),
-then see the [scientific specifications](docs/scientific-specification/) for the
-state, observations, rewards, transitions, horizon, and evaluation contracts.
-`docs/scientific-specification/baseline-report.md` explains the report's
-interpretation and limitations.
+### Run the test suite
+
+From the repository root:
+
+```powershell
+python -m pytest
+```
+
+The test suite covers the scientific simulation components, transition behavior, environment, policies, deterministic reference, value iteration, and related functionality.
+
+The number of passing tests may change as the project evolves. Refer to the latest validation results rather than relying on a fixed count in this README.
+
+### Run the simulation inspection notebook
+
+Launch Jupyter:
+
+```powershell
+python -m jupyter lab
+```
+
+Open:
+
+```text
+experiments/simulation_inspection.ipynb
+```
+
+Run the notebook cells in order to inspect the simulation's behavior, including resistance states, treatment actions, transitions, and episode progression.
+
+The notebook is intended for exploration and inspection. It is not a clinical decision-making interface.
+
+---
+
+## 7. Current scope and limitations
+
+The current project is a research and software-engineering prototype.
+
+It does not:
+
+* Diagnose infections.
+* Identify pathogens from clinical samples.
+* Perform antimicrobial susceptibility testing.
+* Recommend treatment for individual patients.
+* Model antibiotic dosage, pharmacokinetics, or pharmacodynamics.
+* Model clinical cure, mortality, adverse drug reactions, or reinfection.
+* Claim that simulated transition probabilities represent real-world biological probabilities.
+* Replace clinicians, pharmacists, or antimicrobial stewardship teams.
+
+The simulation is intentionally simplified so that treatment strategies and resistance dynamics can be inspected and compared in a controlled computational environment.
+
+The current focus is MDR *E. coli*, and the seven-antibiotic action space is an initial modeling scope rather than a comprehensive representation of all UTI treatment options.
+
+The future decision-support interface is intended to make the outputs of this work more accessible and interpretable. Its development and validation are separate from the simulation and baseline foundations documented here.
+
+---
+
+## 8. Project direction
+
+The longer-term goal is to build a decision-support system that helps users explore how treatment choices may influence both immediate effectiveness and future antibiotic options.
+
+The current work establishes the scientific specification, mathematical model, reproducible simulation, and computational baselines needed to investigate that goal.
+
+Future work will build on these foundations by training and evaluating reinforcement learning approaches, examining their performance against established computational baselines, and presenting the resulting comparisons through an accessible interface.
+
+The central question guiding the project is:
+
+**How can we compare sequences of antibiotic treatment actions while accounting for the possibility that those actions change future resistance and treatment options?**
