@@ -228,9 +228,9 @@ $$
 
 Where:
 
-* \(E(s,a)\) is the treatment-effectiveness reward.
-* \(N_R(s)\) is the number of resistant antibiotics in the current state.
-* \(N_R(s')\) is the number of resistant antibiotics in the next state.
+* $E(s,a)$ is the treatment-effectiveness reward.
+* $N_R(s)$ is the number of resistant antibiotics in the current state.
+* $N_R(s')$ is the number of resistant antibiotics in the next state.
 * The weights `0.5` and `0.1` control the resistance and exposure penalties.
 
 The effectiveness component is:

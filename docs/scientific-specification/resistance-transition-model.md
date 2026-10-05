@@ -8,9 +8,9 @@ The model supports sequential treatment by allowing the resistance state at time
 
 The transition is represented as:
 
-\[
+$$
 S_t + A_t \rightarrow S_{t+1}
-\]
+$$
 
 where `S_t` is the current resistance state and `A_t` is the selected antibiotic action.
 
@@ -103,15 +103,15 @@ The current evidence audit found no directly defensible episode-level transition
 
 In particular, strain-level observations such as 8/10 or 7/10 cannot automatically be interpreted as:
 
-\[
+$$
 P(S_{t+1}\mid S_t,A_t)=0.8
-\]
+$$
 
 or:
 
-\[
+$$
 P(S_{t+1}\mid S_t,A_t)=0.7
-\]
+$$
 
 because those observations describe experimental outcomes across strains or replicates under particular experimental conditions rather than repeated observations of the same episode-level state-action transition.
 
@@ -287,11 +287,11 @@ Probability provenance must distinguish empirical evidence from computational as
 
 The following probability-source categories are used:
 
-* `empirical` — probability directly estimated from sufficiently comparable experimental data;
-* `calibrated` — probability obtained through an explicitly documented calibration procedure;
-* `model_assumption` — probability introduced as a modeling assumption;
-* `reference_scenario` — probability introduced by a predefined reference uncertainty scenario;
-* `unresolved` — no probability has been established.
+* `empirical` - probability directly estimated from sufficiently comparable experimental data;
+* `calibrated` - probability obtained through an explicitly documented calibration procedure;
+* `model_assumption` - probability introduced as a modeling assumption;
+* `reference_scenario` - probability introduced by a predefined reference uncertainty scenario;
+* `unresolved` - no probability has been established.
 
 `REF_UNIFORM_SUPPORTED` therefore uses:
 

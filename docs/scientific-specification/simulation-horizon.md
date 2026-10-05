@@ -17,9 +17,9 @@ treatment duration or recommended number of antibiotic doses.
 
 The MVP uses a maximum horizon of:
 
-\[
+$$
 H = 8
-\]
+$$
 
 An episode can therefore contain at most eight treatment actions.
 
@@ -62,15 +62,15 @@ An episode terminates when any defined termination condition is reached.
 
 The episode terminates after eight treatment actions:
 
-\[
+$$
 t \geq H
-\]
+$$
 
 where:
 
-\[
+$$
 H = 8
-\]
+$$
 
 ---
 
@@ -83,9 +83,9 @@ The MVP contains seven antibiotics.
 
 Therefore:
 
-\[
+$$
 N_S(S_t) = 0
-\]
+$$
 
 terminates the episode.
 
@@ -120,7 +120,7 @@ The same antibiotic may be selected more than once during an episode.
 
 The action space therefore remains:
 
-\[
+$$
 A = \{
 \text{ciprofloxacin},
 \text{nitrofurantoin},
@@ -130,7 +130,7 @@ A = \{
 \text{mecillinam},
 \text{ceftazidime}
 \}
-\]
+$$
 
 No rule prevents an agent from selecting the same action at consecutive
 steps.
@@ -149,9 +149,9 @@ The treatment step is included in the observable state.
 
 The treatment-step value starts at:
 
-\[
+$$
 t = 0
-\]
+$$
 
 and increases after each treatment action.
 
@@ -164,11 +164,11 @@ position within the finite-horizon episode.
 
 The reward is calculated for each treatment transition.
 
-For an episode containing \(T\) treatment actions:
+For an episode containing $T$ treatment actions:
 
-\[
+$$
 G = \sum_{t=0}^{T-1} R_t
-\]
+$$
 
 The maximum possible number of reward-producing treatment transitions in the
 MVP is eight.

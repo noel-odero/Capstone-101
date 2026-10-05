@@ -19,16 +19,18 @@ are not interpreted as biological probabilities or clinical recommendations.
 
 For each environment transition, the reward is defined as:
 
+$$
 R_t = w_E R_E + w_R R_R + w_X R_X
+$$
 
 where:
 
-- R_E = treatment-effectiveness component
-- R_R = resistance-change component
-- R_X = antibiotic-exposure component
-- w_E = effectiveness weight
-- w_R = resistance weight
-- w_X = exposure weight
+- $R_E$ = treatment-effectiveness component
+- $R_R$ = resistance-change component
+- $R_X$ = antibiotic-exposure component
+- $w_E$ = effectiveness weight
+- $w_R$ = resistance weight
+- $w_X$ = exposure weight
 
 The weights are configurable.
 
@@ -50,11 +52,15 @@ evaluation and sensitivity analysis.
 Treatment effectiveness represents whether the selected antibiotic is
 currently effective against the simulated bacterial resistance state.
 
-For action A_t and state S_t:
+For action $A_t$ and state $S_t$:
 
+$$
 R_E =
-    +1, if the selected antibiotic is susceptible
-    -1, if the selected antibiotic is resistant
+\begin{cases}
++1 & \text{if the selected antibiotic is susceptible} \\
+-1 & \text{if the selected antibiotic is resistant}
+\end{cases}
+$$
 
 The effectiveness component therefore provides an immediate signal about
 whether the selected treatment can act against the current resistance state.
@@ -74,23 +80,20 @@ than a guarantee of clinical cure.
 The resistance component penalizes increases in the number of antibiotics
 to which the simulated bacterial population is resistant.
 
-Let:
-
-N_R(S_t)
-
-represent the number of resistant antibiotics in the current state, and:
-
-N_R(S_{t+1})
-
-represent the number of resistant antibiotics after treatment.
+Let $N_R(S_t)$ and $N_R(S_{t+1})$ represent the numbers of resistant
+antibiotics in the current and next states, respectively.
 
 The change in resistance is:
 
-ΔR = N_R(S_{t+1}) - N_R(S_t)
+$$
+\Delta R = N_R(S_{t+1}) - N_R(S_t)
+$$
 
 The resistance reward is:
 
-R_R = -ΔR
+$$
+R_R = -\Delta R
+$$
 
 Therefore:
 
@@ -115,7 +118,9 @@ state, while the reward function evaluates the resulting change.
 
 Each treatment action incurs an exposure cost:
 
+$$
 R_X = -1
+$$
 
 The exposure component discourages unnecessarily long treatment sequences.
 
@@ -133,11 +138,15 @@ dose-related risk.
 
 The complete reward is:
 
+$$
 R_t = w_E R_E + w_R R_R + w_X R_X
+$$
 
 Using the initial MVP weights:
 
+$$
 R_t = 1.0R_E + 0.5R_R + 0.1R_X
+$$
 
 For example, suppose:
 
@@ -147,15 +156,22 @@ For example, suppose:
 
 Then:
 
-R_E = +1
-R_R = -1
-R_X = -1
+$$
+\begin{aligned}
+R_E &= +1 \\
+R_R &= -1 \\
+R_X &= -1
+\end{aligned}
+$$
 
 Therefore:
 
-R_t = (1.0)(+1) + (0.5)(-1) + (0.1)(-1)
-
-R_t = 0.4
+$$
+\begin{aligned}
+R_t &= (1.0)(+1) + (0.5)(-1) + (0.1)(-1) \\
+    &= 0.4
+\end{aligned}
+$$
 
 The agent therefore receives a positive reward, but less than it would
 receive for an effective treatment that did not increase resistance.
@@ -171,7 +187,9 @@ In the binary seven-antibiotic resistance representation, the number of
 susceptible antibiotics is directly related to the number of resistant
 antibiotics:
 
+$$
 N_S = 7 - N_R
+$$
 
 Therefore, independently rewarding both resistance reduction and an
 increase in susceptible future options would count the same state change

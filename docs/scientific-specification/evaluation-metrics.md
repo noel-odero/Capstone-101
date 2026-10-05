@@ -22,7 +22,9 @@ Treatment Effectiveness Rate (TER) is the proportion of treatment actions
 for which the selected antibiotic is susceptible in the true simulated
 resistance state.
 
-TER = effective treatment steps / total treatment steps
+$$
+\mathrm{TER} = \frac{\text{effective treatment steps}}{\text{total treatment steps}}
+$$
 
 Higher values indicate that a policy more frequently selects an antibiotic
 that is effective against the current simulated resistance state.
@@ -36,13 +38,19 @@ transitions that increase the number of resistant antibiotics.
 
 For each transition:
 
-ΔR_t = N_R(S_{t+1}) - N_R(S_t)
+$$
+\Delta R_t = N_R(S_{t+1}) - N_R(S_t)
+$$
 
 A resistance-emergence event occurs when:
 
-ΔR_t > 0
+$$
+\Delta R_t > 0
+$$
 
-RER = resistance-increasing transitions / total transitions
+$$
+\mathrm{RER} = \frac{\text{resistance-increasing transitions}}{\text{total transitions}}
+$$
 
 Lower values indicate fewer resistance-increasing transitions.
 
@@ -53,7 +61,9 @@ Lower values indicate fewer resistance-increasing transitions.
 Future Effective Antibiotics (FEA) is the number of antibiotics remaining
 susceptible at the end of an episode.
 
-FEA = N_S(S_T)
+$$
+\mathrm{FEA} = N_S(S_T)
+$$
 
 The MVP action space contains seven antibiotics, so FEA ranges from 0 to 7.
 
@@ -61,7 +71,9 @@ Higher values indicate greater preservation of future treatment options.
 
 The change from the initial state is also recorded:
 
-ΔFEA = N_S(S_T) - N_S(S_0)
+$$
+\Delta \mathrm{FEA} = N_S(S_T) - N_S(S_0)
+$$
 
 ---
 
@@ -70,7 +82,9 @@ The change from the initial state is also recorded:
 Cumulative Antibiotic Exposure (CAE) is the number of antibiotic treatment
 actions taken during an episode.
 
-CAE = number of treatment actions
+$$
+\mathrm{CAE} = \text{number of treatment actions}
+$$
 
 Lower exposure is desirable only when considered alongside treatment
 effectiveness and resistance outcomes.
@@ -86,8 +100,13 @@ Low exposure alone does not indicate a better policy.
 Episode-level treatment success will be defined once the environment includes
 an explicit infection-clearance model.
 
-Success = 1 if the episode reaches successful clearance
-Success = 0 otherwise
+$$
+\mathrm{Success} =
+\begin{cases}
+1 & \text{if the episode reaches successful clearance} \\
+0 & \text{otherwise}
+\end{cases}
+$$
 
 This metric is not included in the current MVP because the simulation does
 not yet model infection clearance.
@@ -100,7 +119,9 @@ not yet model infection clearance.
 
 Cumulative reward for an episode is:
 
-G = Σ R_t
+$$
+G = \sum_{t=0}^{T-1} R_t
+$$
 
 Cumulative reward is used to assess the objective optimized by the RL agent.
 
@@ -188,14 +209,14 @@ collapsing all outcomes into a single score.
 
 The primary outcome vector is:
 
-(E, R, F, X)
+$(E, R, F, X)$
 
 where:
 
-- E = treatment effectiveness;
-- R = resistance emergence;
-- F = future effective antibiotics;
-- X = cumulative antibiotic exposure.
+- $E$ = treatment effectiveness;
+- $R$ = resistance emergence;
+- $F$ = future effective antibiotics;
+- $X$ = cumulative antibiotic exposure.
 
 This allows trade-offs between effectiveness, resistance, future treatment
 options, and antibiotic exposure to remain visible.

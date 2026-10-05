@@ -4,7 +4,6 @@
 
 The observable state defines the information available to the reinforcement-learning agent when selecting an antibiotic.
 
-The observable state is intentionally separated from the underlying bacterial resistance state.
 
 The simulation maintains the true bacterial state internally, while the agent receives only the information that the proposed decision-support system is intended to observe.
 

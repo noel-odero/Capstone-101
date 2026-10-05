@@ -1,4 +1,7 @@
-﻿import csv
+﻿#  loads the CSV, checks the action IDs and canonical ordering, 
+# and maps between action IDs and antibiotic names.
+
+import csv
 from pathlib import Path
 
 from simulation.resistance_state import ANTIBIOTICS

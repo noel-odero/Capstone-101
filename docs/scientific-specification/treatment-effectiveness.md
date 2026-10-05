@@ -8,23 +8,27 @@ This model provides the treatment-effectiveness component of the simulation. It 
 
 ## Effectiveness Rule
 
-For antibiotic action `a` and true bacterial resistance state `S_t`:
+For antibiotic action $a$ and true bacterial resistance state $S_t$:
 
 - If the bacterial population is susceptible to the selected antibiotic, treatment is considered effective.
 - If the bacterial population is resistant to the selected antibiotic, treatment is considered ineffective.
 
 Formally:
 
+$$
 E(S_t, a) =
-    1 if S_t(a) = 0
-    0 if S_t(a) = 1
+\begin{cases}
+1 & \text{if } S_t(a) = 0 \\
+0 & \text{if } S_t(a) = 1
+\end{cases}
+$$
 
 where:
 
-- `E(S_t, a)` is treatment effectiveness.
-- `S_t(a)` is the resistance status for antibiotic `a`.
-- `0` represents susceptibility.
-- `1` represents resistance.
+- $E(S_t, a)$ is treatment effectiveness.
+- $S_t(a)$ is the resistance status for antibiotic $a$.
+- $0$ represents susceptibility.
+- $1$ represents resistance.
 
 ## True State vs Observation
 
@@ -42,9 +46,9 @@ An effective treatment indicates that the selected antibiotic is active against 
 
 The model therefore separates:
 
-1. **Treatment effectiveness** — whether the selected antibiotic is effective against the current state.
-2. **Treatment success** — whether the treatment strategy achieves the defined infection-clearance condition.
-3. **Stewardship quality** — the efficiency of achieving successful treatment, including cumulative antibiotic exposure and resistance-related costs.
+1. **Treatment effectiveness** - whether the selected antibiotic is effective against the current state.
+2. **Treatment success** - whether the treatment strategy achieves the defined infection-clearance condition.
+3. **Stewardship quality** - the efficiency of achieving successful treatment, including cumulative antibiotic exposure and resistance-related costs.
 
 ## Scope
 

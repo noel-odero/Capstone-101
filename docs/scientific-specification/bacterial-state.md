@@ -2,60 +2,53 @@
 
 ## 1. Purpose
 
-The bacterial state represents the current resistance phenotype of the simulated *Escherichia coli* population.
+The bacterial state represents the current resistance phenotype of the simulated *Escherichia coli* population. It is the underlying condition used to determine treatment effectiveness, resistance evolution, and future treatment options.
 
-The state provides the underlying biological condition from which treatment effectiveness, resistance evolution, and future treatment options are determined.
-
-The state representation is intentionally separated from the observable state available to the reinforcement-learning agent. This allows the simulation to distinguish the underlying resistance condition from the information available for decision-making.
+The state is intentionally distinct from the observation available to the reinforcement-learning agent. This lets the simulation represent the underlying resistance condition separately from the information provided to a decision-making policy.
 
 ## 2. Population-Level Representation
 
-The MVP models resistance at the population level rather than representing individual bacterial cells or individual genomic mutations.
+The MVP models resistance at the population level; it does not represent individual bacterial cells or genomic mutations. The state is a seven-element binary vector, with one element per antibiotic in the MVP action space:
 
-The bacterial state is represented as a seven-dimensional binary vector corresponding to the seven antibiotics in the MVP action space.
+- `0` means susceptible.
+- `1` means resistant.
 
-For each antibiotic:
+Formally, $S_t = [r_0, r_1, ..., r_6]$, where each $r_i \in \{0,1\}$ and corresponds to the antibiotic at canonical position $i$.
 
-- `0` represents susceptible
-- `1` represents resistant
+For example, `0000000` represents susceptibility to all seven antibiotics. `1000000` represents ciprofloxacin resistance, because ciprofloxacin occupies position 0.
 
-The state is therefore:
+## 3. Canonical Antibiotic Ordering
 
-\[
-S_t = [r_1, r_2, ..., r_7]
-\]
+The state vector uses the canonical ordering in `data/processed/action_space.csv`:
 
-where:
+| Position | Action ID | Antibiotic |
+|---:|---:|---|
+| 0 | 0 | Ciprofloxacin |
+| 1 | 1 | Nitrofurantoin |
+| 2 | 2 | Fosfomycin |
+| 3 | 3 | Trimethoprim |
+| 4 | 4 | Gentamicin |
+| 5 | 5 | Mecillinam |
+| 6 | 6 | Ceftazidime |
 
-\[
-r_i \in \{0,1\}
-\]
+This ordering is a computational convention, not a ranking of clinical preference, treatment quality, or first-line versus last-line drugs. The selected antibiotics provide an MVP experimental space spanning multiple antibiotic classes, UTI-relevant drugs, and available resistance-interaction evidence. Their fixed sequence assigns each drug a stable coordinate and action ID: action `2` always means fosfomycin, and state position `2` always represents fosfomycin susceptibility or resistance.
 
-and each \(r_i\) corresponds to one antibiotic in the action space.
+## 4. Why the Ordering Must Stay Fixed
 
-## 3. Antibiotic Ordering
+A seven-element vector is meaningful only when every position has a stable interpretation. Without a fixed ordering, a profile such as `1000000` is ambiguous.
 
-The state vector follows the canonical ordering defined in:
+The same antibiotic mapping must be used by:
 
-`data/processed/action_space.csv`
+- the bacterial resistance state;
+- susceptibility values in the observation given to the agent;
+- action IDs;
+- empirical interaction tables and the transition model;
+- evaluation results and downstream consumers such as the reference environment, value iteration, and PPO.
 
-The current ordering is:
+The literature-derived interaction data is associated with antibiotic names and directions, while simulation components encode antibiotics using this shared mapping. Changing the ordering in only one component could make an action appear to select one antibiotic while the state or transition logic interprets it as another.
 
-| Index | Antibiotic | State value |
-|---|---|---|
-| 0 | Ciprofloxacin | 0 = susceptible, 1 = resistant |
-| 1 | Nitrofurantoin | 0 = susceptible, 1 = resistant |
-| 2 | Fosfomycin | 0 = susceptible, 1 = resistant |
-| 3 | Trimethoprim | 0 = susceptible, 1 = resistant |
-| 4 | Gentamicin | 0 = susceptible, 1 = resistant |
-| 5 | Mecillinam | 0 = susceptible, 1 = resistant |
-| 6 | Ceftazidime | 0 = susceptible, 1 = resistant |
+## 5. Source of Truth and Validation
 
-The ordering must remain consistent across the simulation environment, training data, model input, evaluation pipeline, and API.
+`data/processed/action_space.csv` is the canonical source of truth for the action IDs and antibiotic order. The `ActionSpace` implementation in `simulation/action_space.py` checks the CSV order against the canonical resistance-state order when it loads the action space. This consistency was also explicitly validated during Sprint 4.
 
-## 4. Example State
-
-The state:
-
-```text
-[0, 1, 0, 1, 0, 0, 1]
+Any intentional change to the order must be treated as a coordinated model change: update the canonical action-space data and every dependent state, observation, transition, planning, training, evaluation, and API mapping together, then rerun the relevant tests. Do not reorder the list casually.
