@@ -10,7 +10,7 @@ A particularly important challenge is multidrug-resistant (MDR) *Escherichia col
 
 This project focuses on understanding and comparing antibiotic treatment strategies for MDR *E. coli*. Rather than treating each antibiotic choice as an isolated decision, the project explores how a sequence of treatment actions may affect bacterial resistance over time.
 
-### Our approach
+### My approach
 
 The key idea is to make the possible consequences of different treatment actions easier to inspect and compare.
 
@@ -34,7 +34,7 @@ The project is being developed incrementally. Each sprint establishes a foundati
 
 **Goal:** Define what the system represents before implementing the simulation.
 
-During this sprint, we established the scientific and computational boundaries of the project.
+During this sprint, I established the scientific and computational boundaries of the project.
 
 Key work completed:
 
@@ -52,7 +52,7 @@ Key work completed:
 * Defined the observable information available to the decision-making model.
 * Established how treatment effectiveness is represented.
 * Specified how resistance transitions should be interpreted and modeled.
-* Created an evidence registry to track scientific sources and the relationships they report.
+* Created an evidence registry to track scientific smyces and the relationships they report.
 * Defined the reward function and evaluation metrics.
 * Established an eight-step simulation horizon and episode termination conditions.
 
@@ -75,7 +75,7 @@ Key work completed:
 * Established a reference transition scenario and controlled software fixtures for testing transition behavior.
 * Defined how uncertainty and probability provenance should be documented.
 
-A key scientific limitation identified during this work was that the available literature does not directly provide defensible episode-level transition probabilities for our simplified seven-antibiotic binary model.
+A key scientific limitation identified during this work was that the available literature does not directly provide defensible episode-level transition probabilities for my simplified seven-antibiotic binary model.
 
 As a result, the simulator does not invent empirical probabilities. Its reference scenario is an explicit computational assumption, and separate sensitivity scenarios explore how alternative assumptions can affect simulated outcomes.
 
@@ -209,13 +209,13 @@ Additional sensitivity scenarios use explicit occurrence assumptions to explore 
 
 The environment preserves transition provenance, including scenario information, selected outcomes, and supporting evidence identifiers, to make simulated trajectories easier to inspect.
 
----
+
 
 ## 4. State, reward, and episode design
 
 ### Reward function
 
-The reward function encourages effective treatment while penalizing resistance increases and repeated antibiotic exposure.
+The reward function encmyages effective treatment while penalizing resistance increases and repeated antibiotic exposure.
 
 The default reward is:
 
@@ -275,7 +275,7 @@ An episode terminates when:
 
 The simulator does not model clinical clearance, mortality, reinfection, adverse drug reactions, or patient recovery. Therefore, reaching the end of an episode should not be interpreted as a patient being cured.
 
----
+
 
 ## 5. Repository structure
 
@@ -313,9 +313,8 @@ Capstone-101/
 └── .venv/                     # Local Python virtual environment (not committed)
 ```
 
-The tree is a guide to the main components. Consult the live repository for the complete list of files.
 
----
+
 
 ## 6. Setting up the repository
 
@@ -385,7 +384,7 @@ Run the notebook cells in order to inspect the simulation's behavior, including 
 
 The notebook is intended for exploration and inspection. It is not a clinical decision-making interface.
 
----
+
 
 ## 7. Current scope and limitations
 
@@ -402,13 +401,13 @@ It does not:
 * Claim that simulated transition probabilities represent real-world biological probabilities.
 * Replace clinicians, pharmacists, or antimicrobial stewardship teams.
 
-The simulation is intentionally simplified so that treatment strategies and resistance dynamics can be inspected and compared in a controlled computational environment.
+
+The simulation is intentionally simplified so that treatment strategies and resistance dynamics can be studied and compared in a controlled computational environment. This allows us to investigate whether treatment strategies that account for resistance evolution can maintain treatment effectiveness while reducing resistance emergence and preserving future antibiotic options.
 
 The current focus is MDR *E. coli*, and the seven-antibiotic action space is an initial modeling scope rather than a comprehensive representation of all UTI treatment options.
 
 The future decision-support interface is intended to make the outputs of this work more accessible and interpretable. Its development and validation are separate from the simulation and baseline foundations documented here.
 
----
 
 ## 8. Project direction
 
