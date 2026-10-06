@@ -24,7 +24,6 @@ The project has three major components:
 
 The current repository focuses primarily on the scientific simulation and computational decision-making foundations. It is not a clinical prescribing system and does not make recommendations for individual patients.
 
----
 
 ## 2. Development progress by sprint
 
