@@ -395,3 +395,56 @@ Future work will build on these foundations by training and evaluating reinforce
 The central question guiding the project is:
 
 **How can we compare sequences of antibiotic treatment actions while accounting for the possibility that those actions change future resistance and treatment options?**
+
+
+## 9. Masked PPO training
+
+The first PPO pipeline uses the existing stochastic `AntibioticEnvironment`,
+the 15-value observation, and fixed seven-action space. `MaskablePPO` applies
+the susceptible-action mask during training and evaluation. The reward is the
+negative normalized post-transition resistance burden, with `gamma=1.0`; see
+`docs/scientific-specification/reward-function.md` for its terminal-state
+convention and scope.
+
+Run a small CPU smoke test first:
+
+```powershell
+python -m ml.src.ppo_training `
+  --config experiments/ppo_baseline_config.json `
+  --output-dir experiments/results/ppo_smoke `
+  --smoke-test
+```
+
+Train the configured baseline PPO run:
+
+```powershell
+python -m ml.src.ppo_training `
+  --config experiments/ppo_baseline_config.json `
+  --output-dir experiments/results/ppo_baseline_run
+```
+
+Evaluate a saved checkpoint with deterministic inference over all 128 initial
+resistance profiles:
+
+```powershell
+python -m ml.src.ppo_evaluation `
+  --model-path experiments/results/ppo_baseline_run/final_model.zip `
+  --config experiments/ppo_baseline_config.json `
+  --output-dir experiments/results/ppo_baseline_evaluation
+```
+
+The training directory stores `config.json`, `environment_manifest.json`,
+`final_model.zip`, the best evaluation checkpoint, per-episode training
+metrics, evaluation logs, and diagnostic plots. The evaluation directory stores
+machine-readable metrics, reconstructable decision traces, and plots for reward
+burden, final resistance, action counts, resistance trajectories, and a
+resistance-state heatmap.
+
+The action mask defines feasibility as modeled susceptibility. The simulator
+does not model clinical cure, treatment need, or unnecessary exposure, and its
+transition scenarios are computational assumptions. This pipeline demonstrates
+that mask-aware PPO can interact with the simulator and produce reproducible
+artifacts; it does not establish that PPO outperforms another policy or provides
+clinical recommendations. The deterministic value-iteration solution applies
+to a separate deterministic reference environment and is not a direct stochastic
+PPO benchmark.
