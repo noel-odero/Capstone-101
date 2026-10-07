@@ -162,7 +162,8 @@ def test_initially_terminal_episode_has_no_policy_action():
     assert episode.termination_reason == "no_effective_antibiotic"
     assert episode.treatment_step_count == 0
     assert episode.actions == episode.rewards == episode.effectiveness == ()
-    assert episode.cumulative_reward == 0.0
+    assert episode.terminal_reward_adjustment == -8.0
+    assert episode.cumulative_reward == -8.0
     assert len(episode.observations) == 1
     assert episode.initial_resistance_profile == episode.final_resistance_profile == (1,) * 7
 

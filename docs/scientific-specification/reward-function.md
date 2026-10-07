@@ -1,239 +1,110 @@
-# Reward Function Specification
+# Reward and Feasibility Specification
 
-## 1. Purpose
+## 1. Scope
 
-The reward function defines how the reinforcement learning agent evaluates
-treatment decisions within the simulated E. coli resistance environment.
+The current objective is a constrained finite-horizon planning problem over a
+fully observed binary resistance profile for seven antibiotics. It does not
+model clinical cure, treatment need, dose, duration, or patient-specific
+exposure. Susceptibility is an environment-defined feasibility signal, not a
+guarantee of clinical success.
 
-The objective is to encourage treatment with an antibiotic to which the
-current bacterial population is susceptible, discourage increases in
-resistance, and discourage unnecessary antibiotic exposure.
+The policy must select an antibiotic that is susceptible in the current state
+whenever any susceptible antibiotic is available. This is an action constraint,
+not a reward term.
 
-The reward function is a computational representation of the project's
-stewardship objectives. The reward weights are model design parameters and
-are not interpreted as biological probabilities or clinical recommendations.
+## 2. Feasible Actions
 
----
-
-## 2. Reward Definition
-
-For each environment transition, the reward is defined as:
+For resistance state $s$, define:
 
 $$
-R_t = w_E R_E + w_R R_R + w_X R_X
+A_{\mathrm{feasible}}(s)=\{a\in A : \text{antibiotic }a\text{ is susceptible in }s\}.
 $$
 
-where:
+The seven-action Gymnasium space remains fixed. Policies use the environment's
+action mask; the exact planner maximizes only over $A_{\mathrm{feasible}}(s)$.
+If all antibiotics are resistant, the episode is terminal and no action is
+selected. Direct transition queries remain available for auditing model
+transitions, including infeasible actions; they do not make those actions legal
+policy choices.
 
-- $R_E$ = treatment-effectiveness component
-- $R_R$ = resistance-change component
-- $R_X$ = antibiotic-exposure component
-- $w_E$ = effectiveness weight
-- $w_R$ = resistance weight
-- $w_X$ = exposure weight
+## 3. Reward
 
-The weights are configurable.
-
-The initial MVP values are:
-
-| Component | Weight |
-|---|---:|
-| Treatment effectiveness | 1.0 |
-| Resistance change | 0.5 |
-| Antibiotic exposure | 0.1 |
-
-These values are initial model-design choices and will be subject to
-evaluation and sensitivity analysis.
-
----
-
-## 3. Treatment Effectiveness
-
-Treatment effectiveness represents whether the selected antibiotic is
-currently effective against the simulated bacterial resistance state.
-
-For action $A_t$ and state $S_t$:
+Let $N_R(s)$ be the number of resistant antibiotics in state $s$. For a
+transition to $s_{t+1}$, the reward is:
 
 $$
-R_E =
-\begin{cases}
-+1 & \text{if the selected antibiotic is susceptible} \\
--1 & \text{if the selected antibiotic is resistant}
-\end{cases}
+r_t=-\frac{N_R(s_{t+1})}{7}.
 $$
 
-The effectiveness component therefore provides an immediate signal about
-whether the selected treatment can act against the current resistance state.
+The denominator is the number of antibiotics in the defined action space. It
+normalizes the per-step resistant fraction to $[0,1]$; it is not an empirically
+calibrated biological parameter. No separate immediate-effectiveness bonus,
+resistance-emergence penalty, or exposure penalty is included.
 
-This component does not represent clinical cure.
-
-The MVP does not model minimum inhibitory concentrations, pharmacokinetics,
-pharmacodynamics, patient-specific drug concentrations, or clinical
-clearance probabilities. Therefore, susceptibility in the simulation is
-treated as treatment effectiveness within the computational model rather
-than a guarantee of clinical cure.
-
----
-
-## 4. Resistance Change
-
-The resistance component penalizes increases in the number of antibiotics
-to which the simulated bacterial population is resistant.
-
-Let $N_R(S_t)$ and $N_R(S_{t+1})$ represent the numbers of resistant
-antibiotics in the current and next states, respectively.
-
-The change in resistance is:
+With horizon $H$ and $\gamma=1$, the objective is to minimize cumulative
+post-transition resistance burden:
 
 $$
-\Delta R = N_R(S_{t+1}) - N_R(S_t)
+\max_\pi\;\mathbb{E}_\pi\left[\sum_{t=0}^{H-1}r_t\right]
+=-\min_\pi\;\mathbb{E}_\pi\left[\sum_{t=0}^{H-1}\frac{N_R(s_{t+1})}{7}\right],
 $$
 
-The resistance reward is:
+subject to $a_t\in A_{\mathrm{feasible}}(s_t)$ whenever the feasible set is
+nonempty. This measures resistance burden over time, not merely emergence
+events or the final resistant-drug count.
 
-$$
-R_R = -\Delta R
-$$
+## 4. Terminal Convention and Discounting
 
-Therefore:
+The horizon is fixed at $H$ steps. If all seven antibiotics are already
+resistant at reset, or become resistant after step $k<H$, that state is treated
+as persisting for the remaining horizon. Initially all-resistant episodes
+receive a terminal reward adjustment of $-H$ without inventing an action. If
+all resistance is reached after a transition, that transition reward includes
+the remaining unit-burden terms. This prevents early termination from avoiding
+the cost of a persistently all-resistant state. Other terminal conditions do
+not occur before the configured horizon in the current model.
 
-| Resistance change | R_R |
-|---|---:|
-| Resistance increases by 1 | -1 |
-| No change | 0 |
-| Resistance decreases by 1 | +1 |
-| Resistance increases by 2 | -2 |
-| Resistance decreases by 2 | +2 |
+The approved discount factor is $\gamma=1$. The exact planner rejects other
+values because the terminal-tail accounting and the specified objective are
+undiscounted. Changing the discount factor would define a different objective
+and requires a separate specification.
 
-This allows collateral sensitivity to produce a positive resistance-related
-reward when a transition reduces the number of resistant antibiotics.
+## 5. Interpretation of Objectives and Metrics
 
-The component does not assume that every resistance change is caused by a
-specific biological mechanism. The transition model determines the next
-state, while the reward function evaluates the resulting change.
+| Concern | Current treatment |
+|---|---|
+| Treat effectively now | Hard feasibility constraint based on modeled susceptibility |
+| Avoid resistance emergence | Measured separately as the count/rate of transitions that increase resistant-drug count |
+| Preserve future treatment options | Represented by minimizing resistance burden throughout the horizon; drug identity still matters through downstream transitions |
+| Avoid unnecessary exposure | Not modeled as an objective; action count is reported as a proxy only |
 
----
+In the binary seven-drug state, final susceptible-drug count is $7-N_R(s_H)$.
+That count complements final resistance count, but it does not encode the
+identity-dependent value of future transitions. The planner's continuation
+values capture identity only relative to the specified transition model and
+this reward; they are not independent evidence that a particular drug is
+clinically more valuable.
 
-## 5. Antibiotic Exposure
+The current environment has no treatment-need state, recovery/clearance state,
+or no-treatment/stop action. Therefore, it cannot identify unnecessary
+antibiotic use. Cumulative antibiotic exposure is the number of treatment
+actions, not dose, duration, drug-days, toxicity, or a clinical stewardship
+measure. It remains an evaluation outcome and is excluded from the reward.
 
-Each treatment action incurs an exposure cost:
+The model records seven binary resistance indicators; it does not apply a
+formal clinical multidrug-resistance classification. Claims should refer to
+simulated resistance burden unless such a classification is separately
+defined.
 
-$$
-R_X = -1
-$$
+## 6. Implementation Provenance
 
-The exposure component discourages unnecessarily long treatment sequences.
+`RewardSpecification` records the objective name, normalization, and terminal
+convention in evaluation output and configuration fingerprints. There are no
+tunable reward weights in the current objective. Effectiveness remains present
+in evaluation records as a model-defined susceptibility outcome, allowing
+constraint compliance to be checked.
 
-The exposure penalty is deliberately smaller than the initial treatment
-effectiveness reward. This prevents the model from strongly preferring
-shorter treatment simply because shorter treatment produces less exposure.
-
-The exposure component represents treatment burden within the simulation.
-It does not represent a clinical toxicity estimate or a patient-specific
-dose-related risk.
-
----
-
-## 6. Combined Reward
-
-The complete reward is:
-
-$$
-R_t = w_E R_E + w_R R_R + w_X R_X
-$$
-
-Using the initial MVP weights:
-
-$$
-R_t = 1.0R_E + 0.5R_R + 0.1R_X
-$$
-
-For example, suppose:
-
-- the selected antibiotic is susceptible;
-- resistance increases by one antibiotic after the transition;
-- one treatment step has been used.
-
-Then:
-
-$$
-\begin{aligned}
-R_E &= +1 \\
-R_R &= -1 \\
-R_X &= -1
-\end{aligned}
-$$
-
-Therefore:
-
-$$
-\begin{aligned}
-R_t &= (1.0)(+1) + (0.5)(-1) + (0.1)(-1) \\
-    &= 0.4
-\end{aligned}
-$$
-
-The agent therefore receives a positive reward, but less than it would
-receive for an effective treatment that did not increase resistance.
-
----
-
-## 7. Future Treatment Options
-
-The number of future treatment options is not currently included as a
-separate reward component.
-
-In the binary seven-antibiotic resistance representation, the number of
-susceptible antibiotics is directly related to the number of resistant
-antibiotics:
-
-$$
-N_S = 7 - N_R
-$$
-
-Therefore, independently rewarding both resistance reduction and an
-increase in susceptible future options would count the same state change
-twice.
-
-Future treatment options will instead be evaluated as an outcome metric
-during policy evaluation.
-
-This allows the project to measure whether a policy preserves future
-treatment options without artificially increasing the reward for the same
-resistance change.
-
----
-
-## 8. Treatment Success and Clinical Clearance
-
-Clinical treatment success is not directly represented as a reward component
-in the MVP.
-
-The current simulation determines whether an antibiotic is effective against
-the simulated resistance state but does not model infection clearance.
-
-Therefore, the effectiveness reward must not be interpreted as a clinical
-success or cure probability.
-
-If a future version of the environment introduces an explicit infection
-clearance state, episode-level treatment success can be incorporated into
-the reward function and evaluated separately.
-
----
-
-## 9. Reward Weight Configuration
-
-Reward weights are configurable through the `RewardWeights` object.
-
-The implementation does not hard-code the weights inside the reward
-calculation.
-
-This allows experiments with different stewardship priorities without
-changing the reward-function implementation.
-
-The initial values are:
-
-```text
-effectiveness = 1.0
-resistance = 0.5
-exposure = 0.1
+This is a computational objective for the stated state/action/transition
+model, not a universally validated stewardship utility function or a clinical
+recommendation. Results depend on the interaction data, candidate-generation
+rules, transition scenario, horizon, and action-feasibility constraint.

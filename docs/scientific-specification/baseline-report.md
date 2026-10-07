@@ -1,5 +1,13 @@
 # Baseline Evaluation Report (Sprint 4 Card 4.10)
 
+The saved Sprint 4 report in `experiments/results/baseline/` is a historical
+result produced with the former weighted reward (`effectiveness=1.0`,
+`resistance=0.5`, `exposure=0.1`) and an unconstrained random policy. Do not
+compare its reward values with evaluations under the current constrained
+resistance-burden objective. Preserve it as a historical artifact; a new
+objective-specific baseline plan must use feasible policies and a distinct
+output directory.
+
 The predeclared plan is `experiments/baseline_config.json`: 20 seed runs per
 random/greedy policy and stochastic scenario, all 128 equally weighted binary
 initial profiles, eight-step horizon, gamma=1 for the exact reference, and the

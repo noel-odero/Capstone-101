@@ -64,12 +64,22 @@ def test_known_reward_and_observation_semantics():
     assert np.array_equal(observation[:7], np.zeros(7))
     observation, reward, terminated, truncated, info = environment.step(0)
 
-    assert reward == pytest.approx(0.4)
+    assert reward == pytest.approx(-1 / 7)
     assert np.array_equal(observation[:7], [0, 0, 0, 0, 0, 0, 1])
     assert np.array_equal(observation[7:14], [1, 0, 0, 0, 0, 0, 0])
     assert observation[-1] == 1
     assert not terminated and not truncated
     assert info["source_ids"] == ["POD2018"]
+
+
+def test_action_mask_contains_only_susceptible_actions():
+    environment = DeterministicReferenceEnvironment()
+    environment.reset(options={"initial_resistance_state": (1, 0, 1, 0, 0, 0, 0)})
+
+    assert environment.action_masks().tolist() == [False, True, False, True, True, True, True]
+
+    environment.reset(options={"initial_resistance_state": (1,) * 7})
+    assert not environment.action_masks().any()
 
 
 def test_episode_identical_across_seeds_and_horizon_observations_valid():

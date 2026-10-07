@@ -20,6 +20,7 @@ class EpisodeProgression:
         self,
         episode: EpisodeState,
         action: int,
+        horizon: int | None = None,
         seed: int | None = None,
         rng: random.Random | None = None,
     ) -> EpisodeStepResult:
@@ -27,6 +28,7 @@ class EpisodeProgression:
             state=episode.resistance_state,
             action=action,
             treatment_step=episode.treatment_step,
+            horizon=horizon,
             seed=seed,
             rng=rng,
         )

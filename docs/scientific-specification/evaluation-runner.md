@@ -22,16 +22,18 @@ every episode. Profiles are supplied using the existing reset option. The caller
 owns the environment: the runner resets and advances it, leaves its last episode
 in place, and does not close it. Factories must return a fresh policy without
 reconfiguring the environment. Observation copies prevent policy-side mutation
-from changing the recorded input. Initially terminal episodes are recorded with
-zero actions and reward; no policy action is requested.
+from changing the recorded input. Initially all-resistant episodes are recorded
+with zero actions and no policy call, plus a terminal reward adjustment equal to
+the remaining-horizon resistance burden.
 
-`EvaluationResult` records scenario ID, active horizon, actual episode-step reward
-weights, and a tuple of `EpisodeResult` records. Each episode contains its ID,
-seeds, policy class identity, initial/final true resistance profiles, reset
-observation/info, and `StepResult` records with before/after observation snapshots,
-action, reward, terminal/truncated flags, and deep-copied full transition info.
-Properties expose observation, action, antibiotic, reward, and effectiveness
-sequences, cumulative reward, and treatment-step count. Full info retains
+`EvaluationResult` records scenario ID, active horizon, the named reward
+specification, and a tuple of `EpisodeResult` records. Each episode contains its
+ID, seeds, policy class identity, initial/final true resistance profiles, reset
+observation/info, `StepResult` records with before/after observation snapshots,
+action, reward, terminal/truncated flags, and deep-copied transition info, plus
+any terminal reward adjustment. Properties expose observation, action, antibiotic,
+reward, and effectiveness sequences, cumulative reward, and treatment-step count.
+Full info retains
 transition status, scenario, candidate/source provenance, occurrence assumptions,
 scenario probabilities, and transition seed. No probabilities are estimated.
 
@@ -42,8 +44,11 @@ that exceeds its declared horizon without signaling completion raises an error;
 the runner does not invent truncation. Policy/environment failures propagate,
 without fallback actions or successful partial-episode records.
 
-This runner is policy-agnostic within the existing seeded-constructor and
-`select_action(observation)` contracts. It does not support deterministic-reference
-evaluation, a VI lookup adapter, unknown observation reconstruction, policy
-rankings, aggregate metrics, statistical analysis, or PPO training. Raw results
-are computational episode records, not evidence of clinical effectiveness.
+This runner remains policy-agnostic and does not enforce action masks. Under the
+current constrained objective, policies used for primary optimization must honor
+`AntibioticEnvironment.action_masks()`; an unconstrained random policy is only a
+negative-control baseline, not a feasible competitor. The runner does not support
+deterministic-reference evaluation, a VI lookup adapter, unknown observation
+reconstruction, policy rankings, aggregate metrics, statistical analysis, or PPO
+training. Raw results are computational episode records, not evidence of clinical
+effectiveness.

@@ -47,6 +47,7 @@ class EpisodeStep:
         state: ResistanceState,
         action: int,
         treatment_step: int,
+        horizon: int | None = None,
         seed: int | None = None,
         rng: random.Random | None = None,
     ) -> EpisodeStepResult:
@@ -68,9 +69,10 @@ class EpisodeStep:
         )
 
         reward = self.reward_function.calculate(
-            previous_state=state,
-            next_state=next_state,
-            action=action,
+            next_state,
+            remaining_horizon_steps=(
+                0 if horizon is None else max(0, horizon - treatment_step - 1)
+            ),
         )
 
         observation = self._build_observation(

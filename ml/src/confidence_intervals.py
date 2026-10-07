@@ -173,13 +173,13 @@ def calculate_confidence_intervals(
             metrics.policy_name != first.policy_name
             or metrics.scenario_id != first.scenario_id
             or metrics.horizon != first.horizon
-            or metrics.reward_weights != first.reward_weights
+            or metrics.reward_specification != first.reward_specification
         ):
             raise ValueError("Run metrics have inconsistent policy, scenario, horizon, or reward weights.")
         if (
             run.evaluation.scenario_id != metrics.scenario_id
             or run.evaluation.horizon != metrics.horizon
-            or run.evaluation.reward_weights != metrics.reward_weights
+            or run.evaluation.reward_specification != metrics.reward_specification
         ):
             raise ValueError("Run metrics do not match the evaluation configuration.")
         if tuple(episode.initial_resistance_profile for episode in run.evaluation.episodes) != evaluation.initial_resistance_profiles:

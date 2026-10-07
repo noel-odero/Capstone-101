@@ -112,6 +112,17 @@ def test_initial_observation_is_fully_susceptible():
     assert treatment_step == 0
 
 
+def test_action_mask_tracks_current_susceptibility():
+    environment = AntibioticEnvironment()
+    assert environment.action_masks().all()
+
+    environment.reset(options={"initial_resistance_state": (1, 0, 1, 0, 0, 0, 0)})
+    assert environment.action_masks().tolist() == [False, True, False, True, True, True, True]
+
+    environment.reset(options={"initial_resistance_state": (1,) * 7})
+    assert not environment.action_masks().any()
+
+
 def test_reset_accepts_valid_initial_resistance_state():
     environment = AntibioticEnvironment()
 

@@ -39,6 +39,7 @@ class EpisodeResult:
     terminated: bool
     truncated: bool
     termination_reason: str
+    terminal_reward_adjustment: float = 0.0
 
     @property
     def observations(self) -> tuple[tuple[float, ...], ...]:
@@ -62,7 +63,7 @@ class EpisodeResult:
 
     @property
     def cumulative_reward(self) -> float:
-        return sum(self.rewards, start=0.0)
+        return sum(self.rewards, start=0.0) + self.terminal_reward_adjustment
 
     @property
     def treatment_step_count(self) -> int:
@@ -73,7 +74,7 @@ class EpisodeResult:
 class EvaluationResult:
     scenario_id: str
     horizon: int
-    reward_weights: dict[str, float]
+    reward_specification: dict[str, str | int]
     episodes: tuple[EpisodeResult, ...]
 
 
@@ -125,7 +126,9 @@ def run_evaluation(
 
     horizon = environment.episode_termination.max_steps
     scenario_id = environment.episode_progression.episode_step.transition_model.sampler.scenario_id
-    weights = environment.episode_progression.episode_step.reward_function.weights
+    reward_specification = (
+        environment.episode_progression.episode_step.reward_function.specification.to_dict()
+    )
     episodes = []
 
     for episode_id, initial_state in enumerate(profiles):
@@ -142,6 +145,11 @@ def run_evaluation(
             raise RuntimeError("Environment reset did not initialize an episode.")
         terminated = environment.episode_termination.is_terminated(episode)
         truncated = False
+        terminal_reward_adjustment = (
+            -float(horizon)
+            if terminated and all(value == 1 for value in initial_state.resistance)
+            else 0.0
+        )
         steps = []
         policy = policy_factory(environment.action_space, seed=episode_policy_seed)
         if not callable(getattr(policy, "select_action", None)):
@@ -189,15 +197,12 @@ def run_evaluation(
             terminated=bool(terminated),
             truncated=bool(truncated),
             termination_reason=reason,
+            terminal_reward_adjustment=terminal_reward_adjustment,
         ))
 
     return EvaluationResult(
         scenario_id=scenario_id,
         horizon=horizon,
-        reward_weights={
-            "effectiveness": weights.effectiveness,
-            "resistance": weights.resistance,
-            "exposure": weights.exposure,
-        },
+        reward_specification=reward_specification,
         episodes=tuple(episodes),
     )

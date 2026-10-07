@@ -40,9 +40,7 @@ class AntibioticEnvironment(gym.Env):
 
         self.reward_function = (
             reward_function
-            or RewardFunction(
-                action_space=self.action_space_config
-            )
+            or RewardFunction()
         )
 
         self.episode_progression = episode_progression or EpisodeProgression(
@@ -101,6 +99,18 @@ class AntibioticEnvironment(gym.Env):
         return np.array(
             encode_observation(observation),
             dtype=np.float32,
+        )
+
+    def action_masks(self) -> np.ndarray:
+        """Return the valid-action mask expected by mask-aware policies."""
+        if self.episode is None:
+            return np.ones(self.action_space_config.size, dtype=bool)
+        return np.asarray(
+            [
+                self.episode.resistance_state.is_susceptible(antibiotic)
+                for antibiotic in self.action_space_config.actions
+            ],
+            dtype=bool,
         )
 
     def reset(self, *, seed=None, options=None):
@@ -165,6 +175,7 @@ class AntibioticEnvironment(gym.Env):
         step_result = self.episode_progression.step(
             self.episode,
             action,
+            horizon=self.episode_termination.max_steps,
             seed=step_seed,
         )
 

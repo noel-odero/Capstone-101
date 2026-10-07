@@ -160,10 +160,15 @@ def test_undefined_rates_preserve_contributor_ids(multi_seed_result):
     assert record.interval.sample_count == 2
 
 
-@pytest.mark.parametrize("field", ["policy_name", "scenario_id", "horizon", "reward_weights"])
+@pytest.mark.parametrize("field", ["policy_name", "scenario_id", "horizon", "reward_specification"])
 def test_inconsistent_run_configuration_rejected(multi_seed_result, field):
     run = multi_seed_result.runs[1]
-    new_value = {"policy_name": "OTHER", "scenario_id": "OTHER", "horizon": 99, "reward_weights": {}}[field]
+    new_value = {
+        "policy_name": "OTHER",
+        "scenario_id": "OTHER",
+        "horizon": 99,
+        "reward_specification": {"objective": "OTHER"},
+    }[field]
     run = replace(run, metrics=replace(run.metrics, **{field: new_value}))
     altered = replace(multi_seed_result, runs=(multi_seed_result.runs[0], run, multi_seed_result.runs[2]))
     with pytest.raises(ValueError, match="inconsistent"):

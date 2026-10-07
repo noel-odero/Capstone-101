@@ -55,7 +55,11 @@ def trajectory(profiles, effectiveness, rewards, *, episode_id=0, truncated=Fals
 def evaluation(*episodes):
     return EvaluationResult(
         scenario_id=SCENARIO_ID, horizon=8,
-        reward_weights={"effectiveness": 1.0, "resistance": 0.5, "exposure": 0.1},
+        reward_specification={
+            "objective": "normalized_resistance_burden",
+            "normalization": 7,
+            "terminal_convention": "all_resistant_state_persists_to_horizon",
+        },
         episodes=tuple(episodes),
     )
 
@@ -176,9 +180,9 @@ def test_metrics_and_export_do_not_mutate_input():
     result = calculate_metrics(source)
     exported = result.to_dict()
     json.dumps(exported, allow_nan=False)
-    exported["reward_weights"]["exposure"] = 99
+    exported["reward_specification"]["normalization"] = 99
     exported["episodes"][0]["policy_name"] = "changed"
-    result.reward_weights["exposure"] = 2
+    result.reward_specification["normalization"] = 2
     assert source == before
     assert result.episodes[0].policy_name == "test.policy"
     null_export = calculate_metrics(evaluation(trajectory([(1,) * 7], [], []))).to_dict()

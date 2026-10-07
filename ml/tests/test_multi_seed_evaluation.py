@@ -10,7 +10,7 @@ from ml.src.random_policy import RandomPolicy
 from simulation.deterministic_reference import DeterministicReferenceEnvironment
 from simulation.environment import AntibioticEnvironment
 from simulation.resistance_state import ResistanceState
-from simulation.reward import RewardWeights
+from simulation.reward import RewardSpecification
 from simulation.transition_sampler import TransitionSampler
 
 
@@ -146,7 +146,9 @@ def test_configuration_and_transition_data_mismatch_rejected(difference):
             elif difference == "scenario":
                 step.transition_model.sampler = TransitionSampler("SENSITIVITY_Q_050")
             elif difference == "reward":
-                step.reward_function.weights = RewardWeights(exposure=0.2)
+                step.reward_function.specification = RewardSpecification(
+                    objective="alternate_test_objective"
+                )
             elif difference == "data":
                 step.transition_model.candidate_generator.interactions[0]["relationship"] = "neutral"
             elif difference == "data_order":
@@ -167,7 +169,9 @@ def test_configuration_mutation_during_run_rejected_and_environment_closed():
     environment.close = lambda: closed.append(True)
 
     def policy_factory(action_space, seed):
-        environment.episode_progression.episode_step.reward_function.weights = RewardWeights(exposure=0.2)
+        environment.episode_progression.episode_step.reward_function.specification = RewardSpecification(
+            objective="alternate_test_objective"
+        )
         return RandomPolicy(action_space, seed=seed)
 
     with pytest.raises(ValueError, match="changed during a run"):
@@ -184,6 +188,7 @@ def test_zero_step_episodes_preserve_seed_and_identity_and_undefined_rates():
         episode = run.evaluation.episodes[0]
         assert episode.steps == ()
         assert episode.termination_reason == "no_effective_antibiotic"
+        assert episode.cumulative_reward == -2.0
         assert run.metrics.episodes[0].treatment_effectiveness_rate is None
         assert run.episode_identities == ((run.run_id, 0),)
 

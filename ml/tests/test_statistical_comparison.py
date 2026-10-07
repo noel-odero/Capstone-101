@@ -21,9 +21,13 @@ from ml.src.statistical_comparison import (
 
 
 def make_result(name, effective_counts, *, profile=(0,) * 7, run_ids=None):
-    weights = {"effectiveness": 1.0, "resistance": 0.5, "exposure": 0.1}
+    reward_specification = {
+        "objective": "normalized_resistance_burden",
+        "normalization": 7,
+        "terminal_convention": "all_resistant_state_persists_to_horizon",
+    }
     configuration = {
-        "scenario_id": "TEST", "horizon": 4, "reward_weights": weights,
+        "scenario_id": "TEST", "horizon": 4, "reward_specification": reward_specification,
         "interaction_data_sha256": "fixed_fixture", "action_mappings": list(range(7)),
     }
     runs = []
@@ -39,7 +43,7 @@ def make_result(name, effective_counts, *, profile=(0,) * 7, run_ids=None):
             0, base, base + 100, name, profile, profile, observations[0], {},
             steps, True, False, "maximum_horizon",
         )
-        evaluation = EvaluationResult("TEST", 4, weights.copy(), (episode,))
+        evaluation = EvaluationResult("TEST", 4, reward_specification.copy(), (episode,))
         run_id = index if run_ids is None else run_ids[index]
         runs.append(SeedRunResult(run_id, base, base + 100, evaluation, calculate_metrics(evaluation)))
         seeds.append((base, base + 100))

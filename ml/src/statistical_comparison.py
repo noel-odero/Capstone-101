@@ -162,7 +162,7 @@ def _index_runs(result: MultiSeedResult) -> dict[tuple[int, int], SeedRunResult]
             run.metrics.policy_name != first.policy_name
             or run.metrics.scenario_id != first.scenario_id
             or run.metrics.horizon != first.horizon
-            or run.metrics.reward_weights != first.reward_weights
+            or run.metrics.reward_specification != first.reward_specification
         ):
             raise ValueError("Run-level policy or evaluation configuration differs.")
         episodes = run.evaluation.episodes
@@ -185,7 +185,7 @@ def _index_runs(result: MultiSeedResult) -> dict[tuple[int, int], SeedRunResult]
     if (
         manifest.get("scenario_id") != first.scenario_id
         or manifest.get("horizon") != first.horizon
-        or manifest.get("reward_weights") != first.reward_weights
+        or manifest.get("reward_specification") != first.reward_specification
         or not manifest.get("interaction_data_sha256")
     ):
         raise ValueError("Configuration fingerprint metadata is incomplete or inconsistent.")

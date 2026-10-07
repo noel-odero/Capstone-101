@@ -44,32 +44,40 @@ def test_stochastic_observation_reconstructs_correct_vi_lookup(
     environment.close()
 
 
-@pytest.mark.parametrize("gamma", [0.0, 0.5, 1.0])
-def test_full_state_set_satisfies_bellman_equations_and_tie_rule(gamma):
+def test_full_state_set_satisfies_bellman_equations_and_tie_rule():
     environment = DeterministicReferenceEnvironment()
-    result = value_iteration(environment, gamma=gamma)
+    result = value_iteration(environment)
     states = set(environment.states())
 
     assert len(states) == 1152
     assert set(result.state_values) == set(result.action_values) == set(result.policy) == states
-    assert result.gamma == gamma
+    assert result.gamma == 1.0
 
     for state in states:
         assert set(result.action_values[state]) == set(range(7))
         if environment.is_terminal(state):
-            assert result.state_values[state] == 0.0
+            expected_terminal_value = (
+                -(environment.max_steps - state.treatment_step)
+                if all(state.resistance_state.resistance)
+                else 0.0
+            )
+            assert result.state_values[state] == expected_terminal_value
             assert result.policy[state] is None
             assert all(value == 0.0 for value in result.action_values[state].values())
             continue
 
         for action in range(7):
+            if action not in environment.feasible_actions(state):
+                assert result.action_values[state][action] == float("-inf")
+                continue
             next_state, reward, terminal, _ = environment.transition(state, action)
             continuation = 0.0 if terminal else result.state_values[next_state]
             assert result.action_values[state][action] == pytest.approx(
-                reward + gamma * continuation
+                reward + continuation
             )
         maximum = max(result.action_values[state].values())
         assert result.state_values[state] == maximum
+        assert result.policy[state] in environment.feasible_actions(state)
         assert result.policy[state] == min(
             action for action, value in result.action_values[state].items()
             if value == maximum
@@ -80,25 +88,26 @@ def test_terminal_entry_preserves_reward_and_has_zero_continuation():
     environment = DeterministicReferenceEnvironment()
     result = value_iteration(environment)
     last_step = planning_state("0000000", 7)
-    early_terminal = planning_state("1111110")
+    early_terminal = planning_state("0111111")
 
-    assert result.action_values[last_step][0] == pytest.approx(0.4)
-    assert result.action_values[last_step][2] == pytest.approx(0.9)
-    next_state, reward, terminal, _ = environment.transition(early_terminal, 0)
+    assert result.action_values[last_step][0] == pytest.approx(-1 / 7)
+    assert result.action_values[last_step][2] == pytest.approx(0.0)
+    next_state, reward, terminal, _ = environment.transition(early_terminal, 1)
     assert terminal
     assert next_state == planning_state("1111111", 1)
-    assert reward == pytest.approx(-1.6)
-    assert result.action_values[early_terminal][0] == pytest.approx(-1.6)
+    assert reward == pytest.approx(-8.0)
+    assert result.action_values[early_terminal][1] == float("-inf")
+    assert result.policy[early_terminal] == 0
+    assert result.state_values[planning_state("1111111")] == -8.0
 
 
-@pytest.mark.parametrize("gamma", [0.0, 0.5, 1.0])
-def test_known_immediate_reward_plus_continuation(gamma):
+def test_known_immediate_reward_plus_continuation():
     environment = DeterministicReferenceEnvironment(max_steps=2)
-    result = value_iteration(environment, gamma=gamma)
+    result = value_iteration(environment)
     state = planning_state("0000000")
 
-    assert result.action_values[state][2] == pytest.approx(0.9 + gamma * 0.9)
-    assert result.state_values[state] == pytest.approx(0.9 + gamma * 0.9)
+    assert result.action_values[state][2] == pytest.approx(0.0)
+    assert result.state_values[state] == pytest.approx(0.0)
 
 
 def test_exact_ties_choose_lowest_action_id():
@@ -111,41 +120,55 @@ def test_exact_ties_choose_lowest_action_id():
     assert result.policy[state] == 2
 
 
-@pytest.mark.parametrize("gamma", [0.5, 1.0])
-def test_matches_exhaustive_action_sequences_for_every_initial_profile(gamma):
+def test_matches_exhaustive_action_sequences_for_every_initial_profile():
     environment = DeterministicReferenceEnvironment(max_steps=2)
-    result = value_iteration(environment, gamma=gamma)
+    result = value_iteration(environment)
 
     for initial_state in environment.states():
         if initial_state.treatment_step != 0:
             continue
         returns = []
+        if environment.is_terminal(initial_state):
+            assert result.policy[initial_state] is None
+            continue
+        feasible_initial = environment.feasible_actions(initial_state)
         for actions in product(range(7), repeat=2):
+            if actions[0] not in feasible_initial:
+                continue
             state = initial_state
             rewards = []
+            legal_sequence = True
             for action in actions:
                 if environment.is_terminal(state):
+                    break
+                if action not in environment.feasible_actions(state):
+                    legal_sequence = False
                     break
                 state, reward, terminal, _ = environment.transition(state, action)
                 rewards.append(reward)
                 if terminal:
                     break
-            total = sum(gamma ** step * reward for step, reward in enumerate(rewards))
+            if not legal_sequence:
+                continue
+            total = sum(rewards)
             returns.append((actions[0], total))
 
         optimal_return = max(total for _, total in returns)
         assert result.state_values[initial_state] == pytest.approx(optimal_return)
-        if environment.is_terminal(initial_state):
-            assert result.policy[initial_state] is None
-        else:
-            assert result.policy[initial_state] == min(
-                action for action, total in returns if total == optimal_return
-            )
+        assert result.policy[initial_state] == min(
+            action for action, total in returns if total == optimal_return
+        )
 
 
 @pytest.mark.parametrize("gamma", [-0.01, 1.01, float("nan"), float("inf"), -float("inf")])
 def test_rejects_invalid_discount_values(gamma):
     with pytest.raises(ValueError, match="finite and between"):
+        value_iteration(DeterministicReferenceEnvironment(), gamma=gamma)
+
+
+@pytest.mark.parametrize("gamma", [0.0, 0.5])
+def test_requires_undiscounted_fixed_horizon_objective(gamma):
+    with pytest.raises(ValueError, match="requires gamma=1"):
         value_iteration(DeterministicReferenceEnvironment(), gamma=gamma)
 
 

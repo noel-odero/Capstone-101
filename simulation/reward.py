@@ -1,76 +1,40 @@
-from dataclasses import dataclass
+from dataclasses import asdict, dataclass
 
-from simulation.action_space import ActionSpace
-from simulation.resistance_state import ResistanceState
+from simulation.resistance_state import ANTIBIOTICS, ResistanceState
 
 
 @dataclass(frozen=True)
-class RewardWeights:
-    effectiveness: float = 1.0
-    resistance: float = 0.5
-    exposure: float = 0.1
+class RewardSpecification:
+    objective: str = "normalized_resistance_burden"
+    normalization: int = len(ANTIBIOTICS)
+    terminal_convention: str = "all_resistant_state_persists_to_horizon"
+
+    def to_dict(self) -> dict[str, str | int]:
+        return asdict(self)
 
 
 class RewardFunction:
-    def __init__(
-        self,
-        weights: RewardWeights | None = None,
-        action_space: ActionSpace | None = None,
-    ):
-        self.weights = weights or RewardWeights()
-        self.action_space = action_space or ActionSpace()
+    """Minimize resistance burden subject to an external susceptibility mask."""
 
-    def effectiveness_reward(
-        self,
-        state: ResistanceState,
-        action: int,
-    ) -> float:
-        antibiotic = self.action_space.antibiotic_for(action)
-
-        if state.is_susceptible(antibiotic):
-            return 1.0
-
-        return -1.0
-
-    def resistance_reward(
-        self,
-        previous_state: ResistanceState,
-        next_state: ResistanceState,
-    ) -> float:
-        previous_resistant = len(
-            previous_state.resistant_antibiotics()
-        )
-        next_resistant = len(
-            next_state.resistant_antibiotics()
-        )
-
-        resistance_change = next_resistant - previous_resistant
-
-        return -float(resistance_change)
-
-    def exposure_reward(self) -> float:
-        return -1.0
+    def __init__(self, specification: RewardSpecification | None = None):
+        self.specification = specification or RewardSpecification()
 
     def calculate(
         self,
-        previous_state: ResistanceState,
         next_state: ResistanceState,
-        action: int,
+        *,
+        remaining_horizon_steps: int = 0,
     ) -> float:
-        effectiveness = self.effectiveness_reward(
-            previous_state,
-            action,
-        )
+        if (
+            isinstance(remaining_horizon_steps, bool)
+            or not isinstance(remaining_horizon_steps, int)
+            or remaining_horizon_steps < 0
+        ):
+            raise ValueError("Remaining horizon steps must be a nonnegative integer.")
 
-        resistance = self.resistance_reward(
-            previous_state,
-            next_state,
-        )
+        resistant_count = len(next_state.resistant_antibiotics())
+        charged_steps = 1
+        if resistant_count == len(ANTIBIOTICS):
+            charged_steps += remaining_horizon_steps
 
-        exposure = self.exposure_reward()
-
-        return (
-            self.weights.effectiveness * effectiveness
-            + self.weights.resistance * resistance
-            + self.weights.exposure * exposure
-        )
+        return -resistant_count * charged_steps / self.specification.normalization

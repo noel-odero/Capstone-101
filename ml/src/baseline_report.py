@@ -25,7 +25,7 @@ from simulation.episode import EpisodeState
 from simulation.episode_progression import EpisodeProgression
 from simulation.episode_step import EpisodeStep
 from simulation.resistance_state import ANTIBIOTICS, ResistanceState
-from simulation.reward import RewardWeights
+from simulation.reward import RewardSpecification
 from simulation.stochastic_transition_model import StochasticTransitionModel
 from simulation.transition_sampler import REFERENCE_SCENARIO_ID, SENSITIVITY_SCENARIOS, TransitionSampler
 
@@ -88,13 +88,21 @@ def _exact_reference(profiles, horizon):
                 episode_id, 0, 0, "exact_reference_value_iteration", profile,
                 state.resistance_state.resistance, initial_observation, {}, tuple(steps),
                 True, False, reason,
+                terminal_reward_adjustment=(
+                    solution.state_values[initial] if not steps else 0.0
+                ),
             )
             if not math.isclose(episode.cumulative_reward, solution.state_values[initial], abs_tol=1e-10):
                 raise RuntimeError("Exact rollout reward does not match its Bellman value.")
             episodes.append(episode)
             values.append({"initial_profile": profile, "optimal_value": solution.state_values[initial],
                            "first_action": solution.policy[initial]})
-        evaluation = EvaluationResult(EXACT_SCENARIO, horizon, asdict(RewardWeights()), tuple(episodes))
+        evaluation = EvaluationResult(
+            EXACT_SCENARIO,
+            horizon,
+            asdict(RewardSpecification()),
+            tuple(episodes),
+        )
         return {
             "scenario_id": EXACT_SCENARIO, "gamma": 1.0,
             "planning_state_count": len(solution.state_values),

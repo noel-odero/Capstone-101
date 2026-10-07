@@ -175,7 +175,12 @@ The action space contains seven discrete actions, numbered from `0` to `6`.
 |         5 | Mecillinam     |
 |         6 | Ceftazidime    |
 
-All seven actions remain available to the computational policies, including antibiotics to which the simulated bacterial state is resistant. This allows the system to represent ineffective choices and compare policy behavior without silently removing actions from the action space.
+The underlying Gymnasium action space remains fixed at seven actions. Under the
+current objective, the feasible policy actions are the antibiotics marked
+susceptible in the current state. Environments expose an action mask, but
+`step()` does not itself reject a masked action; optimization policies must
+honor the mask. Unrestricted policies are negative controls, not feasible
+competitors.
 
 ### Observation
 
@@ -214,52 +219,23 @@ The environment preserves transition provenance, including scenario information,
 
 ### Reward function
 
-The reward function encmyages effective treatment while penalizing resistance increases and repeated antibiotic exposure.
-
-The default reward is:
-
-$$
-R(s,a,s') =
-E(s,a)
--0.5\bigl(N_R(s')-N_R(s)\bigr)
--0.1
-$$
-
-Where:
-
-* $E(s,a)$ is the treatment-effectiveness reward.
-* $N_R(s)$ is the number of resistant antibiotics in the current state.
-* $N_R(s')$ is the number of resistant antibiotics in the next state.
-* The weights `0.5` and `0.1` control the resistance and exposure penalties.
-
-The effectiveness component is:
-
-| Treatment result                   | Reward |
-| ---------------------------------- | -----: |
-| Selected antibiotic is susceptible |     +1 |
-| Selected antibiotic is resistant   |     −1 |
-
-The resistance component is based on the change in the number of resistant antibiotics:
-
-* An increase in resistance is penalized.
-* A decrease in resistance contributes positively.
-* No change contributes zero.
-
-The exposure component applies a penalty of `−0.1` for each treatment action.
-
-For example, if an effective treatment step increases the number of resistant antibiotics by one, the reward is:
+Treatment effectiveness is a feasibility constraint: if any antibiotic is
+susceptible in the current simulated state, policies must select from only those
+actions. The reward then minimizes resistance burden across the fixed horizon:
 
 $$
-1 - 0.5(1) - 0.1 = 0.4
+r_t = -\frac{N_R(s_{t+1})}{7}
 $$
 
-If the treatment is effective and resistance does not change, the reward is:
+Here, $N_R(s_{t+1})$ is the number of resistant antibiotics after the
+transition, and seven is the size of the defined action space. Planning uses an
+undiscounted horizon ($\gamma=1$). If all antibiotics become resistant early,
+that state is treated as persisting through the remaining horizon. This is a
+computational resistance-burden objective, not a clinical outcome prediction.
 
-$$
-1 - 0 - 0.1 = 0.9
-$$
-
-These values express the priorities of the computational model. They are not clinical utility scores or measurements of patient outcomes.
+Unnecessary antibiotic exposure is not part of the reward: the current model
+has no treatment-need, recovery, or no-treatment action. Cumulative action
+count is reported separately as a limited exposure proxy.
 
 ### Episode progression
 

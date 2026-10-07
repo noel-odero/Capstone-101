@@ -70,7 +70,7 @@ class DeterministicReferenceEnvironment(gym.Env):
         self._termination = EpisodeTermination(max_steps=max_steps)
         self._model = DeterministicTransitionModel()
         self._action_config = ActionSpace()
-        self._reward = RewardFunction(action_space=self._action_config)
+        self._reward = RewardFunction()
         self.max_steps = max_steps
         self.action_space = spaces.Discrete(len(ANTIBIOTICS))
         self.observation_space = spaces.Box(
@@ -90,6 +90,27 @@ class DeterministicReferenceEnvironment(gym.Env):
 
     def is_terminal(self, state: EpisodeState) -> bool:
         return self._termination.is_terminated(state)
+
+    def feasible_actions(self, state: EpisodeState) -> tuple[int, ...]:
+        if self.is_terminal(state):
+            return ()
+        return tuple(
+            action
+            for action, antibiotic in enumerate(self._action_config.actions)
+            if state.resistance_state.is_susceptible(antibiotic)
+        )
+
+    def action_masks(self) -> np.ndarray:
+        """Return the valid-action mask for the current interactive episode."""
+        if self.episode is None:
+            return np.ones(self.action_space.n, dtype=bool)
+        return np.asarray(
+            [
+                self.episode.resistance_state.is_susceptible(antibiotic)
+                for antibiotic in self._action_config.actions
+            ],
+            dtype=bool,
+        )
 
     def _validate_state(self, state: EpisodeState) -> None:
         if not isinstance(state, EpisodeState):
@@ -130,10 +151,15 @@ class DeterministicReferenceEnvironment(gym.Env):
         result = self._model.step(state.resistance_state, action)
         next_state = state.advance(result.next_state)
         antibiotic = self._action_config.antibiotic_for(action)
+        terminal = self.is_terminal(next_state)
+        remaining_horizon_steps = max(0, self.max_steps - next_state.treatment_step)
         return (
             next_state,
-            self._reward.calculate(state.resistance_state, result.next_state, action),
-            self.is_terminal(next_state),
+            self._reward.calculate(
+                result.next_state,
+                remaining_horizon_steps=remaining_horizon_steps,
+            ),
+            terminal,
             {
                 "scenario_id": REFERENCE_SCENARIO_ID,
                 "transition_probability": 1.0,

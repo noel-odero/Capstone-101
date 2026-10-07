@@ -46,7 +46,9 @@ The canonical 15-dimensional observation uses 0 for susceptible and 1 for
 resistant, includes one-hot last action and elapsed steps, and exposes the
 current reference state fully. Last action does not affect future dynamics or
 reward, so it is excluded from the minimal planning state without losing the
-Markov property. The existing reward function and its default weights are reused.
+Markov property. The constrained resistance-burden reward is used. If a
+transition reaches the all-resistant state before the horizon, its burden is
+charged through the remaining fixed-horizon steps.
 
 ## Exact Planning Interface
 
@@ -59,37 +61,40 @@ This supplies a complete known transition/reward table for Card 4.4.
 ## Solver Contract (Card 4.4)
 
 `ml/src/value_iteration.py` exposes `value_iteration(environment, gamma=1.0)`.
-It accepts the deterministic reference environment and a finite real discount
-factor in `[0, 1]`. Booleans and nonnumeric values raise `TypeError`; nonfinite
-or out-of-range values raise `ValueError`. The approved default `gamma = 1`
-optimizes undiscounted cumulative episode reward.
+It accepts the deterministic reference environment and requires `gamma = 1`
+for the specified undiscounted fixed-horizon burden objective. Booleans and
+nonnumeric values raise `TypeError`; nonfinite or out-of-range values raise
+`ValueError`, and other in-range discount values are rejected.
 
 The solver enumerates planning states and processes them in descending treatment
 step order. Every nonterminal transition advances time, so a single reverse-time
 pass suffices; no convergence tolerance or iterative stopping criterion is needed.
-For each nonterminal state/action, the Bellman backup is:
+For each nonterminal state and feasible action, the Bellman backup is:
 
 $$
-Q(s,a) = R(s,a) + \gamma\,\mathbf{1}_{\text{not terminal}} V(T(s,a)),
-\qquad V(s) = \max_a Q(s,a).
+Q(s,a) = R(s,a) + \mathbf{1}_{\text{not terminal}} V(T(s,a)),
+\qquad V(s) = \max_{a\in A_{\mathrm{feasible}}(s)} Q(s,a).
 $$
 
-The reward for entering a terminal state is retained, but its continuation value
-is zero. Terminal states have zero state and action values and no policy action.
-Exact maximizing ties select the lowest action ID. Near-equal floating-point
+The reward for entering an all-resistant terminal state includes burden through
+the remaining horizon; its continuation value is zero. Other terminal states
+have zero state and action values and no policy action. Infeasible actions have
+action value negative infinity and are excluded from maximization. Exact
+maximizing ties select the lowest feasible action ID. Near-equal floating-point
 values are not converted into ties by a numerical tolerance.
 
 `ValueIterationResult` contains `state_values[state]`,
 `action_values[state][action]`, `policy[state]`, and the validated `gamma`.
 All enumerated states and seven actions are present in the value tables;
-`policy[state]` is `None` for terminal states and an integer otherwise. Keys
-are immutable `EpisodeState` objects. Solving does not reset, step, or mutate
-the interactive environment and does not consume any random generator.
+infeasible action values are negative infinity. `policy[state]` is `None` for
+terminal states and a feasible integer action otherwise. Keys are immutable
+`EpisodeState` objects. Solving does not reset, step, or mutate the interactive
+environment and does not consume any random generator.
 
 This is exact planning under the known reference dynamics, up to floating-point
 arithmetic. It is not an optimal policy for the stochastic environment or a
 clinical recommendation. Values depend on the reference selection rule, processed
-evidence snapshot, reward weights, horizon, and discount factor. The solver relies
+evidence snapshot, reward specification, and horizon. The solver relies
 on this model's complete finite enumeration and strictly advancing nonterminal
 time; it is not a general cyclic or infinite-horizon solver.
 

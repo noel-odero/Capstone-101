@@ -63,7 +63,7 @@ class EvaluationMetrics:
     scenario_id: str
     policy_name: str | None
     horizon: int
-    reward_weights: dict[str, float]
+    reward_specification: dict[str, str | int]
     episodes: tuple[EpisodeMetrics, ...]
     summary: MetricsSummary
 
@@ -107,7 +107,9 @@ def calculate_episode_metrics(
     previous = initial
     effective_steps = 0
     emergence_events = 0
-    cumulative_reward = 0.0
+    if not math.isfinite(episode.terminal_reward_adjustment):
+        raise ValueError("Terminal reward adjustment must be finite.")
+    cumulative_reward = episode.terminal_reward_adjustment
     for step in episode.steps:
         before = _observation_profile(step.observation)
         after = _observation_profile(step.next_observation)
@@ -215,7 +217,7 @@ def calculate_metrics(evaluation: EvaluationResult) -> EvaluationMetrics:
         scenario_id=evaluation.scenario_id,
         policy_name=next(iter(names)) if names else None,
         horizon=evaluation.horizon,
-        reward_weights=deepcopy(evaluation.reward_weights),
+        reward_specification=deepcopy(evaluation.reward_specification),
         episodes=episodes,
         summary=summary,
     )
