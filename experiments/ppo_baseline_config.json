@@ -14,7 +14,27 @@
   "ent_coef": 0.0,
   "clip_range": 0.2,
   "policy_architecture": [64, 64],
+  "training_profile_design": "cycle_all_nonterminal_profiles",
   "evaluation_frequency": 2048,
-  "evaluation_episodes": 8,
+  "evaluation_episodes": 16,
+  "matched_evaluation_profile_design": "all_binary",
+  "matched_evaluation_seed_bases": [
+    100001,
+    200001,
+    300001,
+    400001,
+    500001
+  ],
+  "matched_policy_seed_start": 900001,
+  "matched_runs_independence_assumed": true,
+  "reward_configuration": {
+    "objective": "normalized_resistance_burden",
+    "normalization": 7,
+    "terminal_convention": "all_resistant_state_persists_to_horizon"
+  },
+  "action_mask_configuration": {
+    "enabled": true,
+    "rule": "susceptible_actions_only"
+  },
   "device": "cpu"
 }

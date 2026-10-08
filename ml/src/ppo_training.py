@@ -1,9 +1,10 @@
 from __future__ import annotations
 
 import argparse
-from dataclasses import asdict, dataclass
+from dataclasses import asdict, dataclass, field
 from importlib.metadata import PackageNotFoundError, version
 import hashlib
+from itertools import product
 import json
 from pathlib import Path
 import platform
@@ -21,6 +22,7 @@ from simulation.episode_step import EpisodeStep
 from simulation.environment import AntibioticEnvironment
 from simulation.episode_progression import EpisodeProgression
 from simulation.resistance_state import ANTIBIOTICS
+from simulation.reward import RewardSpecification
 from simulation.stochastic_transition_model import StochasticTransitionModel
 from simulation.transition_sampler import REFERENCE_SCENARIO_ID, SENSITIVITY_SCENARIOS, TransitionSampler
 from ml.src.ppo_visualizations import generate_training_plots
@@ -50,8 +52,20 @@ class PPOConfig:
     ent_coef: float = 0.0
     clip_range: float = 0.2
     policy_architecture: tuple[int, ...] = (64, 64)
+    training_profile_design: str = "cycle_all_nonterminal_profiles"
     evaluation_frequency: int = 2048
-    evaluation_episodes: int = 8
+    evaluation_episodes: int = 16
+    matched_evaluation_profile_design: str = "all_binary"
+    matched_evaluation_seed_bases: tuple[int, ...] = (
+        100001, 200001, 300001, 400001, 500001,
+    )
+    matched_policy_seed_start: int = 900001
+    matched_runs_independence_assumed: bool = True
+    reward_configuration: dict[str, str | int] = field(default_factory=lambda: RewardSpecification().to_dict())
+    action_mask_configuration: dict[str, Any] = field(default_factory=lambda: {
+        "enabled": True,
+        "rule": "susceptible_actions_only",
+    })
     device: str = "cpu"
 
     def __post_init__(self) -> None:
@@ -88,12 +102,50 @@ class PPOConfig:
             raise ValueError(f"Unsupported stochastic scenario: {self.scenario_id}")
         if self.device not in {"cpu", "cuda", "auto"}:
             raise ValueError("device must be cpu, cuda, or auto.")
+        if self.training_profile_design not in {
+            "cycle_all_nonterminal_profiles",
+            "fully_susceptible",
+        }:
+            raise ValueError("Unsupported training initial-profile design.")
+        if self.matched_evaluation_profile_design != "all_binary":
+            raise ValueError("Matched evaluation must preserve the canonical all-binary profile set.")
+        if not self.matched_evaluation_seed_bases:
+            raise ValueError("At least one matched evaluation seed base is required.")
+        matched_environment_seeds: set[int] = set()
+        for seed_base in self.matched_evaluation_seed_bases:
+            if isinstance(seed_base, bool) or not isinstance(seed_base, int) or seed_base < 0:
+                raise ValueError("Matched evaluation seed bases must be nonnegative integers.")
+            expanded = set(range(seed_base, seed_base + 128))
+            if matched_environment_seeds & expanded:
+                raise ValueError("Matched evaluation seed schedules must not overlap.")
+            matched_environment_seeds.update(expanded)
+        if any(seed in matched_environment_seeds for seed in (
+            self.ppo_seed, self.environment_seed, self.evaluation_seed,
+        )):
+            raise ValueError("Matched evaluation seeds must be separate from PPO training/validation seeds.")
+        if (
+            isinstance(self.matched_policy_seed_start, bool)
+            or not isinstance(self.matched_policy_seed_start, int)
+            or self.matched_policy_seed_start < 0
+        ):
+            raise ValueError("matched_policy_seed_start must be a nonnegative integer.")
+        if not isinstance(self.matched_runs_independence_assumed, bool):
+            raise TypeError("matched_runs_independence_assumed must be boolean.")
+        if self.reward_configuration != RewardSpecification().to_dict():
+            raise ValueError("PPO config reward must match the specified normalized resistance-burden objective.")
+        if self.action_mask_configuration != {
+            "enabled": True,
+            "rule": "susceptible_actions_only",
+        }:
+            raise ValueError("PPO action masking must enforce susceptible actions only.")
 
     @classmethod
     def from_dict(cls, values: dict[str, Any]) -> PPOConfig:
         values = dict(values)
         if "policy_architecture" in values:
             values["policy_architecture"] = tuple(values["policy_architecture"])
+        if "matched_evaluation_seed_bases" in values:
+            values["matched_evaluation_seed_bases"] = tuple(values["matched_evaluation_seed_bases"])
         return cls(**values)
 
     @classmethod
@@ -110,6 +162,39 @@ def make_training_environment(config: PPOConfig) -> AntibioticEnvironment:
     episode_step = EpisodeStep(transition_model=transition_model)
     progression = EpisodeProgression(episode_step=episode_step)
     return AntibioticEnvironment(episode_progression=progression, max_steps=config.horizon)
+
+
+def training_initial_profiles(config: PPOConfig) -> tuple[tuple[int, ...], ...]:
+    if config.training_profile_design == "fully_susceptible":
+        return ((0,) * len(ANTIBIOTICS),)
+    return tuple(
+        tuple(profile)
+        for profile in product((0, 1), repeat=len(ANTIBIOTICS))
+        if not all(profile)
+    )
+
+
+def validation_initial_profiles(count: int = 16) -> tuple[tuple[int, ...], ...]:
+    if isinstance(count, bool) or not isinstance(count, int) or not 1 <= count <= 127:
+        raise ValueError("Validation profile count must be between 1 and 127.")
+    by_resistant_count = {
+        resistant_count: [
+            tuple(profile)
+            for profile in product((0, 1), repeat=len(ANTIBIOTICS))
+            if sum(profile) == resistant_count
+        ]
+        for resistant_count in range(len(ANTIBIOTICS))
+    }
+    allocations = (1, 2, 2, 4, 3, 2, 2)
+    selected = []
+    for resistant_count, available in by_resistant_count.items():
+        quota = max(1, round(count * allocations[resistant_count] / sum(allocations)))
+        quota = min(quota, len(available), count - len(selected))
+        if quota <= 0:
+            break
+        indices = np.linspace(0, len(available) - 1, num=quota, dtype=int)
+        selected.extend(available[index] for index in indices)
+    return tuple(selected[:count])
 
 
 def environment_manifest(config: PPOConfig) -> dict[str, Any]:
@@ -134,6 +219,12 @@ def environment_manifest(config: PPOConfig) -> dict[str, Any]:
             "interaction_data_sha256": hashlib.sha256(interaction_payload).hexdigest(),
             "reward_specification": environment.reward_function.specification.to_dict(),
             "action_masking": True,
+            "training_profile_design": config.training_profile_design,
+            "training_profile_count": len(training_initial_profiles(config)),
+            "validation_initial_profiles": [
+                "".join("R" if value else "S" for value in profile)
+                for profile in validation_initial_profiles(config.evaluation_episodes)
+            ],
         }
     finally:
         environment.close()
@@ -143,6 +234,7 @@ class EpisodeMetricsWrapper(gym.Wrapper):
     def __init__(self, env: AntibioticEnvironment):
         super().__init__(env)
         self._initial_resistance_count = 0
+        self._initial_resistance_profile = (0,) * len(ANTIBIOTICS)
         self._resistance_burden = 0.0
         self._emergence_events = 0
         self._effective_steps = 0
@@ -157,6 +249,7 @@ class EpisodeMetricsWrapper(gym.Wrapper):
         if episode is None:
             raise RuntimeError("Environment reset did not initialize an episode.")
         self._initial_resistance_count = sum(episode.resistance_state.resistance)
+        self._initial_resistance_profile = episode.resistance_state.resistance
         self._previous_resistance_count = self._initial_resistance_count
         self._resistance_burden = 0.0
         self._emergence_events = 0
@@ -189,6 +282,7 @@ class EpisodeMetricsWrapper(gym.Wrapper):
             info = dict(info)
             info["ppo_episode_metrics"] = {
                 "initial_resistant_count": self._initial_resistance_count,
+                "initial_resistance_profile": list(self._initial_resistance_profile),
                 "final_resistant_count": next_resistance_count,
                 "cumulative_resistance_burden": self._resistance_burden,
                 "resistance_emergence_events": self._emergence_events,
@@ -202,6 +296,72 @@ class EpisodeMetricsWrapper(gym.Wrapper):
     def _validate_observation(self, observation: np.ndarray) -> None:
         if not np.isfinite(observation).all() or not self.observation_space.contains(observation):
             raise ValueError("Environment emitted a nonfinite or out-of-space observation.")
+
+
+class InitialResistanceProfileWrapper(gym.Wrapper):
+    """Provide a reproducible profile schedule on vectorized episode resets."""
+
+    def __init__(
+        self,
+        env: gym.Env,
+        profiles: tuple[tuple[int, ...], ...],
+        *,
+        shuffle_cycles: bool,
+    ):
+        super().__init__(env)
+        if not profiles:
+            raise ValueError("Initial profile schedule cannot be empty.")
+        self.profiles = profiles
+        self.shuffle_cycles = shuffle_cycles
+        self._rng = np.random.default_rng()
+        self._order = np.arange(len(profiles))
+        self._cursor = 0
+
+    def _new_cycle(self) -> None:
+        self._order = (
+            self._rng.permutation(len(self.profiles))
+            if self.shuffle_cycles
+            else np.arange(len(self.profiles))
+        )
+        self._cursor = 0
+
+    def reset(self, *, seed: int | None = None, options: dict | None = None):
+        if seed is not None:
+            self._rng = np.random.default_rng(seed ^ 0x5EED5EED)
+            self._new_cycle()
+        reset_options = {} if options is None else dict(options)
+        if "initial_resistance_state" not in reset_options:
+            if self._cursor >= len(self._order):
+                self._new_cycle()
+            profile_index = int(self._order[self._cursor])
+            self._cursor += 1
+            reset_options["initial_resistance_state"] = self.profiles[profile_index]
+        return self.env.reset(seed=seed, options=reset_options)
+
+
+def _make_profiled_vector_environment(
+    config: PPOConfig,
+    *,
+    seed: int,
+    monitor_directory: Path,
+    profiles: tuple[tuple[int, ...], ...],
+    shuffle_cycles: bool,
+):
+    def create_wrapped_environment():
+        environment = make_training_environment(config)
+        metrics_environment = EpisodeMetricsWrapper(environment)
+        return InitialResistanceProfileWrapper(
+            metrics_environment,
+            profiles,
+            shuffle_cycles=shuffle_cycles,
+        )
+
+    return make_vec_env(
+        create_wrapped_environment,
+        n_envs=1,
+        seed=seed,
+        monitor_dir=str(monitor_directory),
+    )
 
 
 class TrainingMetricsCallback(BaseCallback):
@@ -273,19 +433,20 @@ def train_ppo(config: PPOConfig, output_dir: str | Path) -> dict[str, Any]:
         json.dump(manifest, manifest_file, indent=2, allow_nan=False)
 
     set_random_seed(config.ppo_seed)
-    training_env = make_vec_env(
-        lambda: make_training_environment(config),
-        n_envs=1,
+    training_env = _make_profiled_vector_environment(
+        config,
         seed=config.environment_seed,
-        monitor_dir=str(output_dir / "logs" / "training"),
-        wrapper_class=EpisodeMetricsWrapper,
+        monitor_directory=output_dir / "logs" / "training",
+        profiles=training_initial_profiles(config),
+        shuffle_cycles=True,
     )
-    evaluation_env = make_vec_env(
-        lambda: make_training_environment(config),
-        n_envs=1,
+    evaluation_profiles = validation_initial_profiles(config.evaluation_episodes)
+    evaluation_env = _make_profiled_vector_environment(
+        config,
         seed=config.evaluation_seed,
-        monitor_dir=str(output_dir / "logs" / "evaluation"),
-        wrapper_class=EpisodeMetricsWrapper,
+        monitor_directory=output_dir / "logs" / "evaluation",
+        profiles=evaluation_profiles,
+        shuffle_cycles=False,
     )
     metrics_callback = TrainingMetricsCallback(
         output_dir / "training_episodes.json",
@@ -359,6 +520,19 @@ def train_ppo(config: PPOConfig, output_dir: str | Path) -> dict[str, Any]:
     return summary
 
 
+def config_for_seed(config: PPOConfig, seed: int) -> PPOConfig:
+    if isinstance(seed, bool) or not isinstance(seed, int):
+        raise TypeError("seed must be an integer.")
+    if not 0 <= seed <= 2**32 - 3:
+        raise ValueError("seed must be between 0 and 2**32 - 3.")
+    return PPOConfig.from_dict({
+        **config.to_dict(),
+        "ppo_seed": seed,
+        "environment_seed": seed + 1,
+        "evaluation_seed": seed + 2,
+    })
+
+
 def load_ppo_model(model_path: str | Path, *, env: Any = None, device: str = "cpu") -> MaskablePPO:
     return MaskablePPO.load(str(model_path), env=env, device=device)
 
@@ -368,6 +542,7 @@ def main() -> None:
     parser.add_argument("--config", default="experiments/ppo_baseline_config.json")
     parser.add_argument("--output-dir", required=True)
     parser.add_argument("--total-timesteps", type=int)
+    parser.add_argument("--seed", type=int, help="Base seed; PPO/environment/evaluation use seed, seed+1, seed+2.")
     parser.add_argument("--smoke-test", action="store_true")
     args = parser.parse_args()
     config = PPOConfig.from_json(args.config)
@@ -383,6 +558,8 @@ def main() -> None:
         })
     if args.total_timesteps is not None:
         config = PPOConfig.from_dict({**config.to_dict(), "total_timesteps": args.total_timesteps})
+    if args.seed is not None:
+        config = config_for_seed(config, args.seed)
     summary = train_ppo(config, args.output_dir)
     print(json.dumps(summary, indent=2))
 

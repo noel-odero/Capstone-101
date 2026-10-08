@@ -3,7 +3,15 @@ from pathlib import Path
 import pytest
 
 from ml.src.ppo_evaluation import evaluate_ppo
-from ml.src.ppo_training import PPOConfig, load_ppo_model, train_ppo
+from ml.src.ppo_training import (
+    InitialResistanceProfileWrapper,
+    PPOConfig,
+    config_for_seed,
+    load_ppo_model,
+    train_ppo,
+    training_initial_profiles,
+    validation_initial_profiles,
+)
 from simulation.environment import AntibioticEnvironment
 
 
@@ -59,6 +67,10 @@ def test_maskable_ppo_training_checkpoint_evaluation_and_traces(tmp_path: Path):
     )
     assert result["summary"]["treatment_effectiveness_rate"] == 1.0
     assert len(result["episodes"]) == 3
+    assert result["training_config"]["total_timesteps"] == config.total_timesteps
+    assert result["training_summary"]["total_timesteps"] == config.total_timesteps
+    assert result["evaluation_config"]["evaluation_seed"] == config.evaluation_seed
+    assert "total_timesteps" not in result["evaluation_config"]
     assert (evaluation_dir / "evaluation_results.json").exists()
     assert (evaluation_dir / "decision_traces.json").exists()
     assert result["environment_manifest"]["interaction_data_sha256"]
@@ -85,3 +97,46 @@ def test_maskable_ppo_training_checkpoint_evaluation_and_traces(tmp_path: Path):
 def test_ppo_config_rejects_discounting_for_burden_objective():
     with pytest.raises(ValueError, match="requires gamma=1.0"):
         PPOConfig(gamma=0.99)
+
+
+def test_base_seed_assigns_reproducible_independent_random_stream_seeds():
+    first = config_for_seed(smoke_config(), 250)
+    second = config_for_seed(smoke_config(), 250)
+    assert first == second
+    assert (first.ppo_seed, first.environment_seed, first.evaluation_seed) == (250, 251, 252)
+
+    with pytest.raises(ValueError, match="between 0 and"):
+        config_for_seed(smoke_config(), 2**32)
+
+
+def test_training_profile_schedule_covers_all_nonterminal_profiles_reproducibly():
+    config = smoke_config()
+    profiles = training_initial_profiles(config)
+    assert len(profiles) == 127
+    assert len(set(profiles)) == 127
+    assert (1,) * 7 not in profiles
+
+    def sample_cycle(seed):
+        wrapper = InitialResistanceProfileWrapper(
+            AntibioticEnvironment(max_steps=config.horizon),
+            profiles,
+            shuffle_cycles=True,
+        )
+        sampled = []
+        for episode_index in range(len(profiles)):
+            wrapper.reset(seed=seed if episode_index == 0 else None)
+            sampled.append(wrapper.unwrapped.episode.resistance_state.resistance)
+        wrapper.close()
+        return sampled
+
+    first = sample_cycle(411)
+    assert first == sample_cycle(411)
+    assert set(first) == set(profiles)
+
+
+def test_periodic_validation_profiles_are_fixed_stratified_and_nonterminal():
+    profiles = validation_initial_profiles()
+    assert len(profiles) == 16
+    assert len(set(profiles)) == 16
+    assert {sum(profile) for profile in profiles} == set(range(7))
+    assert (1,) * 7 not in profiles

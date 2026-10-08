@@ -32,8 +32,32 @@ def _package_version(package_name: str) -> str:
         return "not-installed"
 
 
-def _default_profiles() -> tuple[ResistanceState, ...]:
+def canonical_initial_profiles() -> tuple[ResistanceState, ...]:
     return tuple(ResistanceState(tuple(profile)) for profile in product((0, 1), repeat=len(ANTIBIOTICS)))
+
+
+def _default_profiles() -> tuple[ResistanceState, ...]:
+    return canonical_initial_profiles()
+
+
+def _checkpoint_training_metadata(model_path: str | Path, config: PPOConfig) -> tuple[dict | None, dict | None]:
+    checkpoint_path = Path(model_path)
+    run_directory = checkpoint_path.parent.parent if checkpoint_path.parent.name == "checkpoints" else checkpoint_path.parent
+    config_path = run_directory / "config.json"
+    summary_path = run_directory / "training_summary.json"
+    if not config_path.exists():
+        return None, None
+    with config_path.open(encoding="utf-8") as config_file:
+        training_config = json.load(config_file)
+    if training_config.get("scenario_id") != config.scenario_id:
+        raise ValueError("Evaluation scenario must match the checkpoint's training scenario.")
+    if training_config.get("horizon") != config.horizon:
+        raise ValueError("Evaluation horizon must match the checkpoint's training horizon.")
+    training_summary = None
+    if summary_path.exists():
+        with summary_path.open(encoding="utf-8") as summary_file:
+            training_summary = json.load(summary_file)
+    return training_config, training_summary
 
 
 def evaluate_ppo(
@@ -55,6 +79,7 @@ def evaluate_ppo(
     if output_dir.exists() and any(output_dir.iterdir()):
         raise FileExistsError(f"Evaluation output directory is not empty: {output_dir}")
     output_dir.mkdir(parents=True, exist_ok=True)
+    training_config, training_summary = _checkpoint_training_metadata(model_path, config)
     environment = make_training_environment(config)
     model = load_ppo_model(model_path, device=config.device)
     if model.action_space != environment.action_space:
@@ -205,7 +230,15 @@ def evaluate_ppo(
     result = {
         "algorithm": "MaskablePPO",
         "model_path": str(model_path),
-        "config": config.to_dict(),
+        "training_config": training_config,
+        "training_summary": training_summary,
+        "evaluation_config": {
+            "scenario_id": config.scenario_id,
+            "horizon": config.horizon,
+            "evaluation_seed": config.evaluation_seed,
+            "initial_resistance_profiles": [list(profile.resistance) for profile in profiles],
+            "deterministic_inference": True,
+        },
         "environment_manifest": environment_manifest(config),
         "software_versions": {
             "python": platform.python_version(),

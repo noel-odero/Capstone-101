@@ -406,6 +406,12 @@ negative normalized post-transition resistance burden, with `gamma=1.0`; see
 `docs/scientific-specification/reward-function.md` for its terminal-state
 convention and scope.
 
+Training cycles reproducibly through all 127 nonterminal binary resistance
+profiles, with a seeded shuffled order for each cycle. Periodic evaluation uses
+a fixed 16-profile stratified validation set covering resistance counts 0
+through 6. The final evaluator can assess all 128 profiles; the all-resistant
+profile is recorded as a zero-action terminal episode.
+
 Run a small CPU smoke test first:
 
 ```powershell
@@ -433,9 +439,112 @@ python -m ml.src.ppo_evaluation `
   --output-dir experiments/results/ppo_baseline_evaluation
 ```
 
+Run the matched PPO-versus-Greedy evaluation using the five configured
+evaluation seed schedules (all 128 profiles for each schedule):
+
+```powershell
+python -m ml.src.matched_policy_evaluation `
+  --model-path experiments/results/ppo_baseline_run/final_model.zip `
+  --config experiments/ppo_baseline_config.json `
+  --output-dir experiments/results/ppo_greedy_matched
+```
+
+For a smaller paired check, add `--evaluation-seeds 800001` to use one seed
+schedule while retaining the same ordered 128 profiles. Outputs include
+`raw_results.csv`, `raw_trajectories.json`, `summary.json`, and the fully
+resolved case/configuration plan.
+
+Audit Gentamicin selection in the saved matched trajectories without retraining
+or changing PPO behavior:
+
+```powershell
+python -m ml.src.gentamicin_audit `
+  --matched-results-dir experiments/results/ppo_greedy_matched_five_seed_final `
+  --ppo-config experiments/ppo_baseline_config.json `
+  --output-dir experiments/results/gentamicin_audit_five_seed
+```
+
+The audit saves masked policy probabilities, feasible one-step alternatives
+replayed with the recorded transition seed, per-state/group tables, representative
+traces, and diagnostic plots. It does not estimate downstream counterfactual
+rollouts or infer biological Gentamicin effects from unsupported transitions.
+
+Generate validated canonical decision traces and reproducibly selected trajectory
+visualizations (use a new or empty output directory):
+
+```powershell
+python -m ml.src.decision_trace_report `
+  --matched-results-dir experiments/results/ppo_greedy_matched_five_seed_final `
+  --config experiments/ppo_baseline_config.json `
+  --output-dir experiments/results/decision_traces_step4
+```
+
+`canonical_decisions.jsonl` preserves one validated decision per line: episode,
+profile, checkpoint/seed, observation, action mask and policy probabilities,
+chosen action, authoritative transition metadata, next state, reward, and remaining
+feasible antibiotics. Saved episodes are replayed in separate environments to
+verify that instrumentation agrees with the original trajectories. The report
+documents representative-selection criteria; the detailed ciprofloxacin
+comparisons remain one-step only, not estimates of full-horizon alternatives.
+
+Compare the fixed checkpoints with the exact deterministic value-iteration
+reference (Step 5), using a new or empty output directory:
+
+```powershell
+python -m ml.src.ppo_vi_benchmark `
+  --matched-results-dir experiments/results/ppo_greedy_matched_five_seed_final `
+  --decision-traces-dir experiments/results/decision_traces_step4_final `
+  --config experiments/ppo_baseline_config.json `
+  --output-dir experiments/results/ppo_vi_reference_step5
+```
+
+The compatibility report distinguishes shared encoding, reward, feasibility,
+horizon, and terminal conventions from the different transition rules. Existing
+PPO checkpoints are evaluated under unchanged deterministic reference transitions;
+their stochastic performance is not compared directly with exact reference values.
+The driver verifies checkpoint hashes, training contracts, and interaction-data
+fingerprints. It records terminal states and missing predecessor histories rather
+than inventing PPO inputs, and treats every exact maximizing Q tie as optimal.
+
+Outputs include complete state/history-context tables, agreement by state and
+treatment step, reference action gaps, Gentamicin comparisons, the saved 446-case
+ciprofloxacin diagnostic, canonical representative traces, and plots.
+`Q*(s, PPO action)` assumes VI continuation after the first action; separately
+reported repeated-PPO reference returns use PPO throughout. The PPO critic is
+labeled as a stochastic-trained state-value estimate, not an exact action value.
+These are conditional computational-reference diagnostics, not biological or
+clinical optimality claims. The benchmark does not retrain or modify either model.
+
+## 10. Transition-selection sensitivity
+
+Compare the existing frozen PPO checkpoints and Greedy baseline under the two
+documented candidate-selection rules. This reuses the five evaluation schedules
+and per-case policy seeds saved by the matched ensemble; all 128 initial
+resistance profiles are evaluated in the same order. Use a new or empty output
+directory:
+
+```powershell
+python -m ml.src.transition_selection_sensitivity `
+  --matched-results-dir experiments/results/ppo_greedy_matched_five_seed_final `
+  --config experiments/ppo_baseline_config.json `
+  --output-dir experiments/results/transition_selection_sensitivity_step7
+```
+
+The conditions are `REF_UNIFORM_SUPPORTED` and
+`REF_DETERMINISTIC_FIRST_SUPPORTED`. Deterministic-first has no transition RNG;
+its transition seed is recorded as not applicable, not synthesized. Outputs
+include matched raw results and trajectories, condition and checkpoint/schedule
+summaries, paired transition and profile effects, unsupported-outcome and
+Gentamicin audits, first-divergence counts, and plots. The analysis does not
+retrain models or change reward, transition, mask, or value-iteration behavior.
+Deterministic-first results are policy transfer to a computational fixture, not
+biological validation. Differences are descriptive; trajectories are not
+treated as independent statistical replicates.
+
 The training directory stores `config.json`, `environment_manifest.json`,
 `final_model.zip`, the best evaluation checkpoint, per-episode training
 metrics, evaluation logs, and diagnostic plots. The evaluation directory stores
+the checkpoint's training configuration separately from evaluation settings,
 machine-readable metrics, reconstructable decision traces, and plots for reward
 burden, final resistance, action counts, resistance trajectories, and a
 resistance-state heatmap.
@@ -448,3 +557,39 @@ artifacts; it does not establish that PPO outperforms another policy or provides
 clinical recommendations. The deterministic value-iteration solution applies
 to a separate deterministic reference environment and is not a direct stochastic
 PPO benchmark.
+
+## 11. Reward/objective sensitivity
+
+Re-score the existing matched `REF_UNIFORM_SUPPORTED` PPO/Greedy trajectories
+under the four Step 8 objective definitions without retraining:
+
+```powershell
+python -m ml.src.reward_objective_sensitivity `
+  --matched-results-dir experiments/results/ppo_greedy_matched_five_seed_final `
+  --output-dir experiments/results/reward_objective_sensitivity_step8_final
+```
+
+Conditions B-D are evaluation-only re-scorings of frozen trajectories; they do
+not test policies trained under those objectives. Unnecessary antibiotic
+exposure is not modeled as an objective.
+
+## 12. Reproducibility package
+
+Generate the Step 9 provenance/integrity package from the current repository
+and canonical results, or verify its hashes without rerunning experiments:
+
+```powershell
+.venv\Scripts\python.exe -m ml.src.reproducibility `
+  --repo-root . `
+  --output-dir experiments/results/reproducibility_step9_final
+
+.venv\Scripts\python.exe -m ml.src.reproducibility `
+  --verify `
+  --repo-root . `
+  --package-dir experiments/results/reproducibility_step9_final
+```
+
+The report distinguishes reproduction with frozen artifacts from a clean
+checkout. It records the working-tree revision state, checkpoint and source
+hashes, scientific configuration fingerprints, seed schedules, and exact CLI
+entry points. A clean-checkout rerun is not claimed unless it has been tested.
