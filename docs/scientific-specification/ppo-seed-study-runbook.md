@@ -65,3 +65,7 @@ Evaluation recovery (only after `evaluate` refuses with an interrupted or failed
 - `1`: batch incomplete. `verify` returns this until both training and evaluation are complete, so it is expected after training and before evaluation.
 - `2`: refused before training, evaluation, or report; study state unchanged
 - `3`: a training run or the evaluation run raised an error. A failed training run leaves a `failed` ledger; the failure is printed to stderr.
+
+## Known limitations
+
+- Unresolved: the exact historical evaluation-code version used for the canonical `ppo_step9a_multiseed` evaluation cannot be verified. The evaluation finished at 2026-10-11 09:16 UTC, and `ml/src/ppo_seed_study.py` was last written later that day, so the exact code state used for that evaluation is not recoverable from the working tree. A temporary rerun with the current code reproduced the canonical outputs (matching SHA-256 for `raw_results.csv`, `summary.json`, `per_initial_profile.csv`, and `statistics.json`). This is evidence of equivalence, not verification of the historical version. This limitation is not resolved, and the canonical results are unchanged by this note.
