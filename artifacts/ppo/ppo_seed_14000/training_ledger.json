@@ -1,0 +1,15 @@
+{
+  "training_seed": 14000,
+  "status": "completed",
+  "total_timesteps": 100000,
+  "run_dir": "C:\\Devtools\\source\\personal\\Capstone-101\\experiments\\results\\ppo_step9a_multiseed\\training\\ppo_seed_14000",
+  "started_utc": "2026-10-11T08:25:12+00:00",
+  "finished_utc": "2026-10-11T08:27:11+00:00",
+  "elapsed_seconds": 119.92908349999925,
+  "error": null,
+  "metadata_sha256": {
+    "config.json": "19120fd79b557d618c7831fba21764b3ed6d52cca4f76a8dc3c90a6d9f6c2be4",
+    "training_summary.json": "cc5ccf8648e1f1507acbb68ad14a5d0d9b8f667bac13bcdd2232d1caa00b1800"
+  },
+  "checkpoint_sha256": "3d3b6a362b31e93783a1e1eb92f2502358cd7971d1aaf41916ad0b698702d14f"
+}
