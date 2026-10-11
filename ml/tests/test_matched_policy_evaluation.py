@@ -2,6 +2,7 @@ import json
 from pathlib import Path
 
 import numpy as np
+import pytest
 
 import ml.src.matched_policy_evaluation as matched
 from ml.src.ppo_training import PPOConfig
@@ -131,7 +132,8 @@ def test_production_profile_order_is_canonical_all_binary_order():
     assert all(len(profile.resistance) == len(ANTIBIOTICS) for profile in profiles)
 
 
-def test_multi_checkpoint_aggregate_preserves_seed_and_profile_results(tmp_path, monkeypatch):
+@pytest.mark.parametrize("shared_schedule", [False, True])
+def test_multi_checkpoint_aggregate_preserves_seed_and_profile_results(tmp_path, monkeypatch, shared_schedule):
     config = PPOConfig(
         **{
             **matched_config().to_dict(),
@@ -147,9 +149,11 @@ def test_multi_checkpoint_aggregate_preserves_seed_and_profile_results(tmp_path,
             json.dumps({"ppo_seed": seed, "scenario_id": config.scenario_id, "horizon": config.horizon}),
             encoding="utf-8",
         )
+        (model_directory / "training_summary.json").write_text(json.dumps({"total_timesteps": 100096}), encoding="utf-8")
+        (model_directory / "final_model.zip").write_bytes(f"placeholder checkpoint {seed}".encode("utf-8"))
         model_paths.append(model_directory / "final_model.zip")
 
-    def fake_matched_run(model_path, run_config, output_dir, *, evaluation_seed_bases, policy_seed_start=None, initial_profiles=None):
+    def fake_matched_run(model_path, run_config, output_dir, *, evaluation_seed_bases, policy_seed_start=None, initial_profiles=None, checkpoint_bytes=None):
         profiles = matched.canonical_initial_profiles()
         base = evaluation_seed_bases[0]
         training_seed = int(Path(model_path).parent.name.split("_")[-1])
@@ -200,6 +204,7 @@ def test_multi_checkpoint_aggregate_preserves_seed_and_profile_results(tmp_path,
         model_paths,
         config,
         tmp_path / "ensemble",
+        shared_evaluation_schedule=shared_schedule,
     )
     assert result["summary"]["training_seed_count"] == 2
     assert result["summary"]["matched_case_count"] == 256
@@ -209,3 +214,198 @@ def test_multi_checkpoint_aggregate_preserves_seed_and_profile_results(tmp_path,
     assert (tmp_path / "ensemble" / "per_initial_profile.csv").exists()
     assert (tmp_path / "ensemble" / "report.md").exists()
     assert len(result["plots"]) == 3
+
+
+class _StopAfterCapture(Exception):
+    pass
+
+
+def test_ensemble_evaluates_the_bytes_it_hashed_even_if_the_file_is_replaced(tmp_path, monkeypatch):
+    config = matched_config()
+    model_paths = []
+    originals = {}
+    for seed in (1000, 2000):
+        model_directory = tmp_path / f"model_{seed}"
+        model_directory.mkdir()
+        (model_directory / "config.json").write_text(
+            json.dumps({"ppo_seed": seed, "scenario_id": config.scenario_id, "horizon": config.horizon}),
+            encoding="utf-8",
+        )
+        (model_directory / "training_summary.json").write_text(json.dumps({"total_timesteps": 100096}), encoding="utf-8")
+        (model_directory / "final_model.zip").write_bytes(f"original checkpoint {seed}".encode("utf-8"))
+        model_paths.append(model_directory / "final_model.zip")
+        originals[str(model_paths[-1])] = f"original checkpoint {seed}".encode("utf-8")
+    received = {}
+
+    def replacing_run(model_path, run_config, output_dir, *, evaluation_seed_bases, policy_seed_start=None, initial_profiles=None, checkpoint_bytes=None):
+        received[str(model_path)] = checkpoint_bytes
+        Path(model_path).write_bytes(b"replaced checkpoint")
+        if len(received) == len(model_paths):
+            raise _StopAfterCapture
+        return {"config": {}, "summary": {}, "raw_results": []}
+
+    monkeypatch.setattr(matched, "run_matched_policy_evaluation", replacing_run)
+    with pytest.raises(_StopAfterCapture):
+        matched.run_matched_ppo_seed_ensemble(model_paths, config, tmp_path / "ensemble")
+    assert received == originals
+
+
+def test_ensemble_refuses_checkpoint_without_training_summary(tmp_path, monkeypatch):
+    config = matched_config()
+    model_paths = []
+    for seed in (1000, 2000):
+        model_directory = tmp_path / f"model_{seed}"
+        model_directory.mkdir()
+        (model_directory / "config.json").write_text(
+            json.dumps({"ppo_seed": seed, "scenario_id": config.scenario_id, "horizon": config.horizon}),
+            encoding="utf-8",
+        )
+        (model_directory / "final_model.zip").write_bytes(f"placeholder checkpoint {seed}".encode("utf-8"))
+        model_paths.append(model_directory / "final_model.zip")
+    calls = []
+    monkeypatch.setattr(matched, "run_matched_policy_evaluation", lambda *args, **kwargs: calls.append(args))
+    with pytest.raises(FileNotFoundError, match="training metadata is missing"):
+        matched.run_matched_ppo_seed_ensemble(model_paths, config, tmp_path / "ensemble")
+    assert calls == []
+
+
+def _write_checkpoint_directories(tmp_path: Path, config: PPOConfig) -> list[Path]:
+    model_paths = []
+    for seed in (1000, 2000):
+        model_directory = tmp_path / f"model_{seed}"
+        model_directory.mkdir()
+        (model_directory / "config.json").write_text(
+            json.dumps({"ppo_seed": seed, "scenario_id": config.scenario_id, "horizon": config.horizon}),
+            encoding="utf-8",
+        )
+        (model_directory / "training_summary.json").write_text(json.dumps({"total_timesteps": 100096}), encoding="utf-8")
+        (model_directory / "final_model.zip").write_bytes(f"placeholder checkpoint {seed}".encode("utf-8"))
+        model_paths.append(model_directory / "final_model.zip")
+    return model_paths
+
+
+def _verified_inputs(model_paths: list[Path]) -> list[dict]:
+    verified = []
+    for path in model_paths:
+        directory = path.parent
+        verified.append(
+            {
+                "training_seed": json.loads((directory / "config.json").read_text(encoding="utf-8"))["ppo_seed"],
+                "checkpoint_sha256": matched._sha256_bytes(path.read_bytes()),
+                "metadata_sha256": {
+                    name: matched._sha256_bytes((directory / name).read_bytes()) for name in matched.METADATA_FILES
+                },
+            }
+        )
+    return verified
+
+
+@pytest.mark.parametrize("field", ["training_seed", "checkpoint_sha256", "metadata_sha256"])
+def test_ensemble_refuses_expected_input_mismatch_before_creating_output(tmp_path, monkeypatch, field):
+    config = matched_config()
+    model_paths = _write_checkpoint_directories(tmp_path, config)
+    expected = _verified_inputs(model_paths)
+    if field == "training_seed":
+        expected[1]["training_seed"] = 2001
+    elif field == "checkpoint_sha256":
+        expected[1]["checkpoint_sha256"] = "0" * 64
+    else:
+        expected[1]["metadata_sha256"]["config.json"] = "0" * 64
+    calls = []
+    monkeypatch.setattr(matched, "run_matched_policy_evaluation", lambda *args, **kwargs: calls.append(args))
+    with pytest.raises(ValueError, match="Nothing was evaluated"):
+        matched.run_matched_ppo_seed_ensemble(
+            model_paths,
+            config,
+            tmp_path / "ensemble",
+            expected_inputs=expected,
+        )
+    assert calls == []
+    assert not (tmp_path / "ensemble").exists()
+
+
+def test_ensemble_refuses_expected_input_count_mismatch(tmp_path, monkeypatch):
+    config = matched_config()
+    model_paths = _write_checkpoint_directories(tmp_path, config)
+    calls = []
+    monkeypatch.setattr(matched, "run_matched_policy_evaluation", lambda *args, **kwargs: calls.append(args))
+    with pytest.raises(ValueError, match="Nothing was evaluated"):
+        matched.run_matched_ppo_seed_ensemble(
+            model_paths,
+            config,
+            tmp_path / "ensemble",
+            expected_inputs=_verified_inputs(model_paths)[:1],
+        )
+    assert calls == []
+    assert not (tmp_path / "ensemble").exists()
+
+
+def test_checkpoint_bytes_evaluate_the_same_policy_as_the_path(tmp_path):
+    config = matched_config()
+    environment = matched.make_training_environment(config)
+    model = matched.MaskablePPO("MlpPolicy", environment, n_steps=16, batch_size=8, n_epochs=1, device="cpu", seed=0)
+    checkpoint = tmp_path / "final_model.zip"
+    model.save(str(checkpoint))
+    environment.close()
+    profiles = [(0,) * 7, (1,) * 7]
+    by_path = matched.run_matched_policy_evaluation(checkpoint, config, tmp_path / "by_path", initial_profiles=profiles)
+    by_bytes = matched.run_matched_policy_evaluation(
+        checkpoint,
+        config,
+        tmp_path / "by_bytes",
+        initial_profiles=profiles,
+        checkpoint_bytes=checkpoint.read_bytes(),
+    )
+    assert by_path["raw_results"] == by_bytes["raw_results"]
+
+
+class _StopAfterScheduling(Exception):
+    pass
+
+
+def _schedule_calls(tmp_path: Path, monkeypatch, *, shared: bool) -> list[tuple[int, tuple[int, ...], int]]:
+    config = matched_config()
+    model_paths = []
+    for seed in (1000, 2000, 3000):
+        model_directory = tmp_path / f"model_{seed}"
+        model_directory.mkdir()
+        (model_directory / "config.json").write_text(
+            json.dumps({"ppo_seed": seed, "scenario_id": config.scenario_id, "horizon": config.horizon}),
+            encoding="utf-8",
+        )
+        (model_directory / "training_summary.json").write_text(json.dumps({"total_timesteps": 100096}), encoding="utf-8")
+        (model_directory / "final_model.zip").write_bytes(f"placeholder checkpoint {seed}".encode("utf-8"))
+        model_paths.append(model_directory / "final_model.zip")
+    calls = []
+
+    def record_schedule(model_path, run_config, output_dir, *, evaluation_seed_bases, policy_seed_start=None, initial_profiles=None, checkpoint_bytes=None):
+        calls.append((int(Path(model_path).parent.name.split("_")[-1]), tuple(evaluation_seed_bases), policy_seed_start))
+        if len(calls) == len(model_paths):
+            raise _StopAfterScheduling
+        return {"config": {"reward_configuration": {}}, "summary": {}, "raw_results": []}
+
+    monkeypatch.setattr(matched, "run_matched_policy_evaluation", record_schedule)
+    with pytest.raises(_StopAfterScheduling):
+        matched.run_matched_ppo_seed_ensemble(
+            model_paths, config, tmp_path / f"ensemble_{shared}", shared_evaluation_schedule=shared,
+        )
+    return calls
+
+
+def test_shared_schedule_gives_every_checkpoint_identical_seed_blocks(tmp_path, monkeypatch):
+    config = matched_config()
+    calls = _schedule_calls(tmp_path, monkeypatch, shared=True)
+    assert [seed for seed, _, _ in calls] == [1000, 2000, 3000]
+    assert {bases for _, bases, _ in calls} == {tuple(config.matched_evaluation_seed_bases)}
+    assert {start for _, _, start in calls} == {config.matched_policy_seed_start}
+
+
+def test_positional_schedule_shifts_seed_blocks_per_checkpoint(tmp_path, monkeypatch):
+    config = matched_config()
+    calls = _schedule_calls(tmp_path, monkeypatch, shared=False)
+    assert calls[0][1] == tuple(config.matched_evaluation_seed_bases)
+    assert len({bases for _, bases, _ in calls}) == 3
+    policy_stride = len(config.matched_evaluation_seed_bases) * len(matched.canonical_initial_profiles()) + 1
+    assert [start for _, _, start in calls] == [
+        config.matched_policy_seed_start + index * policy_stride for index in range(3)
+    ]

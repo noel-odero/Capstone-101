@@ -1,8 +1,11 @@
 from __future__ import annotations
 
 import argparse
+from collections.abc import Mapping
 import csv
-from dataclasses import asdict
+from dataclasses import asdict, dataclass
+import hashlib
+import io
 import json
 from pathlib import Path
 from statistics import mean, stdev
@@ -20,6 +23,12 @@ from ml.src.statistical_comparison import match_run_pairs, paired_bootstrap_inte
 from simulation.environment import AntibioticEnvironment
 from simulation.resistance_state import ANTIBIOTICS, ResistanceState
 from ml.src.greedy_policy import GreedyPolicy
+
+# Cumulative-burden differences are multiples of 1/(7 x 640), about 2.2e-4, when nonzero, because the
+# reward is -resistant_count * charged_steps / 7 and each seed averages 640 rows. Analytic float64 error
+# is about 2e-14. 1e-12 lies between these scales, so a difference inside it is numerical noise, not a
+# policy outcome. This argument covers cumulative_resistance_burden only; secondary ratio metrics lack it.
+BURDEN_TIE_TOLERANCE = 1e-12
 
 
 class MaskablePPOObservationPolicy:
@@ -59,6 +68,10 @@ def _episode_burden(episode) -> float:
     return -episode.cumulative_reward
 
 
+def _sha256_bytes(data: bytes) -> str:
+    return hashlib.sha256(data).hexdigest()
+
+
 def _paired_difference(greedy: float | None, ppo: float | None) -> float | None:
     if greedy is None or ppo is None:
         return None
@@ -69,18 +82,70 @@ def _episode_record(episode) -> dict[str, Any]:
     return asdict(episode)
 
 
-def _training_config_for_checkpoint(model_path: Path, config: PPOConfig) -> dict[str, Any]:
+# Checkpoint metadata files; their bytes are hashed and bound into the ensemble record.
+METADATA_FILES = ("config.json", "training_summary.json")
+
+
+@dataclass(frozen=True)
+class _CheckpointInputs:
+    """One checkpoint and its training metadata, each read exactly once.
+
+    The bytes held here are the only bytes the evaluation consumes, and the hashes are computed from them.
+    """
+
+    model_path: Path
+    training_config: dict[str, Any]
+    metadata_sha256: dict[str, str]
+    checkpoint_bytes: bytes
+    checkpoint_sha256: str
+
+
+def _read_checkpoint_inputs(model_path: Path, config: PPOConfig) -> _CheckpointInputs:
+    """Read the checkpoint and its training metadata once each and parse the metadata from those same bytes."""
     run_directory = model_path.parent.parent if model_path.parent.name == "checkpoints" else model_path.parent
-    config_path = run_directory / "config.json"
-    if not config_path.exists():
-        raise FileNotFoundError(f"Checkpoint training config is missing: {config_path}")
-    with config_path.open(encoding="utf-8") as config_file:
-        training_config = json.load(config_file)
+    metadata_bytes: dict[str, bytes] = {}
+    for name in METADATA_FILES:
+        path = run_directory / name
+        if not path.is_file():
+            raise FileNotFoundError(f"Checkpoint training metadata is missing: {path}")
+        metadata_bytes[name] = path.read_bytes()
+    training_config = json.loads(metadata_bytes["config.json"].decode("utf-8"))
+    training_summary = json.loads(metadata_bytes["training_summary.json"].decode("utf-8"))
+    if not isinstance(training_config, dict) or not isinstance(training_summary, dict):
+        raise ValueError(f"Checkpoint training metadata is not a JSON object: {run_directory}")
     if training_config.get("scenario_id") != config.scenario_id:
         raise ValueError("Checkpoint training scenario does not match matched evaluation.")
     if training_config.get("horizon") != config.horizon:
         raise ValueError("Checkpoint training horizon does not match matched evaluation.")
-    return training_config
+    checkpoint_bytes = model_path.read_bytes()
+    return _CheckpointInputs(
+        model_path=model_path,
+        training_config=training_config,
+        metadata_sha256={name: _sha256_bytes(data) for name, data in metadata_bytes.items()},
+        checkpoint_bytes=checkpoint_bytes,
+        checkpoint_sha256=_sha256_bytes(checkpoint_bytes),
+    )
+
+
+def _check_expected_inputs(inputs: Sequence[_CheckpointInputs], expected: Sequence[Mapping[str, Any]]) -> None:
+    """Refuse unless every checkpoint and its metadata bytes match the caller's verified values, in order."""
+    if len(expected) != len(inputs):
+        raise ValueError("Verified input count differs from the checkpoint count. Nothing was evaluated.")
+    for loaded, verified in zip(inputs, expected):
+        training_seed = loaded.training_config.get("ppo_seed")
+        if training_seed != verified["training_seed"]:
+            raise ValueError(
+                f"Checkpoint {loaded.model_path} is PPO seed {training_seed}; verified seed is "
+                f"{verified['training_seed']}. Nothing was evaluated."
+            )
+        if loaded.checkpoint_sha256 != verified["checkpoint_sha256"]:
+            raise ValueError(
+                f"Checkpoint bytes for seed {training_seed} differ from the verified hash. Nothing was evaluated."
+            )
+        if loaded.metadata_sha256 != verified["metadata_sha256"]:
+            raise ValueError(
+                f"Training metadata bytes for seed {training_seed} differ from the verified hashes. Nothing was evaluated."
+            )
 
 
 def _paired_rows(ppo_result: MultiSeedResult, greedy_result: MultiSeedResult) -> tuple[list[dict], list[dict]]:
@@ -341,7 +406,15 @@ def run_matched_ppo_seed_ensemble(
     output_dir: str | Path,
     *,
     evaluation_seed_bases: Sequence[int] | None = None,
+    shared_evaluation_schedule: bool = False,
+    expected_inputs: Sequence[Mapping[str, Any]] | None = None,
 ) -> dict[str, Any]:
+    """Evaluate several PPO checkpoints against the same greedy baseline.
+
+    ``expected_inputs`` optionally gives, per checkpoint and in the same order, the verified ``training_seed``,
+    ``checkpoint_sha256``, and ``metadata_sha256``. When given, every byte read is compared to these values before
+    any output is written; a mismatch raises ``ValueError`` and nothing is evaluated.
+    """
     config.__post_init__()
     model_paths = tuple(Path(path) for path in model_paths)
     if len(model_paths) < 2:
@@ -353,9 +426,14 @@ def run_matched_ppo_seed_ensemble(
     profile_count = len(profiles)
     seed_stride = max(seed_template) - min(seed_template) + profile_count + 1
     policy_stride = len(seed_template) * profile_count + 1
+    evaluation_protocol = "shared_schedule" if shared_evaluation_schedule else "positional_schedule"
     output_dir = Path(output_dir)
     if output_dir.exists() and any(output_dir.iterdir()):
         raise FileExistsError(f"Matched ensemble output directory is not empty: {output_dir}")
+    # Every checkpoint and its metadata are read before any output exists; the evaluation consumes these bytes only.
+    inputs = [_read_checkpoint_inputs(model_path, config) for model_path in model_paths]
+    if expected_inputs is not None:
+        _check_expected_inputs(inputs, expected_inputs)
     output_dir.mkdir(parents=True, exist_ok=True)
     model_output_dir = output_dir / "models"
     model_output_dir.mkdir()
@@ -365,25 +443,38 @@ def run_matched_ppo_seed_ensemble(
     model_summaries = {}
     model_configs = {}
     schedule_by_training_seed = {}
-    for model_index, model_path in enumerate(model_paths):
-        training_config = _training_config_for_checkpoint(model_path, config)
+    policy_seed_start_by_training_seed = {}
+    checkpoint_sha256_by_training_seed = {}
+    metadata_sha256_by_training_seed = {}
+    for model_index, loaded in enumerate(inputs):
+        model_path = loaded.model_path
+        training_config = loaded.training_config
+        metadata_hashes = loaded.metadata_sha256
         if "ppo_seed" not in training_config:
             raise ValueError(f"Checkpoint has no saved PPO seed metadata: {model_path}")
         training_seed = int(training_config["ppo_seed"])
         if training_seed in training_seeds:
             raise ValueError(f"Duplicate PPO training seed: {training_seed}")
         training_seeds.append(training_seed)
-        shifted_seed_bases = tuple(seed + model_index * seed_stride for seed in seed_template)
-        policy_seed_start = config.matched_policy_seed_start + model_index * policy_stride
-        schedule_by_training_seed[str(training_seed)] = list(shifted_seed_bases)
+        if shared_evaluation_schedule:
+            model_seed_bases = seed_template
+            policy_seed_start = config.matched_policy_seed_start
+        else:
+            model_seed_bases = tuple(seed + model_index * seed_stride for seed in seed_template)
+            policy_seed_start = config.matched_policy_seed_start + model_index * policy_stride
+        schedule_by_training_seed[str(training_seed)] = list(model_seed_bases)
+        policy_seed_start_by_training_seed[str(training_seed)] = policy_seed_start
         model_dir = model_output_dir / f"ppo_seed_{training_seed}"
         result = run_matched_policy_evaluation(
             model_path,
             config,
             model_dir,
-            evaluation_seed_bases=shifted_seed_bases,
+            evaluation_seed_bases=model_seed_bases,
             policy_seed_start=policy_seed_start,
+            checkpoint_bytes=loaded.checkpoint_bytes,
         )
+        checkpoint_sha256_by_training_seed[str(training_seed)] = loaded.checkpoint_sha256
+        metadata_sha256_by_training_seed[str(training_seed)] = metadata_hashes
         model_configs[str(training_seed)] = result["config"]
         rows = []
         for source_row in result["raw_results"]:
@@ -392,8 +483,8 @@ def run_matched_ppo_seed_ensemble(
             all_rows.append(row)
         model_summaries[str(training_seed)] = result["summary"]
 
-    if len({row["case_id"] for row in all_rows}) != len(all_rows):
-        raise ValueError("Combined ensemble case IDs are not unique.")
+    if len({(row["ppo_training_seed"], row["case_id"]) for row in all_rows}) != len(all_rows):
+        raise ValueError("Combined ensemble case IDs are not unique within a training seed.")
 
     metrics_by_seed: dict[int, dict[str, dict[str, float | None]]] = {}
     for training_seed in training_seeds:
@@ -432,12 +523,12 @@ def run_matched_ppo_seed_ensemble(
             "ppo_mean_emergence_rate": _mean([row["ppo_resistance_emergence_rate"] for row in rows]),
             "greedy_mean_emergence_rate": _mean([row["greedy_resistance_emergence_rate"] for row in rows]),
             "greedy_minus_ppo_emergence_rate": _mean([row["greedy_minus_ppo_resistance_emergence_rate"] for row in rows]),
-            "ppo_lower_burden_case_count": sum(row["greedy_minus_ppo_burden"] > 1e-12 for row in rows),
-            "equal_burden_case_count": sum(abs(row["greedy_minus_ppo_burden"]) <= 1e-12 for row in rows),
-            "greedy_lower_burden_case_count": sum(row["greedy_minus_ppo_burden"] < -1e-12 for row in rows),
+            "ppo_lower_burden_case_count": sum(row["greedy_minus_ppo_burden"] > BURDEN_TIE_TOLERANCE for row in rows),
+            "equal_burden_case_count": sum(abs(row["greedy_minus_ppo_burden"]) <= BURDEN_TIE_TOLERANCE for row in rows),
+            "greedy_lower_burden_case_count": sum(row["greedy_minus_ppo_burden"] < -BURDEN_TIE_TOLERANCE for row in rows),
             "mean_burden_direction": (
-                "PPO lower" if difference > 1e-12
-                else "Greedy lower" if difference < -1e-12
+                "PPO lower" if difference > BURDEN_TIE_TOLERANCE
+                else "Greedy lower" if difference < -BURDEN_TIE_TOLERANCE
                 else "tied within numerical tolerance"
             ),
         })
@@ -451,6 +542,7 @@ def run_matched_ppo_seed_ensemble(
     summary = {
         "training_seed_count": len(training_seeds),
         "training_seeds": training_seeds,
+        "evaluation_protocol": evaluation_protocol,
         "evaluation_seed_bases_per_training_seed": len(seed_template),
         "initial_profile_count": len(profiles),
         "matched_case_count": len(all_rows),
@@ -470,7 +562,11 @@ def run_matched_ppo_seed_ensemble(
         "horizon": config.horizon,
         "initial_profiles": [list(profile.resistance) for profile in profiles],
         "initial_profile_order": "canonical itertools.product((0, 1), repeat=7); unchanged across all policies and seeds",
+        "evaluation_protocol": evaluation_protocol,
         "evaluation_seed_bases_by_training_seed": schedule_by_training_seed,
+        "policy_seed_start_by_training_seed": policy_seed_start_by_training_seed,
+        "checkpoint_sha256_by_training_seed": checkpoint_sha256_by_training_seed,
+        "metadata_sha256_by_training_seed": metadata_sha256_by_training_seed,
         "case_seed_mapping": "case environment seed = evaluation_seed_base + profile_index",
         "training_models": [str(path) for path in model_paths],
         "reward_configuration": first_model_config["reward_configuration"],
@@ -572,7 +668,9 @@ def run_matched_policy_evaluation(
     initial_profiles: Sequence[ResistanceState | Sequence[int]] | None = None,
     evaluation_seed_bases: Sequence[int] | None = None,
     policy_seed_start: int | None = None,
+    checkpoint_bytes: bytes | None = None,
 ) -> dict[str, Any]:
+    """Evaluate one checkpoint. If checkpoint_bytes is given, the model is loaded from those bytes, not from model_path."""
     config.__post_init__()
     profiles = canonical_initial_profiles() if initial_profiles is None else tuple(
         state if isinstance(state, ResistanceState) else ResistanceState(tuple(state))
@@ -600,7 +698,10 @@ def run_matched_policy_evaluation(
         raise FileExistsError(f"Matched evaluation output directory is not empty: {output_dir}")
     output_dir.mkdir(parents=True, exist_ok=True)
 
-    model = load_ppo_model(model_path, device=config.device)
+    if checkpoint_bytes is None:
+        model = load_ppo_model(model_path, device=config.device)
+    else:
+        model = MaskablePPO.load(io.BytesIO(checkpoint_bytes), device=config.device)
     ppo_policy_factory = lambda action_space, seed: MaskablePPOObservationPolicy(action_space, model, seed)
     greedy_policy_factory = GreedyPolicy
     seed_pairs = tuple(
