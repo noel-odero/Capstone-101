@@ -79,11 +79,11 @@ No unsupported case silently switches to a different hypothesis test.
 
 ## Predeclared Testing Family
 
-`compare_strategies(evaluations, contrasts, family_id=..., config=...)` accepts
-explicit ordered strategy contrasts and creates exactly four tests per contrast.
-Duplicate/reversed contrasts are rejected. Every contrast belongs to one scenario
-and matching configuration. No sensitivity/reference pooling or joint claims
-across scenarios are made. Such claims require an explicitly expanded future family.
+`compare_strategies` and its report object were removed because nothing called them.
+Predeclaration rules (one contrast by four metrics, one scenario and configuration,
+no duplicate or reversed contrasts) are no longer enforced by code. No sensitivity/
+reference pooling or joint claims across scenarios are made. Such claims require an
+explicitly expanded future family.
 
 `adjust_holm()` applies Holm step-down across the entire planned contrast-by-four-
 metric family. Untestable hypotheses retain their family slots conservatively as
@@ -96,16 +96,10 @@ effectiveness, or biological validation.
 
 ## Reproducibility and Output
 
-Reports preserve original evaluations, paired values, missingness, scenario,
-configuration/input SHA-256 hashes, policy labels and class identities, ordered
-contrasts, family size, all settings, and Python/NumPy/SciPy plus comparison-contract
-versions. Pair order is canonical by seed design. Separate RNG streams for bootstrap
-and permutation use reported seeds derived from the base seeds and a SHA-256 digest
-of family ID, contrast, and metric. Unrelated contrast ordering does not change
-these streams. Repeating inputs/settings with the same numerical environment
-reproduces results. Preserve the source revision externally along with the report;
-the contract version is not a git commit identifier. `to_dict()` exports detached
-JSON-compatible results. Inputs and previous cards are not modified.
+The report object and its `to_dict()` export were removed with `compare_strategies`.
+The seed derivation from a SHA-256 digest of family ID, contrast, and metric, and the
+configuration/input hashing, no longer have code behind them. Pair order is canonical
+by seed design. Inputs and previous cards are not modified.
 
 This card adds no VI adapter, baseline report, PPO training, or later-card work.
 Available inputs may have too few runs for inference; they produce explicitly

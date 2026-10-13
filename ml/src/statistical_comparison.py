@@ -1,13 +1,9 @@
-from collections.abc import Mapping, Sequence
-from dataclasses import asdict, dataclass
-import hashlib
-import json
+from collections.abc import Sequence
+from dataclasses import dataclass
 import math
 from numbers import Real
-import platform
 
 import numpy as np
-import scipy
 from scipy.stats import PermutationMethod, skew, wilcoxon
 
 from ml.src.metrics import calculate_metrics
@@ -113,31 +109,6 @@ class PairedMetricComparison:
     pair_records: tuple[dict, ...]
     bootstrap_seed: int
     permutation_seed: int
-
-
-@dataclass(frozen=True)
-class StatisticalComparisonReport:
-    scenario_id: str
-    family_id: str
-    contrasts: tuple[tuple[str, str], ...]
-    family_size: int
-    config: ComparisonConfig
-    configuration_sha256: str
-    input_sha256: dict[str, str]
-    software_versions: dict[str, str]
-    comparisons: tuple[PairedMetricComparison, ...]
-    matching: dict[str, dict]
-    evaluations: dict[str, MultiSeedResult]
-
-    def to_dict(self) -> dict:
-        result = asdict(self)
-        result["evaluations"] = {name: value.to_dict() for name, value in self.evaluations.items()}
-        return result
-
-
-def _fingerprint(value: object) -> str:
-    payload = json.dumps(value, sort_keys=True, separators=(",", ":"), allow_nan=False)
-    return hashlib.sha256(payload.encode("utf-8")).hexdigest()
 
 
 def _index_runs(result: MultiSeedResult) -> dict[tuple[int, int], SeedRunResult]:
@@ -373,63 +344,3 @@ def adjust_holm(p_values: Sequence[float | None]) -> tuple[float | None, ...]:
         if value is not None:
             adjusted[index] = previous
     return tuple(adjusted)
-
-
-def compare_strategies(
-    evaluations: Mapping[str, MultiSeedResult],
-    contrasts: Sequence[tuple[str, str]],
-    *, family_id: str, config: ComparisonConfig = ComparisonConfig(),
-) -> StatisticalComparisonReport:
-    """One explicit family of contrasts times four metrics within one scenario."""
-    from dataclasses import replace
-
-    if not family_id or not isinstance(family_id, str):
-        raise ValueError("A nonempty predeclared family_id is required.")
-    if not contrasts:
-        raise ValueError("Predeclare at least one strategy contrast.")
-    comparisons = []
-    matching = {}
-    planned = []
-    used = {}
-    for contrast in contrasts:
-        if not isinstance(contrast, (tuple, list)) or len(contrast) != 2:
-            raise ValueError("Contrasts must be strategy-name pairs.")
-        name_a, name_b = contrast
-        if name_a == name_b or name_a not in evaluations or name_b not in evaluations:
-            raise ValueError("Contrasts must name two distinct supplied strategies.")
-        if any(set(contrast) == set(previous) for previous in planned):
-            raise ValueError("Duplicate or reversed contrasts are not separate hypotheses.")
-        paired = match_run_pairs(evaluations[name_a], evaluations[name_b], allow_missing=config.allow_missing_pairs)
-        if used and evaluations[name_a].environment_configuration != next(iter(used.values())).environment_configuration:
-            raise ValueError("All family contrasts must use the same scenario and configuration.")
-        used[name_a] = evaluations[name_a]
-        used[name_b] = evaluations[name_b]
-        planned.append((name_a, name_b))
-        matching[str(len(planned) - 1)] = {
-            "strategy_a": name_a, "strategy_b": name_b,
-            "unmatched_a": paired.unmatched_a, "unmatched_b": paired.unmatched_b,
-        }
-        for metric in PRIMARY_METRICS:
-            identity = json.dumps([family_id, name_a, name_b, metric], separators=(",", ":"))
-            offset = int.from_bytes(hashlib.sha256(identity.encode()).digest()[:8], "big")
-            per_metric_config = replace(
-                config, bootstrap_seed=config.bootstrap_seed + offset,
-                permutation_seed=config.permutation_seed + offset,
-            )
-            comparisons.append(compare_paired_metric(
-                paired, metric, strategy_a=name_a, strategy_b=name_b, config=per_metric_config,
-            ))
-    adjusted = adjust_holm(tuple(result.raw_p_value for result in comparisons))
-    comparisons = tuple(
-        replace(result, adjusted_p_value=p_value, reject_null=None if p_value is None else p_value <= config.alpha)
-        for result, p_value in zip(comparisons, adjusted)
-    )
-    first = next(iter(used.values()))
-    return StatisticalComparisonReport(
-        first.runs[0].metrics.scenario_id, family_id, tuple(planned), len(comparisons), config,
-        _fingerprint(first.environment_configuration),
-        {name: _fingerprint(value.to_dict()) for name, value in used.items()},
-        {"python": platform.python_version(), "numpy": np.__version__, "scipy": scipy.__version__,
-         "comparison_contract": "card_4_9_v1"},
-        comparisons, matching, dict(used),
-    )
