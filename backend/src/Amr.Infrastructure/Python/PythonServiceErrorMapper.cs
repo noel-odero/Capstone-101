@@ -33,8 +33,7 @@ public sealed partial class PythonServiceErrorMapper(ILogger<PythonServiceErrorM
                 or PythonErrorCodes.ModelContractMismatch
                 or PythonErrorCodes.ModelOrDataUnavailable => new AmrException(
                 ErrorCategory.DependencyUnavailable, ErrorCodes.ModelUnavailable, "The frozen model is not available."),
-            PythonErrorCodes.ComparisonContractViolation => new AmrException(
-                ErrorCategory.Internal, ErrorCodes.ComparisonContractViolation, "The paired runs did not satisfy the comparison contract; no result was produced."),
+            PythonErrorCodes.ComparisonContractViolation => ComparisonErrors.ContractViolation(),
             _ when (int)status >= 500 => new AmrException(
                 ErrorCategory.Internal, ErrorCodes.InternalError, "The scientific service failed to complete the request."),
             _ => InvalidResponse(innerException: null),
@@ -47,8 +46,7 @@ public sealed partial class PythonServiceErrorMapper(ILogger<PythonServiceErrorM
     public static AmrException Unavailable(Exception? innerException) => new(
         ErrorCategory.DependencyUnavailable, ErrorCodes.PythonServiceUnavailable, "The scientific service is unavailable.", innerException);
 
-    public static AmrException InvalidResponse(Exception? innerException) => new(
-        ErrorCategory.UpstreamFailure, ErrorCodes.PythonServiceInvalidResponse, "The scientific service returned an unexpected response.", innerException);
+    public static AmrException InvalidResponse(Exception? innerException) => UpstreamErrors.InvalidResponse(innerException);
 
     private static PythonErrorEnvelope? TryReadEnvelope(string body)
     {

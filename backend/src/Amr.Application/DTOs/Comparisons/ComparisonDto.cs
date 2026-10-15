@@ -35,11 +35,14 @@ public sealed record ComparisonContractDto(
     bool TransitionOutcomesGuaranteedIdentical,
     ObservedDivergenceDto Observed);
 
+/// <param name="Id">The scientific service's run id. Until persistence exists it identifies this execution only and cannot be retrieved.</param>
+/// <param name="IsPersisted">False when the run is not stored, so GET by id does not work for it.</param>
 /// <param name="Ppo">Null when the comparison failed.</param>
 /// <param name="Baseline">The Random Susceptible Baseline; null when the comparison failed.</param>
 public sealed record ComparisonDto(
     Guid Id,
     RunStatus Status,
+    bool IsPersisted,
     DateTimeOffset CreatedAtUtc,
     ModelProvenanceDto Provenance,
     SeedConfigurationDto SeedConfiguration,

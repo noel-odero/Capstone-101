@@ -2,6 +2,38 @@
 
 Decisions that are easy to get wrong. Code comments on the DTOs and interfaces carry the same statements.
 
+## Endpoint status (Stage C)
+
+Stage C delivers the request-to-Python path. There is no storage yet: nothing is kept in memory either, so a result that
+was just returned cannot be fetched again. That is deliberate; durable storage and retrieval are Stage D.
+
+| Route | Status | Behavior |
+|---|---|---|
+| `GET /api/v1/health` | Working | 200 when `pythonService` and `model` are healthy, otherwise 503 with the same report body |
+| `GET /api/v1/health/live` | Working | 200 while the process answers; touches no dependency |
+| `GET /api/v1/model` | Working | Frozen-model metadata from Python |
+| `GET /api/v1/antibiotics` | Working | Seven-drug catalogue in action order |
+| `POST /api/v1/profiles/validate` | Working | 200 for any valid profile, including terminal all-resistant |
+| `POST /api/v1/simulations` | Working | Runs `ppo` or `random_susceptible_baseline` in Python; 200, `isPersisted: false` |
+| `POST /api/v1/comparisons` | Working | Runs the paired comparison in Python; 200, `isPersisted: false`, contract verified or 500 |
+| `GET /api/v1/simulations/{id}` | 501 `persistence_not_available` | Needs stored runs (Stage D) |
+| `GET /api/v1/comparisons/{id}` | 501 `persistence_not_available` | Needs stored runs (Stage D) |
+| `GET /api/v1/recommendations/{simulationId}` | 501 `persistence_not_available` | Needs stored runs (Stage D) |
+| `GET /api/v1/simulations/recent` | 501 `persistence_not_available` | Query is validated first, so bad paging is 422 |
+
+The 501 is category `NotImplemented` (`ErrorCodes.PersistenceNotAvailable`) so the API never answers 404 for a run that may
+exist, and never answers 200 from a cache.
+
+**Run ids.** `id` on a POST response is the Python run id. While `isPersisted` is false it identifies that execution only
+and is not retrievable. POST returns 200, not 201, because no resource is created and no `Location` exists to point at;
+Stage D can move to 201 together with the stored resource.
+
+**Validation boundary.** DTO validation attributes at the API boundary are the contract (shape, lengths, ranges, strategy
+enum, unknown members). Application services trust a bound DTO and do not re-validate it. Python remains the backstop:
+its own rejection is mapped to 422 and its message is not echoed. Services additionally check that a Python response
+answers the request (same profile, seeds and strategy) and reject mismatches as `python_service_invalid_response`, or as
+`comparison_contract_violation` for comparisons.
+
 ## Strategy identifiers
 
 | Public (`/api/v1`) | Python wire | Display label |
@@ -30,7 +62,7 @@ among simulator-feasible (susceptible) drugs; it is not clinical advice.
 ## What the public contract takes from Python
 
 Evidence is in `service/schemas.py`, `simulation/reward.py`, `ml/src/ppo_training.py` and the fixtures under
-`backend/tests/Amr.UnitTests/Fixtures/python`.
+`backend/tests/Shared/Fixtures/python`.
 
 | Field | Python source | Decision |
 |---|---|---|
@@ -59,6 +91,7 @@ All problem responses are RFC 9457 (`application/problem+json`) with `code` and 
 | Dependency unavailable | 503 | `model_unavailable`, `python_service_unavailable`, `python_service_timeout`, `database_unavailable` |
 | Upstream failure | 502 | `python_service_invalid_response` |
 | Internal | 500 | `internal_error`, `comparison_contract_violation` |
+| Not implemented | 501 | `persistence_not_available` |
 
 Python errors map in `Infrastructure/Python/PythonServiceErrorMapper.cs`: `invalid_context` and
 `request_validation_error` to 422; `model_not_loaded`, `checkpoint_integrity_failure`, `model_contract_mismatch` and
@@ -73,10 +106,15 @@ cancellation reaches the HTTP request and propagates as `OperationCanceledExcept
 bounds a call (`python_service_timeout`); `HealthTimeoutSeconds` bounds the health probe; `ConnectTimeoutSeconds`
 bounds connecting. Response bodies are parsed strictly: a missing or null required member is an invalid response, unknown
 members are ignored. The Python fixtures are regenerated with
-`.\.venv\Scripts\python.exe -B backend/tests/Amr.UnitTests/Fixtures/generate_python_fixtures.py` from the repository root.
+`.\.venv\Scripts\python.exe -B backend/tests/Shared/Fixtures/generate_python_fixtures.py` from the repository root.
+Fixtures are real captures and can go stale when the Python schema changes; regenerate them after any `service/` change.
 
 Readiness (`IDependencyHealthProbe`) reports `pythonService` and `model` separately: a reachable service with a model
-that failed verification is `pythonService` healthy, `model` unhealthy (`model_unavailable`).
+that failed verification is `pythonService` healthy, `model` unhealthy (`model_unavailable`). There is no `database`
+component until Stage D adds a database probe.
+
+A Python connect timeout can surface as `python_service_timeout` rather than `python_service_unavailable`; both are 503 and
+clients should treat them alike.
 
 ## Build reproducibility
 

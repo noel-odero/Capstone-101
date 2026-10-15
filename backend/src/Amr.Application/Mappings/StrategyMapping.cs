@@ -22,9 +22,6 @@ public static class StrategyMapping
     {
         PythonStrategyIds.Ppo => StrategyKind.Ppo,
         PythonStrategyIds.Greedy => StrategyKind.RandomSusceptibleBaseline,
-        _ => throw new AmrException(
-            ErrorCategory.UpstreamFailure,
-            ErrorCodes.PythonServiceInvalidResponse,
-            "The scientific service returned an unknown strategy."),
+        _ => throw UpstreamErrors.InvalidResponse(),
     };
 }

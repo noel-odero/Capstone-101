@@ -19,7 +19,4 @@
   <ItemGroup>
     <Using Include="Xunit" />
   </ItemGroup>
-  <ItemGroup>
-    <None Include="Fixtures\python\*.json" CopyToOutputDirectory="PreserveNewest" />
-  </ItemGroup>
 </Project>

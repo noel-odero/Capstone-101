@@ -1,8 +1,8 @@
-using System.Net;
+﻿using System.Net;
 using System.Text;
 using System.Text.Json.Nodes;
 
-namespace Amr.UnitTests.Infrastructure.Python;
+namespace Amr.TestSupport;
 
 /// <summary>Real responses captured from the Python service; see Fixtures/generate_python_fixtures.py.</summary>
 internal static class PythonFixtures

@@ -7,5 +7,6 @@ public enum ErrorCategory
     NotFound,
     DependencyUnavailable,
     UpstreamFailure,
+    NotImplemented,
     Internal,
 }

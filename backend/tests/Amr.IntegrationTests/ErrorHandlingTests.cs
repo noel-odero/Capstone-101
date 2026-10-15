@@ -15,6 +15,7 @@ public class ErrorHandlingTests(AmrApiFactory factory) : IClassFixture<AmrApiFac
         { ErrorCategory.NotFound, HttpStatusCode.NotFound },
         { ErrorCategory.DependencyUnavailable, HttpStatusCode.ServiceUnavailable },
         { ErrorCategory.UpstreamFailure, HttpStatusCode.BadGateway },
+        { ErrorCategory.NotImplemented, HttpStatusCode.NotImplemented },
         { ErrorCategory.Internal, HttpStatusCode.InternalServerError },
     };
 

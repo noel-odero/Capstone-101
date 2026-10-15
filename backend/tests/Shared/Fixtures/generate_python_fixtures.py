@@ -1,7 +1,7 @@
-"""Regenerates the Python service responses used as fixtures by the .NET client tests.
+﻿"""Regenerates the Python service responses used as fixtures by the .NET client tests.
 
 Run from the repository root with the project's Python environment:
-    .\.venv\Scripts\python.exe -B backend/tests/Amr.UnitTests/Fixtures/generate_python_fixtures.py
+    .\.venv\Scripts\python.exe -B backend/tests/Shared/Fixtures/generate_python_fixtures.py
 
 Every file is the real response of the service, produced in process. Nothing outside this folder is written.
 """

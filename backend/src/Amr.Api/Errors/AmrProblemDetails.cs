@@ -21,6 +21,7 @@ public static class AmrProblemDetails
         ErrorCategory.NotFound => StatusCodes.Status404NotFound,
         ErrorCategory.DependencyUnavailable => StatusCodes.Status503ServiceUnavailable,
         ErrorCategory.UpstreamFailure => StatusCodes.Status502BadGateway,
+        ErrorCategory.NotImplemented => StatusCodes.Status501NotImplemented,
         ErrorCategory.Internal => StatusCodes.Status500InternalServerError,
         _ => throw new ArgumentOutOfRangeException(nameof(category), category, "Unmapped error category."),
     };
@@ -66,8 +67,11 @@ public static class AmrProblemDetails
         };
         Decorate(problem, context.HttpContext, ErrorCodes.ValidationFailed);
 
-        return new UnprocessableEntityObjectResult(problem) { ContentTypes = { ContentType } };
+        return ToResult(problem);
     }
+
+    public static ObjectResult ToResult(ProblemDetails problem) =>
+        new(problem) { StatusCode = problem.Status, ContentTypes = { ContentType } };
 
     private static string CodeForStatus(int status) => status switch
     {

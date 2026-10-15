@@ -1,8 +1,8 @@
-using Amr.Infrastructure.Python;
+﻿using Amr.Infrastructure.Python;
 using Microsoft.Extensions.Logging.Abstractions;
 using Microsoft.Extensions.Options;
 
-namespace Amr.UnitTests.Infrastructure.Python;
+namespace Amr.TestSupport;
 
 /// <summary>Scriptable HTTP handler that records every request, so tests can assert what was sent and how often.</summary>
 internal sealed class StubHandler(Func<HttpRequestMessage, CancellationToken, Task<HttpResponseMessage>> respond) : HttpMessageHandler
