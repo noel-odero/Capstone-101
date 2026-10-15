@@ -49,6 +49,15 @@ class ModelNotReadyError(ServiceError):
     message = "The frozen model is not ready."
 
 
+class ComparisonContractError(ServiceError):
+    status_code = 500
+    code = "comparison_contract_violation"
+    message = "The paired runs did not satisfy the comparison contract; no result was returned."
+
+    def __init__(self, check: str):
+        super().__init__(details=[{"check": check}])
+
+
 def to_service_error(error: BaseException) -> ServiceError:
     """Map any exception to a safe ServiceError; callers must log the original separately."""
     if isinstance(error, ServiceError):

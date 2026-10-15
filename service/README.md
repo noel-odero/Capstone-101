@@ -6,14 +6,24 @@ stores nothing, and all output is simulation output, not clinical advice.
 
 ## Install
 
-From the repository root, using the existing virtual environment (`python` on PATH may be a broken Store alias):
+Python 3.11, from the repository root (`python` on PATH may be a broken Store alias). Runtime only, in a new
+virtual environment:
 
 ```powershell
-.\.venv\Scripts\python.exe -m pip install -r service/requirements.txt
+python -m venv venv
+.\venv\Scripts\python.exe -m pip install -r service/requirements.txt
 ```
 
-`service/requirements.txt` includes `ml/requirements.txt` and adds FastAPI, Uvicorn, Pydantic and httpx
-(needed by the test client). The root requirements and lock file are unchanged.
+For tests, add the development extras (`pytest`, `httpx`):
+
+```powershell
+.\venv\Scripts\python.exe -m pip install -r service/requirements-dev.txt
+```
+
+`service/requirements.txt` lists only what the service imports: the scientific stack pinned to the versions in
+`ml/requirements-lock.txt`, plus FastAPI, Uvicorn and Pydantic. It does not install `jupyter`, `pandas` or
+`pytest`. The research environment (`ml/requirements.txt`, the existing `.venv`) is unchanged and also runs the
+service. Substitute `.\.venv\Scripts\python.exe` below if you use it. `venv/` is gitignored.
 
 ## Run
 
@@ -21,7 +31,7 @@ From the repository root. Use one worker: the model is verified and loaded once 
 are serialized inside the engine.
 
 ```powershell
-.\.venv\Scripts\python.exe -m uvicorn service.main:app --host 127.0.0.1 --port 8000 --workers 1
+.\venv\Scripts\python.exe -m uvicorn service.main:app --host 127.0.0.1 --port 8000 --workers 1
 ```
 
 Startup verifies the checkpoint SHA-256, the transition-data hash and the manifest contract (about 2 to 7 s).
@@ -31,8 +41,8 @@ and every model-dependent endpoint returns the same 503 error. Interactive docs:
 ## Test
 
 ```powershell
-.\.venv\Scripts\python.exe -m pytest -q          # whole repository
-.\.venv\Scripts\python.exe -m pytest service -q  # service only
+.\venv\Scripts\python.exe -m pytest -q          # whole repository
+.\venv\Scripts\python.exe -m pytest service -q  # service only
 ```
 
 ## Endpoints
@@ -67,9 +77,18 @@ Unknown request fields are rejected.
   `states[i]` to `states[i + 1]`. Profile differences are derived from before/after profiles.
 - Seeds: `environment_seed` and `policy_seed` are optional (0 to 4294967295); omitted seeds are generated and
   reported. PPO is deterministic and ignores `policy_seed`; the baseline uses it for tie-breaking.
-- Comparison pairing: both strategies share the environment seed, so per-step transition seeds come from the
-  same stream by step index. Trajectories can still diverge because candidate transition sets depend on the
-  selected action. One paired run is a single sample and does not show either strategy is better.
+- Comparison contract (`POST /internal/compare`): before returning, the service verifies that PPO and the
+  baseline shared the initial profile, environment seed, scenario, horizon, transition-data hash, reward
+  configuration and action-mask configuration (using the existing `match_run_pairs` plus explicit checks against
+  the pinned model), and that their per-step transition seeds are equal by step index. The verified items are
+  returned in `comparison_contract`. If any check fails the request returns 500
+  `comparison_contract_violation` and no results.
+- Matched seeds are not matched outcomes: a transition seed only seeds the random draw among the candidate
+  transitions of the selected action in the current state, and those candidate sets differ by action and state.
+  Equal transition seeds therefore do not guarantee identical transition outcomes
+  (`transition_outcomes_guaranteed_identical` is always `false`), and trajectories can diverge once the actions
+  differ. `comparison_contract.observed` reports the first divergent step. One paired run is a single sample and
+  does not show either strategy is better.
 
 ## Errors
 
@@ -80,5 +99,5 @@ same id. Stack traces and file paths are logged server-side only.
 |---|---|
 | 422 | `request_validation_error`, `invalid_context` |
 | 503 | `model_not_loaded`, `checkpoint_integrity_failure`, `model_contract_mismatch`, `model_or_data_unavailable` |
-| 500 | `empty_action_mask`, `infeasible_policy_action`, `inference_failure`, `internal_error` |
+| 500 | `empty_action_mask`, `infeasible_policy_action`, `comparison_contract_violation`, `inference_failure`, `internal_error` |
 | other | `http_error` (unknown route or method) |

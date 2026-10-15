@@ -259,6 +259,42 @@ class SimulationResponse(BaseModel):
     disclaimer: str
 
 
+class SharedConfiguration(BaseModel):
+    initial_profile: list[int]
+    environment_seed: int
+    scenario_id: str
+    horizon: int
+    interaction_data_sha256: str
+    reward_specification: dict[str, Any]
+    action_mask_configuration: dict[str, Any]
+
+
+class TransitionSeedSchedule(BaseModel):
+    shared_by_step_index: Literal[True]
+    steps_compared: int
+    meaning: str
+
+
+class ObservedDivergence(BaseModel):
+    steps_compared: int
+    steps_with_same_action: int
+    first_divergent_step: int | None = Field(
+        description="First step whose action or resulting profile differs between strategies; null if none."
+    )
+    trajectories_identical: bool
+
+
+class ComparisonContract(BaseModel):
+    verified: Literal[True] = Field(description="Present only when every check passed; otherwise the request fails.")
+    checks_passed: list[str]
+    shared: SharedConfiguration
+    transition_seed_schedule: TransitionSeedSchedule
+    transition_outcomes_guaranteed_identical: Literal[False] = Field(
+        description="Always false: a shared seed schedule does not guarantee identical transition outcomes."
+    )
+    observed: ObservedDivergence
+
+
 class ComparisonResponse(BaseModel):
     run_id: str
     kind: Literal["comparison"] = "comparison"
@@ -266,6 +302,7 @@ class ComparisonResponse(BaseModel):
     provenance: Provenance
     seed_configuration: SeedConfiguration
     pairing_semantics: str
+    comparison_contract: ComparisonContract
     ppo: StrategyResult
     greedy: StrategyResult
     metric_definitions: dict[str, str]

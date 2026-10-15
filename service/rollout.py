@@ -13,7 +13,9 @@ from ml.src.metrics import EpisodeMetrics
 from ml.src.multi_seed_evaluation import MultiSeedResult, run_multi_seed_evaluation
 from ml.src.ppo_inference import NO_CANDIDATE_STATUS, ContractMismatchError, InferenceContext
 from ml.src.ppo_training import make_training_environment
+from ml.src.statistical_comparison import match_run_pairs
 from service import __version__
+from service.errors import ComparisonContractError
 from service.runtime import DISCLAIMER, ModelRuntime
 from simulation.resistance_state import ANTIBIOTICS
 
@@ -47,11 +49,13 @@ METRIC_DEFINITIONS = {
     "cumulative_antibiotic_exposure": "Number of antibiotic administrations (one per step).",
 }
 PAIRING_SEMANTICS = (
-    "Both strategies use the same initial profile, horizon, scenario and environment seed, so their "
-    "per-step transition seeds come from the same seed stream by step index. Trajectories can still diverge: "
-    "the candidate transition set depends on the selected action and state, so identical seeds do not imply "
-    "identical transition outcomes. PPO is deterministic and ignores the policy seed; the baseline uses it "
-    "for tie-breaking among susceptible actions."
+    "Matched and verified before a result is returned: initial profile, environment seed, scenario, horizon, "
+    "reward configuration and transition-data hash. Because the environment seed is shared, the simulator draws "
+    "the same sequence of per-step transition seeds by step index. A transition seed only seeds the random draw "
+    "among the candidate transitions of the selected action in the current state. Those candidate sets depend on "
+    "the action and state, so equal seeds do not guarantee identical transition outcomes, and trajectories can "
+    "diverge once the strategies choose different actions. PPO is deterministic and ignores the policy seed; "
+    "the baseline uses it for tie-breaking among susceptible actions."
 )
 SINGLE_RUN_CAVEAT = (
     "One paired trajectory is a single stochastic sample. It does not show that either strategy is better, "
@@ -267,6 +271,91 @@ def simulate(
     }
 
 
+def _first_divergent_step(ppo: dict[str, Any], greedy: dict[str, Any]) -> int | None:
+    ppo_steps, greedy_steps = ppo["steps"], greedy["steps"]
+    for index, (left, right) in enumerate(zip(ppo_steps, greedy_steps)):
+        if (left["action_id"], left["resistance_profile_after"]) != (right["action_id"], right["resistance_profile_after"]):
+            return index
+    return None if len(ppo_steps) == len(greedy_steps) else min(len(ppo_steps), len(greedy_steps))
+
+
+def _comparison_contract(
+    runtime: ModelRuntime,
+    profile: tuple[int, ...],
+    environment_seed: int,
+    ppo_run: MultiSeedResult,
+    greedy_run: MultiSeedResult,
+    ppo: dict[str, Any],
+    greedy: dict[str, Any],
+) -> dict[str, Any]:
+    """Verify the matched design or raise; the result reports only what was checked or observed."""
+    try:
+        match_run_pairs(ppo_run, greedy_run)  # identical environment/data configuration, profiles and seed design
+    except ValueError as error:
+        raise ComparisonContractError("existing_matched_run_validation") from error
+
+    ppo_config, greedy_config = ppo_run.environment_configuration, greedy_run.environment_configuration
+    episodes = (ppo_run.runs[0].evaluation.episodes[0], greedy_run.runs[0].evaluation.episodes[0])
+    pinned = runtime.config
+    common = min(len(ppo["steps"]), len(greedy["steps"]))
+    checks = {
+        "initial_profile": all(episode.initial_resistance_profile == profile for episode in episodes),
+        "environment_seed": all(episode.environment_seed == environment_seed for episode in episodes),
+        "scenario_id": ppo_config["scenario_id"] == greedy_config["scenario_id"] == runtime.manifest.scenario_id,
+        "horizon": ppo_config["horizon"] == greedy_config["horizon"] == runtime.engine.horizon,
+        "interaction_data_sha256": (
+            ppo_config["interaction_data_sha256"]
+            == greedy_config["interaction_data_sha256"]
+            == runtime.manifest.interaction_data_sha256
+        ),
+        "reward_specification": (
+            ppo_config["reward_specification"] == greedy_config["reward_specification"] == pinned.reward_configuration
+        ),
+        "action_mask_configuration": (
+            ppo_config["action_mask_configuration"]
+            == greedy_config["action_mask_configuration"]
+            == pinned.action_mask_configuration
+        ),
+        "transition_seed_schedule": all(
+            ppo["steps"][index]["transition_seed"] == greedy["steps"][index]["transition_seed"]
+            for index in range(common)
+        ),
+    }
+    for check, passed in checks.items():
+        if not passed:
+            raise ComparisonContractError(check)
+
+    first_divergence = _first_divergent_step(ppo, greedy)
+    return {
+        "verified": True,
+        "checks_passed": list(checks),
+        "shared": {
+            "initial_profile": list(profile),
+            "environment_seed": environment_seed,
+            "scenario_id": ppo_config["scenario_id"],
+            "horizon": ppo_config["horizon"],
+            "interaction_data_sha256": ppo_config["interaction_data_sha256"],
+            "reward_specification": ppo_config["reward_specification"],
+            "action_mask_configuration": ppo_config["action_mask_configuration"],
+        },
+        "transition_seed_schedule": {
+            "shared_by_step_index": True,
+            "steps_compared": common,
+            "meaning": "Equal transition seeds only seed the random draw among the selected action's candidate "
+            "transitions in the current state; they do not make the outcomes equal.",
+        },
+        "transition_outcomes_guaranteed_identical": False,
+        "observed": {
+            "steps_compared": common,
+            "steps_with_same_action": sum(
+                ppo["steps"][index]["action_id"] == greedy["steps"][index]["action_id"] for index in range(common)
+            ),
+            "first_divergent_step": first_divergence,
+            "trajectories_identical": first_divergence is None,
+        },
+    }
+
+
 def compare(
     runtime: ModelRuntime,
     *,
@@ -278,7 +367,10 @@ def compare(
     env_seed, env_source = _seed(environment_seed)
     baseline_seed, policy_source = _seed(policy_seed)
     ppo_run, ppo_episode, ppo_metrics = _evaluate(runtime, "ppo", profile, env_seed, baseline_seed)
-    _, greedy_episode, greedy_metrics = _evaluate(runtime, "greedy", profile, env_seed, baseline_seed)
+    greedy_run, greedy_episode, greedy_metrics = _evaluate(runtime, "greedy", profile, env_seed, baseline_seed)
+    ppo = _strategy_result(runtime, "ppo", ppo_episode, ppo_metrics, env_seed, None)
+    greedy = _strategy_result(runtime, "greedy", greedy_episode, greedy_metrics, env_seed, baseline_seed)
+    contract = _comparison_contract(runtime, profile, env_seed, ppo_run, greedy_run, ppo, greedy)
     return {
         **_envelope(),
         "kind": "comparison",
@@ -291,7 +383,8 @@ def compare(
             "notes": ["policy_seed applies to the baseline only; PPO ignores it."],
         },
         "pairing_semantics": PAIRING_SEMANTICS,
-        "ppo": _strategy_result(runtime, "ppo", ppo_episode, ppo_metrics, env_seed, None),
-        "greedy": _strategy_result(runtime, "greedy", greedy_episode, greedy_metrics, env_seed, baseline_seed),
+        "comparison_contract": contract,
+        "ppo": ppo,
+        "greedy": greedy,
         "single_run_caveat": SINGLE_RUN_CAVEAT,
     }
