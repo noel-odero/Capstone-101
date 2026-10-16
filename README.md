@@ -21,7 +21,7 @@ ml/src/                               PPO training, evaluation, Greedy baseline,
 ml/tests/                             ML pipeline tests
 simulation/                           Resistance state, actions, transitions, environment, reward
 service/                              Internal FastAPI scientific service (see service/README.md)
-backend/                              ASP.NET Core public API (see backend/README.md)
+backend/                              ASP.NET Core public API with PostgreSQL run storage (see backend/README.md)
 tests/                                Simulation and data tests
 ```
 

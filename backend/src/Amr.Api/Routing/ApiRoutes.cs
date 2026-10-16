@@ -4,6 +4,9 @@ namespace Amr.Api.Routing;
 public static class ApiRoutes
 {
     public const string Version1 = "1.0";
+
+    /// <summary>The route segment value for version 1, as in /api/v1/.</summary>
+    public const string UrlVersion1 = "1";
     public const string Base = "api/v{version:apiVersion}";
 
     public const string Health = Base + "/health";

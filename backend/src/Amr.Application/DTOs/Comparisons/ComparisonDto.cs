@@ -35,10 +35,11 @@ public sealed record ComparisonContractDto(
     bool TransitionOutcomesGuaranteedIdentical,
     ObservedDivergenceDto Observed);
 
-/// <param name="Id">The scientific service's run id. Until persistence exists it identifies this execution only and cannot be retrieved.</param>
-/// <param name="IsPersisted">False when the run is not stored, so GET by id does not work for it.</param>
-/// <param name="Ppo">Null when the comparison failed.</param>
+/// <param name="Id">The scientific service's run id, which is also the stored resource id: GET /comparisons/{id} returns this run once IsPersisted is true.</param>
+/// <param name="IsPersisted">True only after the run was durably committed; a response is never sent with true before that.</param>
+/// <param name="Ppo">Null when the comparison failed. Only completed, contract-verified comparisons are stored.</param>
 /// <param name="Baseline">The Random Susceptible Baseline; null when the comparison failed.</param>
+/// <param name="MetricDefinitions">Definitions of every metric in both results, keyed by the metric property name and stored with the run.</param>
 public sealed record ComparisonDto(
     Guid Id,
     RunStatus Status,
@@ -51,5 +52,6 @@ public sealed record ComparisonDto(
     StrategyResultDto? Ppo,
     StrategyResultDto? Baseline,
     RunErrorDto? Error,
+    IReadOnlyDictionary<string, MetricDefinitionDto> MetricDefinitions,
     string SingleRunCaveat,
     string Disclaimer);

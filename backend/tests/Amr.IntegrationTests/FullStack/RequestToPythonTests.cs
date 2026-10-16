@@ -5,11 +5,10 @@ using Amr.IntegrationTests.Infrastructure;
 
 namespace Amr.IntegrationTests.FullStack;
 
-/// <summary>Request-to-Python path through the real controllers, services, mappings and Python client, with only the network stubbed.</summary>
+/// <summary>Request-to-Python path through the real controllers, services and Python client, with only the network stubbed. None of these reach the database.</summary>
 public class RequestToPythonTests(AmrApiFactory factory) : IClassFixture<AmrApiFactory>
 {
     private const string PpoBody = """{"resistanceProfile":[0,1,0,0,0,0,0],"strategy":"ppo","environmentSeed":100001}""";
-    private const string BaselineBody = """{"resistanceProfile":[0,1,0,0,0,0,0],"strategy":"random_susceptible_baseline","environmentSeed":100001,"policySeed":900001}""";
     private const string CompareBody = """{"resistanceProfile":[0,1,0,0,0,0,0],"environmentSeed":100001,"policySeed":900001}""";
 
     private static JsonNode SentBody(StubHandler python) => JsonNode.Parse(python.Requests.Single().Body!)!;
@@ -51,66 +50,6 @@ public class RequestToPythonTests(AmrApiFactory factory) : IClassFixture<AmrApiF
         Assert.Equal("/internal/profiles/validate", python.Requests.Single().Uri.AbsolutePath);
         Assert.Equal(new[] { 1, 1, 1, 1, 1, 1, 1 }, SentBody(python)["resistance_profile"]!.AsArray().Select(node => node!.GetValue<int>()));
         Assert.True((await response.ReadJsonAsync()).GetProperty("isTerminal").GetBoolean());
-    }
-
-    [Fact]
-    public async Task A_ppo_simulation_reaches_python_with_the_ppo_strategy_and_returns_the_trace()
-    {
-        var (client, python) = StubbedPythonHost.Create(factory);
-
-        var response = await client.PostJsonAsync("/api/v1/simulations", PpoBody);
-
-        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
-        var sent = SentBody(python);
-        Assert.Equal(("ppo", 100001L), (sent["strategy"]!.GetValue<string>(), sent["environment_seed"]!.GetValue<long>()));
-        Assert.DoesNotContain("horizon", sent.AsObject().Select(pair => pair.Key));
-        var body = await response.ReadJsonAsync();
-        Assert.Equal("ppo", body.GetProperty("result").GetProperty("strategy").GetString());
-        Assert.False(body.GetProperty("isPersisted").GetBoolean());
-        Assert.True(Guid.TryParse(body.GetProperty("id").GetString(), out _));
-        Assert.Contains(body.GetProperty("result").GetProperty("steps").EnumerateArray(), step => step.GetProperty("transitionStatus").GetString() == "unsupported_no_candidate");
-    }
-
-    [Fact]
-    public async Task The_baseline_is_sent_to_python_under_its_legacy_wire_name_and_returned_under_its_public_name()
-    {
-        var (client, python) = StubbedPythonHost.Create(factory);
-
-        var response = await client.PostJsonAsync("/api/v1/simulations", BaselineBody);
-
-        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
-        var sent = SentBody(python);
-        Assert.Equal(("greedy", 900001L), (sent["strategy"]!.GetValue<string>(), sent["policy_seed"]!.GetValue<long>()));
-        var text = await response.Content.ReadAsStringAsync();
-        Assert.Contains("\"strategy\":\"random_susceptible_baseline\"", text, StringComparison.Ordinal);
-        Assert.DoesNotContain("greedy", text, StringComparison.OrdinalIgnoreCase);
-    }
-
-    [Fact]
-    public async Task A_terminal_simulation_is_a_200_with_no_steps()
-    {
-        var (client, _) = StubbedPythonHost.Create(factory);
-
-        var response = await client.PostJsonAsync("/api/v1/simulations", """{"resistanceProfile":[1,1,1,1,1,1,1],"strategy":"ppo","environmentSeed":1}""");
-
-        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
-        Assert.Equal(0, (await response.ReadJsonAsync()).GetProperty("result").GetProperty("steps").GetArrayLength());
-    }
-
-    [Fact]
-    public async Task A_comparison_reaches_python_without_horizon_and_returns_a_verified_pair()
-    {
-        var (client, python) = StubbedPythonHost.Create(factory);
-
-        var response = await client.PostJsonAsync("/api/v1/comparisons", CompareBody);
-
-        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
-        Assert.Equal("/internal/compare", python.Requests.Single().Uri.AbsolutePath);
-        Assert.DoesNotContain("horizon", SentBody(python).AsObject().Select(pair => pair.Key));
-        var body = await response.ReadJsonAsync();
-        Assert.True(body.GetProperty("contract").GetProperty("verified").GetBoolean());
-        Assert.Equal("random_susceptible_baseline", body.GetProperty("baseline").GetProperty("strategy").GetString());
-        Assert.False(body.GetProperty("isPersisted").GetBoolean());
     }
 
     [Fact]
@@ -210,8 +149,19 @@ public class RequestToPythonTests(AmrApiFactory factory) : IClassFixture<AmrApiF
 
         var response = await client.PostJsonAsync("/api/v1/simulations", """{"resistanceProfile":[0,1,0,0,0,0,0],"strategy":"ppo","environmentSeed":5}""");
 
-        Assert.NotEqual(HttpStatusCode.OK, response.StatusCode);
+        Assert.NotEqual(HttpStatusCode.Created, response.StatusCode);
         Assert.StartsWith("application/problem+json", response.Content.Headers.ContentType!.MediaType, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public async Task A_python_metric_set_that_differs_from_the_catalogue_is_rejected()
+    {
+        var body = PythonFixtures.Mutate("simulate_200_ppo", node => node["metric_definitions"]!.AsObject().Remove("unsupported_step_count"));
+        var (client, _) = StubbedPythonHost.Create(factory, (_, _) => Task.FromResult(PythonFixtures.Respond(HttpStatusCode.OK, body)));
+
+        var response = await client.PostJsonAsync("/api/v1/simulations", PpoBody);
+
+        await response.ReadProblemAsync(HttpStatusCode.BadGateway, ErrorCodes.PythonServiceInvalidResponse);
     }
 
     [Fact]
@@ -233,25 +183,9 @@ public class RequestToPythonTests(AmrApiFactory factory) : IClassFixture<AmrApiF
         await Assert.ThrowsAnyAsync<OperationCanceledException>(() => pending);
         Assert.True(await Task.WhenAny(observed.Task, Task.Delay(TimeSpan.FromSeconds(5))) == observed.Task, "Python never saw the cancellation.");
     }
-}
-
-public class HealthThroughPythonTests(AmrApiFactory factory) : IClassFixture<AmrApiFactory>
-{
-    [Fact]
-    public async Task A_healthy_service_with_a_verified_model_is_ready()
-    {
-        var (client, _) = StubbedPythonHost.Create(factory);
-
-        var response = await client.GetAsync("/api/v1/health");
-
-        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
-        var body = await response.ReadJsonAsync();
-        Assert.True(body.GetProperty("ready").GetBoolean());
-        Assert.Equal(new[] { "api", "pythonService", "model" }, body.GetProperty("components").EnumerateArray().Select(item => item.GetProperty("name").GetString()));
-    }
 
     [Fact]
-    public async Task A_reachable_service_without_a_verified_model_is_503_with_a_stable_code_only()
+    public async Task A_reachable_service_without_a_verified_model_reports_a_stable_model_code_only()
     {
         var (client, _) = StubbedPythonHost.Create(factory, (_, _) => Task.FromResult(PythonFixtures.Fixture("health_503_model_unavailable", HttpStatusCode.ServiceUnavailable)));
 
@@ -259,71 +193,23 @@ public class HealthThroughPythonTests(AmrApiFactory factory) : IClassFixture<Amr
 
         Assert.Equal(HttpStatusCode.ServiceUnavailable, response.StatusCode);
         var text = await response.Content.ReadAsStringAsync();
-        var body = System.Text.Json.JsonDocument.Parse(text).RootElement;
-        Assert.False(body.GetProperty("ready").GetBoolean());
-        var model = body.GetProperty("components").EnumerateArray().Single(item => item.GetProperty("name").GetString() == "model");
-        Assert.Equal(("unhealthy", "model_unavailable"), (model.GetProperty("status").GetString(), model.GetProperty("detail").GetString()));
+        var components = System.Text.Json.JsonDocument.Parse(text).RootElement.GetProperty("components").EnumerateArray()
+            .ToDictionary(item => item.GetProperty("name").GetString()!, item => (item.GetProperty("status").GetString(), item.GetProperty("detail").GetString()));
+        Assert.Equal(("healthy", null), components["pythonService"]);
+        Assert.Equal(("unhealthy", "model_unavailable"), components["model"]);
         Assert.DoesNotContain("python.test", text, StringComparison.Ordinal);
     }
 
     [Fact]
-    public async Task An_unreachable_service_is_503_and_liveness_is_still_200_without_calling_python()
+    public async Task An_unreachable_python_service_makes_readiness_fail_but_not_liveness()
     {
         var (client, python) = StubbedPythonHost.Create(factory, (_, _) => throw new HttpRequestException("refused"));
 
         var live = await client.GetAsync("/api/v1/health/live");
-        Assert.Equal(HttpStatusCode.OK, live.StatusCode);
-        Assert.Equal(0, python.CallCount);
-
         var ready = await client.GetAsync("/api/v1/health");
+
+        Assert.Equal(HttpStatusCode.OK, live.StatusCode);
         Assert.Equal(HttpStatusCode.ServiceUnavailable, ready.StatusCode);
-        var components = (await ready.ReadJsonAsync()).GetProperty("components").EnumerateArray().ToDictionary(item => item.GetProperty("name").GetString()!, item => item.GetProperty("status").GetString());
-        Assert.Equal(("healthy", "unhealthy", "unhealthy"), (components["api"], components["pythonService"], components["model"]));
-    }
-}
-
-/// <summary>
-/// Stage C has no storage. Retrieval endpoints must say so explicitly; they must not return data from an in-process
-/// cache that would disappear on restart or differ between instances.
-/// </summary>
-public class PersistenceDependentEndpointsTests(AmrApiFactory factory) : IClassFixture<AmrApiFactory>
-{
-    [Theory]
-    [InlineData("/api/v1/simulations/3f2504e0-4f89-41d3-9a0c-0305e82c3301")]
-    [InlineData("/api/v1/comparisons/3f2504e0-4f89-41d3-9a0c-0305e82c3301")]
-    [InlineData("/api/v1/recommendations/3f2504e0-4f89-41d3-9a0c-0305e82c3301")]
-    [InlineData("/api/v1/simulations/recent")]
-    [InlineData("/api/v1/simulations/recent?page=2&pageSize=10")]
-    public async Task Retrieval_is_an_explicit_501_that_never_calls_python(string url)
-    {
-        var (client, python) = StubbedPythonHost.Create(factory);
-
-        var response = await client.GetAsync(url);
-
-        var problem = await response.ReadProblemAsync(HttpStatusCode.NotImplemented, ErrorCodes.PersistenceNotAvailable);
-        Assert.Equal("urn:amr:problem:persistence_not_available", problem.GetProperty("type").GetString());
-        Assert.Equal(0, python.CallCount);
-    }
-
-    [Fact]
-    public async Task A_run_that_was_just_created_cannot_be_retrieved_and_says_so_up_front()
-    {
-        var (client, _) = StubbedPythonHost.Create(factory);
-        var created = await (await client.PostJsonAsync("/api/v1/simulations", """{"resistanceProfile":[0,1,0,0,0,0,0],"strategy":"ppo","environmentSeed":100001}""")).ReadJsonAsync();
-        Assert.False(created.GetProperty("isPersisted").GetBoolean());
-
-        var retrieval = await client.GetAsync($"/api/v1/simulations/{created.GetProperty("id").GetString()}");
-
-        await retrieval.ReadProblemAsync(HttpStatusCode.NotImplemented, ErrorCodes.PersistenceNotAvailable);
-    }
-
-    [Fact]
-    public async Task Invalid_paging_is_still_a_422_rather_than_a_501()
-    {
-        var (client, _) = StubbedPythonHost.Create(factory);
-
-        var response = await client.GetAsync("/api/v1/simulations/recent?pageSize=500");
-
-        await response.ReadProblemAsync(HttpStatusCode.UnprocessableEntity, ErrorCodes.ValidationFailed);
+        Assert.Equal(1, python.CallCount);
     }
 }

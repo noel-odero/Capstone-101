@@ -16,7 +16,7 @@ public class ComparisonServiceTests
     private static (ComparisonService Service, StubHandler Handler) Serving(string? body = null, string fixture = "compare_200", HttpStatusCode status = HttpStatusCode.OK)
     {
         var handler = StubHandler.Returning(() => body is null ? PythonFixtures.Fixture(fixture, status) : PythonFixtures.Respond(status, body));
-        return (new ComparisonService(ClientFactory.Create(handler)), handler);
+        return (new ComparisonService(ClientFactory.Create(handler), new FakeRunRepository()), handler);
     }
 
     [Fact]
@@ -82,7 +82,7 @@ public class ComparisonServiceTests
         Assert.Contains("future_key", comparison.Provenance.RewardSpecification.Keys);
         Assert.Contains("future_key", comparison.Contract.Shared.RewardSpecification.Keys);
         Assert.Equal((100001, 900001), (comparison.SeedConfiguration.EnvironmentSeed, comparison.SeedConfiguration.PolicySeed));
-        Assert.False(comparison.IsPersisted);
+        Assert.True(comparison.IsPersisted);
         Assert.Equal(RunStatus.Completed, comparison.Status);
     }
 
@@ -156,7 +156,7 @@ public class ComparisonServiceTests
     public async Task The_cancellation_token_reaches_the_python_request()
     {
         var handler = StubHandler.Hanging();
-        var service = new ComparisonService(ClientFactory.Create(handler));
+        var service = new ComparisonService(ClientFactory.Create(handler), new FakeRunRepository());
         using var cancellation = new CancellationTokenSource();
 
         var pending = service.RunAsync(Request(), cancellation.Token);
@@ -164,16 +164,5 @@ public class ComparisonServiceTests
 
         await Assert.ThrowsAnyAsync<OperationCanceledException>(() => pending);
         Assert.True(handler.Requests.Single().Token.IsCancellationRequested);
-    }
-
-    [Fact]
-    public async Task Retrieval_is_explicitly_not_implemented_without_persistence()
-    {
-        var (service, handler) = Serving();
-
-        var error = await Assert.ThrowsAsync<AmrException>(() => service.GetAsync(Guid.NewGuid(), CancellationToken.None));
-
-        Assert.Equal((ErrorCategory.NotImplemented, ErrorCodes.PersistenceNotAvailable), (error.Category, error.Code));
-        Assert.Equal(0, handler.CallCount);
     }
 }

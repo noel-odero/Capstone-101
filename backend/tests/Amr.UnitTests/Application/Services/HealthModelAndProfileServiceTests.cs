@@ -190,13 +190,4 @@ public class HealthModelAndProfileServiceTests
 
         Assert.Equal(ErrorCodes.PythonServiceInvalidResponse, error.Code);
     }
-
-    [Fact]
-    public async Task Stored_recommendations_and_history_are_explicitly_not_implemented_without_persistence()
-    {
-        var recommendation = await Assert.ThrowsAsync<AmrException>(() => new RecommendationService().GetBySimulationAsync(Guid.NewGuid(), CancellationToken.None));
-        var history = await Assert.ThrowsAsync<AmrException>(() => new RunHistoryService().GetRecentAsync(new(), CancellationToken.None));
-
-        Assert.All(new[] { recommendation, history }, error => Assert.Equal((ErrorCategory.NotImplemented, ErrorCodes.PersistenceNotAvailable), (error.Category, error.Code)));
-    }
 }

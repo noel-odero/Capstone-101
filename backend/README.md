@@ -1,61 +1,102 @@
 # Backend (ASP.NET Core)
 
 Public API for the capstone. It validates requests, calls the internal Python scientific service for every simulation,
-comparison, model lookup and profile check, and returns versioned JSON. It contains no scientific logic.
+comparison, model lookup and profile check, stores completed runs in PostgreSQL, and returns versioned JSON. It contains no
+scientific logic.
 
-Contract decisions: [docs/api-contract.md](docs/api-contract.md).
+Contract decisions (ids, `201 Created`, `isPersisted`, metric definitions, unsupported transitions, migrations, health,
+live tests): [docs/api-contract.md](docs/api-contract.md).
 
 ## Layout
 
 | Project | Role |
 |---|---|
 | `src/Amr.Domain` | Enums and value types; no references |
-| `src/Amr.Application` | DTOs, service interfaces, services, mappings, error model; references Domain only, no packages |
-| `src/Amr.Infrastructure` | Python HTTP client and health probe; the only project that talks HTTP |
+| `src/Amr.Application` | DTOs, service and repository interfaces, services, mappings, metric catalogue, error model; references Domain only, no packages |
+| `src/Amr.Infrastructure` | Python HTTP client, EF Core / PostgreSQL persistence and migrations, health probes; the only project that talks HTTP or to the database |
 | `src/Amr.Api` | Controllers, problem details, versioning, registration; controllers only call application services |
-| `tests/Amr.UnitTests` | Services, mappings, client, architecture rules |
-| `tests/Amr.IntegrationTests` | Controllers with fake services, full stack with a stubbed Python network, optional live tests |
+| `tests/Amr.UnitTests` | Services, mappings, persistence mapping, failure classification, architecture rules |
+| `tests/Amr.IntegrationTests` | Controllers with fake services, full stack with a stubbed Python network and real PostgreSQL, schema and migration tests, live tests |
 | `tests/Shared` | Python fixtures (real captures) and stub HTTP support |
+| `scripts/run-live-tests.ps1` | Starts the real Python service and runs the live tests with skipping disabled |
 
 ## Prerequisites
 
-.NET SDK 10.0.401 or a later 10.0.4xx patch (`global.json`). The Python service runs from the repository `.venv`.
+- .NET SDK 10.0.401 or a later 10.0.4xx patch (`global.json`).
+- The Python service, run from the repository `.venv`.
+- A PostgreSQL server for the API and for the database tests (a disposable container is enough for development).
 
 ## Run
 
-Start the Python service from the repository root, then the API from `backend/`:
+1. Start a PostgreSQL server and set the connection string in the environment. It is never stored in a file:
+
+   ```powershell
+   $env:ConnectionStrings__Amr = 'Host=localhost;Port=5432;Database=amr;Username=amr;Password=<local-dev-password>'
+   ```
+
+2. Apply the migrations explicitly. The API never changes the schema on startup:
+
+   ```powershell
+   cd backend
+   dotnet tool restore
+   dotnet tool run dotnet-ef database update --project src/Amr.Infrastructure --startup-project src/Amr.Api
+   ```
+
+3. Start the Python service from the repository root, then the API from `backend/`:
+
+   ```powershell
+   .\.venv\Scripts\python.exe -m uvicorn service.main:app --host 127.0.0.1 --port 8000 --workers 1
+   dotnet run --project src/Amr.Api
+   ```
+
+`PythonService:BaseUrl` (default `http://127.0.0.1:8000`) and the timeouts are in `src/Amr.Api/appsettings.json`. The API
+does not start without `ConnectionStrings__Amr`. `GET /api/v1/health` reports `database_migrations_pending` if step 2 was
+skipped.
+
+To review the schema change as SQL instead of applying it directly, generate an idempotent script:
 
 ```powershell
-.\.venv\Scripts\python.exe -m uvicorn service.main:app --host 127.0.0.1 --port 8000 --workers 1
-dotnet run --project src/Amr.Api
+dotnet tool run dotnet-ef migrations script --idempotent --project src/Amr.Infrastructure --startup-project src/Amr.Api -o amr-migrations.sql
 ```
-
-`PythonService:BaseUrl` (default `http://127.0.0.1:8000`) and the timeouts are in `src/Amr.Api/appsettings.json`.
 
 ## Test
 
+Start a disposable PostgreSQL server (never a shared database) and point the tests at it with an admin connection string:
+
 ```powershell
+docker run -d --name amr-test-pg -e POSTGRES_PASSWORD=<throwaway> -p 127.0.0.1:55432:5432 postgres:17-alpine
+$env:AMR_TEST_POSTGRES = 'Host=127.0.0.1;Port=55432;Username=postgres;Password=<throwaway>;Database=postgres'
+$env:AMR_REQUIRE_POSTGRES = 'true'   # fail, rather than skip, if the server is missing
 dotnet build Amr.sln --no-incremental --nologo
 dotnet test Amr.sln --nologo
 ```
 
-Live tests call a real Python service and are skipped unless `AMR_PYTHON_URL` is set:
+Every database test class creates and drops its own `amr_it_<guid>` database. Without `AMR_TEST_POSTGRES` the PostgreSQL
+tests are skipped and reported as skipped; without `AMR_PYTHON_URL` the live tests are skipped. Set `CI=true` for
+locked-mode package restore.
+
+### Live tests (real Python service, real PostgreSQL, no skipping)
 
 ```powershell
-$env:AMR_PYTHON_URL = 'http://127.0.0.1:8000'
-dotnet test tests/Amr.IntegrationTests --nologo
+.\scripts\run-live-tests.ps1
 ```
 
-Set `CI=true` for locked-mode package restore.
+The script starts the Python service, waits for a ready model, sets `AMR_PYTHON_URL`, runs the live tests with
+`AMR_REQUIRE_LIVE=true` and `AMR_REQUIRE_POSTGRES=true`, and always stops the service. It needs `AMR_TEST_POSTGRES` in the
+environment and the repository `.venv`. **No CI workflow is configured**, so nothing runs these tests automatically yet;
+they run only when someone runs the script.
 
 ## Endpoint status
 
-| Route | Status |
+| Route | Behavior |
 |---|---|
-| `GET /api/v1/health`, `GET /api/v1/health/live` | Working |
-| `GET /api/v1/model`, `GET /api/v1/antibiotics` | Working |
-| `POST /api/v1/profiles/validate` | Working |
-| `POST /api/v1/simulations`, `POST /api/v1/comparisons` | Working; results are returned with `isPersisted: false` |
-| `GET /api/v1/simulations/{id}`, `GET /api/v1/comparisons/{id}`, `GET /api/v1/recommendations/{simulationId}`, `GET /api/v1/simulations/recent` | 501 `persistence_not_available` until durable storage exists |
+| `GET /api/v1/health`, `GET /api/v1/health/live` | Readiness covers Python, the model and the migrated database; liveness does not |
+| `GET /api/v1/model`, `GET /api/v1/antibiotics` | Served by Python |
+| `POST /api/v1/profiles/validate` | 200, including terminal all-resistant profiles |
+| `POST /api/v1/simulations`, `POST /api/v1/comparisons` | 201 Created with `Location`; the run is stored and `isPersisted` is true only after the commit |
+| `GET /api/v1/simulations/{id}`, `GET /api/v1/comparisons/{id}` | The stored run; 404 for an unknown id or the other kind |
+| `GET /api/v1/recommendations/{simulationId}` | PPO steps of a stored simulation; 404 `recommendation_not_found` otherwise |
+| `GET /api/v1/simulations/recent` | Simulations and comparisons, newest first, paged |
 
-Results are not stored and not cached in memory, so a returned run cannot be fetched again yet.
+If Python succeeds but the save fails, the response is 503 `database_unavailable` or 500 `persistence_failed`, no id is
+issued, and the failure is logged with the run id and correlation id. Python is never called twice for one request.

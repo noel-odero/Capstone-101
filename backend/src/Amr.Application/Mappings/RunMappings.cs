@@ -2,6 +2,7 @@ using System.Globalization;
 using Amr.Application.DTOs.Common;
 using Amr.Application.DTOs.Simulations;
 using Amr.Application.Errors;
+using Amr.Application.Metrics;
 using Amr.Application.PythonContracts;
 using Amr.Domain.Enums;
 
@@ -19,6 +20,7 @@ public static class RunMappings
         run.SeedConfiguration.ToDto(),
         run.Result.ToDto(),
         Error: null,
+        MetricCatalogue.Describe(run.MetricDefinitions),
         run.Disclaimer);
 
     public static ModelProvenanceDto ToDto(this PythonProvenance provenance) => new(

@@ -1,5 +1,8 @@
 using Amr.Application.Interfaces.Clients;
+using Amr.Application.Interfaces.Persistence;
+using Amr.Infrastructure.Persistence;
 using Amr.Infrastructure.Python;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Options;
@@ -20,7 +23,31 @@ public static class InfrastructureServiceCollectionExtensions
             .ConfigurePrimaryHttpMessageHandler(CreatePythonHandler);
         services.AddTransient<IDependencyHealthProbe, PythonServiceHealthChecker>();
 
+        AddPersistence(services, configuration);
+
         return services;
+    }
+
+    /// <summary>The connection string is read when options are first used, so host configuration added after registration is honored.</summary>
+    private static void AddPersistence(IServiceCollection services, IConfiguration configuration)
+    {
+        services.AddOptions<DatabaseOptions>()
+            .Bind(configuration.GetSection(DatabaseOptions.SectionName))
+            .Configure(options => options.ConnectionString = configuration.GetConnectionString(DatabaseOptions.ConnectionStringName))
+            .ValidateDataAnnotations()
+            .ValidateOnStart();
+
+        services.AddDbContext<AmrDbContext>((provider, builder) =>
+        {
+            var database = provider.GetRequiredService<IOptions<DatabaseOptions>>().Value;
+            builder
+                .UseNpgsql(database.ConnectionString, npgsql => npgsql.CommandTimeout(database.CommandTimeoutSeconds))
+                .UseQueryTrackingBehavior(QueryTrackingBehavior.NoTracking);
+        });
+
+        services.AddSingleton(TimeProvider.System);
+        services.AddScoped<IRunRepository, RunRepository>();
+        services.AddScoped<IDependencyHealthProbe, DatabaseHealthProbe>();
     }
 
     private static void ConfigurePythonClient(IServiceProvider provider, HttpClient client)

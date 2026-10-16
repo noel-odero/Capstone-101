@@ -27,13 +27,13 @@ public class ComparisonsControllerTests(AmrApiFactory factory) : IClassFixture<A
 
         var response = await client.PostJsonAsync(Url, ValidBody);
 
-        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        Assert.Equal(HttpStatusCode.Created, response.StatusCode);
         var request = Assert.Single(fake.RunRequests);
         Assert.Equal((100001L, 900001L), (request.EnvironmentSeed, request.PolicySeed));
         var body = await response.ReadJsonAsync();
         Assert.Equal("ppo", body.GetProperty("ppo").GetProperty("strategy").GetString());
         Assert.Equal("random_susceptible_baseline", body.GetProperty("baseline").GetProperty("strategy").GetString());
-        Assert.False(body.GetProperty("isPersisted").GetBoolean());
+        Assert.True(body.GetProperty("isPersisted").GetBoolean());
         Assert.False(body.TryGetProperty("greedy", out _));
     }
 

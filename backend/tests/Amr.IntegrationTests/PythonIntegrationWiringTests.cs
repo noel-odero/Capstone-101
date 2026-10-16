@@ -2,6 +2,7 @@ using Amr.Application.DTOs.Health;
 using Amr.Application.Errors;
 using Amr.Application.Interfaces.Clients;
 using Amr.IntegrationTests.Infrastructure;
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 
 namespace Amr.IntegrationTests;
@@ -12,10 +13,28 @@ public class PythonIntegrationWiringTests(AmrApiFactory factory) : IClassFixture
     private static readonly string[] UnreachableCodes = [ErrorCodes.PythonServiceUnavailable, ErrorCodes.PythonServiceTimeout];
 
     [Fact]
-    public void The_python_client_and_health_probe_are_registered_in_the_host()
+    public void The_python_client_and_both_health_probes_are_registered_in_the_host()
     {
+        using var scope = factory.Services.CreateScope();
+
         Assert.NotNull(factory.Services.GetRequiredService<IPythonServiceClient>());
-        Assert.NotEmpty(factory.Services.GetServices<IDependencyHealthProbe>());
+        var probes = scope.ServiceProvider.GetServices<IDependencyHealthProbe>().Select(probe => probe.GetType()).ToList();
+        Assert.Contains(typeof(Amr.Infrastructure.Python.PythonServiceHealthChecker), probes);
+        Assert.Contains(typeof(Amr.Infrastructure.Persistence.DatabaseHealthProbe), probes);
+    }
+
+    [Fact]
+    public void A_connection_string_supplied_by_a_test_overrides_the_harness_default_but_a_host_setting_does_not()
+    {
+        using var overridden = factory.WithWebHostBuilder(builder => builder.ConfigureAppConfiguration((_, configuration) =>
+            configuration.AddInMemoryCollection(new Dictionary<string, string?> { ["ConnectionStrings:Amr"] = "Host=override.test;Database=x" })));
+        using var hostSetting = factory.WithWebHostBuilder(builder => builder.UseSetting("ConnectionStrings:Amr", "Host=ignored.test;Database=x"));
+
+        var explicitValue = overridden.Services.GetRequiredService<Microsoft.Extensions.Options.IOptions<Amr.Infrastructure.Persistence.DatabaseOptions>>().Value.ConnectionString;
+        var hostValue = hostSetting.Services.GetRequiredService<Microsoft.Extensions.Options.IOptions<Amr.Infrastructure.Persistence.DatabaseOptions>>().Value.ConnectionString;
+
+        Assert.Equal("Host=override.test;Database=x", explicitValue);
+        Assert.Equal(AmrApiFactory.UnreachableDatabase, hostValue);
     }
 
     [Fact]
@@ -26,7 +45,8 @@ public class PythonIntegrationWiringTests(AmrApiFactory factory) : IClassFixture
             builder.UseSetting("PythonService:BaseUrl", "http://127.0.0.1:1");
             builder.UseSetting("PythonService:ConnectTimeoutSeconds", "2");
         });
-        var probe = unreachable.Services.GetRequiredService<IDependencyHealthProbe>();
+        using var scope = unreachable.Services.CreateScope();
+        var probe = scope.ServiceProvider.GetServices<IDependencyHealthProbe>().OfType<Amr.Infrastructure.Python.PythonServiceHealthChecker>().Single();
 
         var components = await probe.CheckAsync(CancellationToken.None);
 

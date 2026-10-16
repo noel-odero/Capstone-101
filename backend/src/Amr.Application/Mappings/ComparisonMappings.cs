@@ -1,4 +1,5 @@
 using Amr.Application.DTOs.Comparisons;
+using Amr.Application.Metrics;
 using Amr.Application.PythonContracts;
 using Amr.Domain.Enums;
 
@@ -18,6 +19,7 @@ public static class ComparisonMappings
         run.Ppo.ToDto(),
         run.Greedy.ToDto(),
         Error: null,
+        MetricCatalogue.Describe(run.MetricDefinitions),
         run.SingleRunCaveat,
         run.Disclaimer);
 

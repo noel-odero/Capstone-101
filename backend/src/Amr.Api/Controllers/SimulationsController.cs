@@ -12,28 +12,33 @@ namespace Amr.Api.Controllers;
 public sealed class SimulationsController(ISimulationService simulations, IRunHistoryService history) : ApiControllerBase
 {
     /// <summary>
-    /// Runs one strategy from a profile. The result is not stored yet (isPersisted false), so its id cannot be retrieved.
+    /// Runs one strategy from a profile and stores the result. 201 Created is returned only after the run was committed
+    /// (isPersisted true); the Location header and id retrieve exactly this run. If the run executed but could not be
+    /// saved the response is an error (503 database_unavailable or 500 persistence_failed) and no id is issued.
     /// </summary>
     [HttpPost]
-    [ProducesResponseType<SimulationDto>(StatusCodes.Status200OK)]
+    [ProducesResponseType<SimulationDto>(StatusCodes.Status201Created)]
     [ProducesResponseType<ValidationProblemDetails>(StatusCodes.Status422UnprocessableEntity, AmrProblemDetails.ContentType)]
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status503ServiceUnavailable, AmrProblemDetails.ContentType)]
-    public async Task<ActionResult<SimulationDto>> Create(CreateSimulationRequest request, CancellationToken cancellationToken) =>
-        await simulations.RunAsync(request, cancellationToken);
+    public async Task<ActionResult<SimulationDto>> Create(CreateSimulationRequest request, CancellationToken cancellationToken)
+    {
+        var simulation = await simulations.RunAsync(request, cancellationToken);
+        return CreatedAtAction(nameof(Get), new { id = simulation.Id, version = ApiRoutes.UrlVersion1 }, simulation);
+    }
 
-    /// <summary>Recent simulations and comparisons. Needs stored runs: 501 until persistence is implemented.</summary>
+    /// <summary>Recent simulations and comparisons, newest first.</summary>
     [HttpGet("recent")]
     [ProducesResponseType<PagedResultDto<RunSummaryDto>>(StatusCodes.Status200OK)]
     [ProducesResponseType<ValidationProblemDetails>(StatusCodes.Status422UnprocessableEntity, AmrProblemDetails.ContentType)]
-    [ProducesResponseType<ProblemDetails>(StatusCodes.Status501NotImplemented, AmrProblemDetails.ContentType)]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status503ServiceUnavailable, AmrProblemDetails.ContentType)]
     public async Task<ActionResult<PagedResultDto<RunSummaryDto>>> GetRecent([FromQuery] RecentRunsQuery query, CancellationToken cancellationToken) =>
         await history.GetRecentAsync(query, cancellationToken);
 
-    /// <summary>A stored simulation. Needs stored runs: 501 until persistence is implemented.</summary>
+    /// <summary>A stored simulation. A comparison id is not a simulation id.</summary>
     [HttpGet("{id:guid}")]
     [ProducesResponseType<SimulationDto>(StatusCodes.Status200OK)]
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status404NotFound, AmrProblemDetails.ContentType)]
-    [ProducesResponseType<ProblemDetails>(StatusCodes.Status501NotImplemented, AmrProblemDetails.ContentType)]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status503ServiceUnavailable, AmrProblemDetails.ContentType)]
     public async Task<ActionResult<SimulationDto>> Get(Guid id, CancellationToken cancellationToken)
     {
         var simulation = await simulations.GetAsync(id, cancellationToken);

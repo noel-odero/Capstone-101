@@ -59,6 +59,33 @@ public class DependencyDirectionTests
     [InlineData("Amr.Domain")]
     [InlineData("Amr.Application")]
     [InlineData("Amr.Api")]
+    public void Only_infrastructure_knows_entity_framework_or_the_database_driver(string name)
+    {
+        var sources = Directory.EnumerateFiles(Path.Combine(BackendRoot, "src", name), "*.cs", SearchOption.AllDirectories)
+            .Where(path => !path.Contains($"{Path.DirectorySeparatorChar}obj{Path.DirectorySeparatorChar}", StringComparison.Ordinal));
+
+        Assert.DoesNotContain(sources, path =>
+        {
+            var text = File.ReadAllText(path);
+            return text.Contains("EntityFrameworkCore", StringComparison.Ordinal) || text.Contains("Npgsql", StringComparison.Ordinal) || text.Contains("DbContext", StringComparison.Ordinal);
+        });
+    }
+
+    [Fact]
+    public void Ef_entities_never_appear_in_the_application_or_api_surface()
+    {
+        var published = new[] { typeof(Amr.Application.DTOs.Common.StrategyResultDto).Assembly, typeof(Amr.Api.Routing.ApiRoutes).Assembly }
+            .SelectMany(assembly => assembly.GetExportedTypes())
+            .SelectMany(type => type.GetMethods().Select(method => method.ReturnType).Concat(type.GetProperties().Select(property => property.PropertyType)))
+            .Select(type => type.FullName ?? string.Empty);
+
+        Assert.DoesNotContain(published, name => name.Contains("Persistence.Entities", StringComparison.Ordinal));
+    }
+
+    [Theory]
+    [InlineData("Amr.Domain")]
+    [InlineData("Amr.Application")]
+    [InlineData("Amr.Api")]
     public void Only_infrastructure_talks_http(string name)
     {
         var sources = Directory.EnumerateFiles(Path.Combine(BackendRoot, "src", name), "*.cs", SearchOption.AllDirectories)

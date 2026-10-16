@@ -109,6 +109,7 @@ public class ControllerArchitectureTests
         {
             "IPythonServiceClient", "PythonContracts", "HttpClient", "System.Net.Http", "DbContext", "EntityFrameworkCore",
             "StrategyMapping", "Mappings", "Amr.Infrastructure", "IMemoryCache", "ConcurrentDictionary", "Dictionary<Guid",
+            "IRunRepository", "Persistence", "Entities", "SaveChanges",
         };
 
         var sources = Directory.EnumerateFiles(ControllerDirectory, "*.cs");

@@ -21,7 +21,6 @@ public static class AmrProblemDetails
         ErrorCategory.NotFound => StatusCodes.Status404NotFound,
         ErrorCategory.DependencyUnavailable => StatusCodes.Status503ServiceUnavailable,
         ErrorCategory.UpstreamFailure => StatusCodes.Status502BadGateway,
-        ErrorCategory.NotImplemented => StatusCodes.Status501NotImplemented,
         ErrorCategory.Internal => StatusCodes.Status500InternalServerError,
         _ => throw new ArgumentOutOfRangeException(nameof(category), category, "Unmapped error category."),
     };

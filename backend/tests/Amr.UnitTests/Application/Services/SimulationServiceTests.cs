@@ -16,7 +16,7 @@ public class SimulationServiceTests
     private static (SimulationService Service, StubHandler Handler) Serving(string fixture, HttpStatusCode status = HttpStatusCode.OK, string? body = null)
     {
         var handler = StubHandler.Returning(() => body is null ? PythonFixtures.Fixture(fixture, status) : PythonFixtures.Respond(status, body));
-        return (new SimulationService(ClientFactory.Create(handler)), handler);
+        return (new SimulationService(ClientFactory.Create(handler), new FakeRunRepository()), handler);
     }
 
     [Fact]
@@ -110,7 +110,7 @@ public class SimulationServiceTests
     }
 
     [Fact]
-    public async Task The_run_is_identified_by_pythons_run_id_and_is_marked_as_not_persisted()
+    public async Task The_run_is_identified_by_pythons_run_id_and_marked_persisted_after_the_save()
     {
         var (service, _) = Serving("simulate_200_ppo");
 
@@ -118,7 +118,7 @@ public class SimulationServiceTests
 
         var fixtureId = Guid.Parse(System.Text.Json.JsonDocument.Parse(PythonFixtures.Read("simulate_200_ppo")).RootElement.GetProperty("run_id").GetString()!);
         Assert.Equal(fixtureId, simulation.Id);
-        Assert.False(simulation.IsPersisted);
+        Assert.True(simulation.IsPersisted);
         Assert.Equal(RunStatus.Completed, simulation.Status);
         Assert.Null(simulation.Error);
         Assert.Equal(TimeSpan.Zero, simulation.CreatedAtUtc.Offset);
@@ -163,7 +163,7 @@ public class SimulationServiceTests
     public async Task The_cancellation_token_reaches_the_python_request()
     {
         var handler = StubHandler.Hanging();
-        var service = new SimulationService(ClientFactory.Create(handler));
+        var service = new SimulationService(ClientFactory.Create(handler), new FakeRunRepository());
         using var cancellation = new CancellationTokenSource();
 
         var pending = service.RunAsync(Request(), cancellation.Token);
@@ -185,16 +185,5 @@ public class SimulationServiceTests
         Assert.Equal(ErrorCodes.ValidationFailed, rejected.Code);
         Assert.Equal((ErrorCategory.DependencyUnavailable, ErrorCodes.ModelUnavailable), (down.Category, down.Code));
         Assert.DoesNotContain("checkpoint", down.Message, StringComparison.OrdinalIgnoreCase);
-    }
-
-    [Fact]
-    public async Task Retrieval_is_explicitly_not_implemented_without_persistence_and_never_invents_a_run()
-    {
-        var (service, handler) = Serving("simulate_200_ppo");
-
-        var error = await Assert.ThrowsAsync<AmrException>(() => service.GetAsync(Guid.NewGuid(), CancellationToken.None));
-
-        Assert.Equal((ErrorCategory.NotImplemented, ErrorCodes.PersistenceNotAvailable), (error.Category, error.Code));
-        Assert.Equal(0, handler.CallCount);
     }
 }

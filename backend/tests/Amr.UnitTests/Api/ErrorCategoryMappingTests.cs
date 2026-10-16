@@ -11,7 +11,6 @@ public class ErrorCategoryMappingTests
         { ErrorCategory.NotFound, 404 },
         { ErrorCategory.DependencyUnavailable, 503 },
         { ErrorCategory.UpstreamFailure, 502 },
-        { ErrorCategory.NotImplemented, 501 },
         { ErrorCategory.Internal, 500 },
     };
 

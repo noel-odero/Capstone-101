@@ -20,27 +20,29 @@ public class SimulationsControllerTests(AmrApiFactory factory) : IClassFixture<A
     }
 
     [Fact]
-    public async Task A_valid_request_reaches_the_service_with_typed_values_and_returns_200()
+    public async Task A_valid_request_reaches_the_service_with_typed_values_and_returns_201_with_a_location()
     {
         var (client, fake) = Host();
 
         var response = await client.PostJsonAsync(Url, """{"resistanceProfile":[0,1,0,0,0,0,0],"strategy":"random_susceptible_baseline","environmentSeed":7,"policySeed":9}""");
 
-        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        Assert.Equal(HttpStatusCode.Created, response.StatusCode);
+        var id = (await response.ReadJsonAsync()).GetProperty("id").GetGuid();
+        Assert.Equal($"{Url}/{id}", response.Headers.Location!.AbsolutePath);
         var request = Assert.Single(fake.RunRequests);
         Assert.Equal(new[] { 0, 1, 0, 0, 0, 0, 0 }, request.ResistanceProfile);
         Assert.Equal((StrategyKind.RandomSusceptibleBaseline, 7L, 9L), (request.Strategy, request.EnvironmentSeed, request.PolicySeed));
     }
 
     [Fact]
-    public async Task The_response_shape_is_camel_case_with_snake_case_enums_and_explicit_non_persistence()
+    public async Task The_response_shape_is_camel_case_with_snake_case_enums_and_the_persisted_flag_from_the_service()
     {
         var (client, _) = Host((_, _) => SampleDtos.Simulation(StrategyKind.RandomSusceptibleBaseline));
 
         var body = await (await client.PostJsonAsync(Url, ValidBody)).ReadJsonAsync();
 
         Assert.Equal("completed", body.GetProperty("status").GetString());
-        Assert.False(body.GetProperty("isPersisted").GetBoolean());
+        Assert.True(body.GetProperty("isPersisted").GetBoolean());
         Assert.Equal("random_susceptible_baseline", body.GetProperty("result").GetProperty("strategy").GetString());
         Assert.Equal("Random Susceptible Baseline", body.GetProperty("result").GetProperty("displayLabel").GetString());
         Assert.Equal("normalized_resistance_burden", body.GetProperty("provenance").GetProperty("rewardSpecification").GetProperty("objective").GetString());
@@ -65,13 +67,13 @@ public class SimulationsControllerTests(AmrApiFactory factory) : IClassFixture<A
     private const System.Text.Json.JsonValueKind JsonValueKindNull = System.Text.Json.JsonValueKind.Null;
 
     [Fact]
-    public async Task A_valid_terminal_run_is_a_200_with_no_steps()
+    public async Task A_valid_terminal_run_is_a_201_with_no_steps()
     {
         var (client, _) = Host((_, _) => SampleDtos.TerminalSimulation());
 
         var response = await client.PostJsonAsync(Url, """{"resistanceProfile":[1,1,1,1,1,1,1],"strategy":"ppo","environmentSeed":1}""");
 
-        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        Assert.Equal(HttpStatusCode.Created, response.StatusCode);
         var result = (await response.ReadJsonAsync()).GetProperty("result");
         Assert.Equal(0, result.GetProperty("steps").GetArrayLength());
         Assert.Equal("no_effective_antibiotic", result.GetProperty("terminationReason").GetString());

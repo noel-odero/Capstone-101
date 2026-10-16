@@ -1,6 +1,7 @@
 using Amr.Application.DTOs.Comparisons;
 using Amr.Application.Errors;
 using Amr.Application.Interfaces.Clients;
+using Amr.Application.Interfaces.Persistence;
 using Amr.Application.Interfaces.Services;
 using Amr.Application.Mappings;
 using Amr.Application.PythonContracts;
@@ -8,8 +9,9 @@ using Amr.Domain.Enums;
 
 namespace Amr.Application.Services;
 
-public sealed class ComparisonService(IPythonServiceClient python) : IComparisonService
+public sealed class ComparisonService(IPythonServiceClient python, IRunRepository runs) : IComparisonService
 {
+    /// <summary>A comparison is stored only after the contract and the request match were verified, so an unverified pair is never persisted.</summary>
     public async Task<ComparisonDto> RunAsync(CreateComparisonRequest request, CancellationToken cancellationToken)
     {
         var run = await python.CompareAsync(
@@ -29,13 +31,16 @@ public sealed class ComparisonService(IPythonServiceClient python) : IComparison
             throw UpstreamErrors.InvalidResponse();
         }
 
-        return RunResponseChecks.Answers(request, ppo.InitialProfile, ppo.EnvironmentSeed)
-            && RunResponseChecks.Answers(request, baseline.InitialProfile, baseline.EnvironmentSeed)
-            ? comparison
-            : throw ComparisonErrors.ContractViolation();
+        if (!RunResponseChecks.Answers(request, ppo.InitialProfile, ppo.EnvironmentSeed)
+            || !RunResponseChecks.Answers(request, baseline.InitialProfile, baseline.EnvironmentSeed))
+        {
+            throw ComparisonErrors.ContractViolation();
+        }
+
+        await runs.SaveComparisonAsync(comparison, cancellationToken);
+        return comparison with { IsPersisted = true };
     }
 
-    /// <summary>Needs stored runs. Not implemented until persistence exists.</summary>
     public Task<ComparisonDto?> GetAsync(Guid id, CancellationToken cancellationToken) =>
-        Task.FromException<ComparisonDto?>(PersistenceNotAvailable.Error());
+        runs.FindComparisonAsync(id, cancellationToken);
 }

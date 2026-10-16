@@ -26,10 +26,10 @@ public sealed class LivePythonServiceTests : IDisposable
 
         var configured = _factory.WithWebHostBuilder(builder => builder.UseSetting("PythonService:BaseUrl", url));
         _client = configured.Services.GetRequiredService<IPythonServiceClient>();
-        Probe = configured.Services.GetRequiredService<IDependencyHealthProbe>();
+        Probe = new Amr.Infrastructure.Python.PythonServiceHealthChecker(_client, Microsoft.Extensions.Logging.Abstractions.NullLogger<Amr.Infrastructure.Python.PythonServiceHealthChecker>.Instance);
     }
 
-    private IDependencyHealthProbe Probe { get; } = null!;
+    private Amr.Infrastructure.Python.PythonServiceHealthChecker Probe { get; } = null!;
 
     public void Dispose() => _factory.Dispose();
 

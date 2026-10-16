@@ -1,38 +1,135 @@
-# Public API contract notes
+﻿# Public API contract notes
 
 Decisions that are easy to get wrong. Code comments on the DTOs and interfaces carry the same statements.
 
-## Endpoint status (Stage C)
+## Endpoints
 
-Stage C delivers the request-to-Python path. There is no storage yet: nothing is kept in memory either, so a result that
-was just returned cannot be fetched again. That is deliberate; durable storage and retrieval are Stage D.
-
-| Route | Status | Behavior |
+| Route | Success | Behavior |
 |---|---|---|
-| `GET /api/v1/health` | Working | 200 when `pythonService` and `model` are healthy, otherwise 503 with the same report body |
-| `GET /api/v1/health/live` | Working | 200 while the process answers; touches no dependency |
-| `GET /api/v1/model` | Working | Frozen-model metadata from Python |
-| `GET /api/v1/antibiotics` | Working | Seven-drug catalogue in action order |
-| `POST /api/v1/profiles/validate` | Working | 200 for any valid profile, including terminal all-resistant |
-| `POST /api/v1/simulations` | Working | Runs `ppo` or `random_susceptible_baseline` in Python; 200, `isPersisted: false` |
-| `POST /api/v1/comparisons` | Working | Runs the paired comparison in Python; 200, `isPersisted: false`, contract verified or 500 |
-| `GET /api/v1/simulations/{id}` | 501 `persistence_not_available` | Needs stored runs (Stage D) |
-| `GET /api/v1/comparisons/{id}` | 501 `persistence_not_available` | Needs stored runs (Stage D) |
-| `GET /api/v1/recommendations/{simulationId}` | 501 `persistence_not_available` | Needs stored runs (Stage D) |
-| `GET /api/v1/simulations/recent` | 501 `persistence_not_available` | Query is validated first, so bad paging is 422 |
+| `GET /api/v1/health` | 200 / 503 | 200 only when `pythonService`, `model` and `database` are all healthy; otherwise 503 with the same report body |
+| `GET /api/v1/health/live` | 200 | The process answers; touches no dependency |
+| `GET /api/v1/model` | 200 | Frozen-model metadata from Python |
+| `GET /api/v1/antibiotics` | 200 | Seven-drug catalogue in action order |
+| `POST /api/v1/profiles/validate` | 200 | Any valid profile, including terminal all-resistant |
+| `POST /api/v1/simulations` | 201 | Runs `ppo` or `random_susceptible_baseline` in Python, stores the result, returns it with `Location` |
+| `POST /api/v1/comparisons` | 201 | Runs the paired comparison in Python, verifies the contract, stores the pair, returns it with `Location` |
+| `GET /api/v1/simulations/{id}` | 200 / 404 | The stored simulation, in the same representation as the POST response |
+| `GET /api/v1/comparisons/{id}` | 200 / 404 | The stored comparison, in the same representation as the POST response |
+| `GET /api/v1/recommendations/{simulationId}` | 200 / 404 | PPO-selected steps of a stored simulation |
+| `GET /api/v1/simulations/recent` | 200 | Stored simulations and comparisons, newest first |
 
-The 501 is category `NotImplemented` (`ErrorCodes.PersistenceNotAvailable`) so the API never answers 404 for a run that may
-exist, and never answers 200 from a cache.
+Any database-backed route answers 503 `database_unavailable` while the database cannot be reached. A missing run is never
+reported as an empty result or a 404 in that case.
 
-**Run ids.** `id` on a POST response is the Python run id. While `isPersisted` is false it identifies that execution only
-and is not retrievable. POST returns 200, not 201, because no resource is created and no `Location` exists to point at;
-Stage D can move to 201 together with the stored resource.
+## Run creation: ids, status code and `isPersisted`
 
-**Validation boundary.** DTO validation attributes at the API boundary are the contract (shape, lengths, ranges, strategy
-enum, unknown members). Application services trust a bound DTO and do not re-validate it. Python remains the backstop:
-its own rejection is mapped to 422 and its message is not echoed. Services additionally check that a Python response
-answers the request (same profile, seeds and strategy) and reject mismatches as `python_service_invalid_response`, or as
-`comparison_contract_violation` for comparisons.
+**The id.** `id` is the Python run id (a UUID the scientific service issues per execution). It is also the stored
+resource id: `GET /api/v1/simulations/{id}` or `GET /api/v1/comparisons/{id}` returns exactly the run that was created.
+A simulation id is not a comparison id; asking for the wrong kind is `404 not_found`.
+
+**Why 201 Created.** Creation now produces a durable, individually addressable resource, so the response is
+`201 Created` with `Location: /api/v1/simulations/{id}` (or `/comparisons/{id}`) and the run as the body. A `200 OK` would
+not say that a new resource now exists, and would leave the client without its address.
+
+**When `isPersisted` is true.** Only after the database transaction committed. The service builds the result with
+`isPersisted: false`, saves it, and sets `true` on the returned copy after the save succeeded. A response is never sent
+with `isPersisted: true` before the commit, and a failed save never produces a success body at all. A retrieved run always
+has `isPersisted: true`.
+
+**When the save fails.** Python may have executed a run that has no public record:
+
+| Cause | Status | Code |
+|---|---|---|
+| Database unreachable, authentication or resource failure, timeout | 503 | `database_unavailable` |
+| The write was rejected (constraint, missing schema, duplicate run id) | 500 | `persistence_failed` |
+
+The message says the simulation ran but no record exists, and no id is issued to the client. The failure is logged at
+error level with the Python run id and the request's `X-Correlation-ID`, so the orphaned upstream execution can be found.
+Python is called once per request: there are no automatic retries of simulation or comparison POSTs, and a failed save does
+not re-run Python. Client cancellation during the save rolls the transaction back, so nothing is stored.
+
+**Failed and partial runs.** Only completed runs are stored. Python either returns a full result or an error, so there is no
+partial result. A failed or contract-violating run (`comparison_contract_violation`, an invalid or mismatched Python
+response) is reported as an error and never persisted. The database enforces this: `experiment_runs.status` has a check
+constraint allowing only `completed`, and a comparison row must carry its contract, pairing semantics and caveat.
+
+## Persistence model
+
+| Table | Purpose |
+|---|---|
+| `model_versions` | The exact model and simulator configuration: model id, algorithm, checkpoint SHA-256, interaction-data SHA-256, scenario, horizon, action-mask rule, reward specification, antibiotic order. Unique on a SHA-256 fingerprint of those fields (the service version is excluded). |
+| `experiment_runs` | One simulation or comparison. Primary key is the public id. References one model version, and records inputs (initial profile, seeds and their sources), service version, Python's creation time, the commit time, metric definitions, and for comparisons the pairing semantics, caveat and verified contract. |
+| `strategy_runs` | One strategy's trajectory and its 12 metrics. Unique on (experiment run, strategy): a simulation has one, a comparison has `ppo` and `random_susceptible_baseline`. Also holds the state snapshots. |
+| `step_traces` | One step. Primary key (strategy run, step index), so order is stable and duplicates are impossible. |
+
+`ModelVersion` relates one-to-many to experiment runs, which relate one-to-many to strategy runs, which relate
+one-to-many to step traces. Foreign keys cascade from run to strategy runs to steps; a model version cannot be deleted
+while a run references it. A save is one transaction: the model-version upsert (`ON CONFLICT DO NOTHING`, race-free), the
+run, its strategy runs and every step commit together or not at all.
+
+Values are copied, never recomputed, so a retrieved run equals the run Python produced. Structured sub-documents
+(state snapshots, feasible actions, candidate transitions, metric definitions, the reward specification and the comparison
+contract) are stored as `jsonb`, which does not preserve object key order; JSON consumers must not depend on it.
+Paths, devices and Python class names are never stored or returned.
+
+## Metrics: `metricDefinitions`
+
+Every simulation and comparison response (POST and GET) carries `metricDefinitions`, keyed by the metric's property name
+in `result.metrics` (`ppo.metrics` / `baseline.metrics` for comparisons). Each entry has:
+
+- `definition`: the Python service's text, verbatim as returned with that run and stored with it;
+- `kind`: `cumulative` (a running total of per-step quantities), `count` (a tally, or the count in one state),
+  `difference` (a signed difference of two counts) or `rate` (a ratio of two counts within one episode);
+- `unit` and `aggregation`: the scale and how the value is computed over one episode.
+
+All values describe one simulated episode. No exposed metric is an average across episodes or a percentage; rates are
+proportions in [0, 1] and are `null` when the episode has no steps. None is a clinical outcome. The kind, unit and
+aggregation were verified against `service/rollout.py`, `ml/src/metrics.py` and `simulation/reward.py`
+(`Amr.Application/Metrics/MetricCatalogue.cs` is the single catalogue). A Python response whose metric names differ from
+the catalogue is rejected as `python_service_invalid_response` instead of being guessed at.
+
+| Metric | Kind | Unit | Aggregation | Python definition (verbatim) |
+|---|---|---|---|---|
+| `cumulativeResistanceBurden` | cumulative | resistant-antibiotic burden normalized by 7 antibiotics; simulated, lower is less burden | Sum over steps of the negated step reward; an all-resistant state is charged for the remaining horizon | Negative of the simulator's cumulative reward (ml.src.matched_policy_evaluation._episode_burden): sum over steps of resistant_count_after / 7, with an all-resistant state charged for the remaining horizon. Lower means less simulated resistance burden; it is not a clinical outcome. |
+| `cumulativeReward` | cumulative | simulator reward units | Sum of step rewards plus any terminal adjustment | Sum of simulator step rewards plus any terminal adjustment (ml.src.metrics). |
+| `treatmentSteps` | count | steps | Number of actions taken before the episode ended | Number of actions taken before the episode ended. |
+| `initialResistantCount` | count | antibiotics, from 0 to 7 | Value at the start of the episode; not accumulated | Resistant antibiotics in the initial profile. |
+| `finalResistantCount` | count | antibiotics, from 0 to 7 | Value at the end of the episode; not accumulated | Resistant antibiotics in the final profile. |
+| `finalSusceptibleCount` | count | antibiotics, from 0 to 7 | Value at the end of the episode; not accumulated | Susceptible antibiotics in the final profile (ml.src.metrics future_effective_antibiotics). |
+| `changeInSusceptibleCount` | difference | antibiotics, signed | Final susceptible count minus initial susceptible count | final_susceptible_count minus the initial susceptible count. |
+| `resistanceEmergenceEvents` | count | steps | Number of steps after which the resistant count increased | Steps after which the resistant count increased (ml.src.metrics). |
+| `resistanceEmergenceRate` | rate | proportion of steps in [0, 1]; not a percentage | resistance_emergence_events divided by treatment_steps; null when there are no steps | resistance_emergence_events / treatment_steps; null when there are no steps. |
+| `susceptibleActionRate` | rate | proportion of steps in [0, 1]; not a percentage | Steps whose selected drug was susceptible in the simulator divided by treatment_steps; null when there are no steps | Fraction of steps whose selected drug was susceptible in the simulator (ml.src.metrics treatment_effectiveness_rate). The susceptible-only mask makes this 1.0 for both strategies, and it is not clinical efficacy; null when there are no steps. |
+| `unsupportedStepCount` | count | steps | Number of steps with transition_status unsupported_no_candidate | Steps with transition_status unsupported_no_candidate: the simulator had no candidate transition and left the profile unchanged. |
+| `cumulativeAntibioticExposure` | cumulative | antibiotic administrations | One per step, so it equals treatment_steps | Number of antibiotic administrations (one per step). |
+
+Unresolved for the scientific owners, not guessed here: Python describes `cumulativeReward` as including "any terminal
+adjustment" without defining it. The metric is passed through unchanged, and `cumulativeResistanceBurden` is defined as its
+negative, so the two inherit the same ambiguity. The `susceptibleActionRate` source field is internally named
+`treatment_effectiveness_rate`; the public name deliberately avoids implying efficacy.
+
+## Susceptibility versus supported transition data
+
+Two different facts are kept apart on every step and are stored in separate columns:
+
+- `selectedDrugSusceptible`: in the resistance profile the selected antibiotic was susceptible (the simulator's internal
+  `effective` flag). It is not clinical efficacy.
+- `transitionStatus` / `hasCandidateTransition`: whether the simulator has transition data for that action in that state.
+  `transitionStatus` is the sampled outcome, or `unsupported_no_candidate` when there is no candidate transition.
+
+A susceptible drug can have no transition data. Such a step has `selectedDrugSusceptible: true`,
+`transitionStatus: "unsupported_no_candidate"`, `hasCandidateTransition: false`, empty `candidateTransitions`, a null
+`selectedOutcome`, and the profile after equals the profile before. Nothing is invented for it, and it is counted in
+`unsupportedStepCount`. Python provides no separate reason code beyond `transitionStatus`, so none is stored. The same
+values come back from POST, GET and the recommendation endpoint.
+
+## Validation boundary
+
+DTO validation attributes at the API boundary are the contract (shape, lengths, ranges, strategy enum, unknown members).
+Application services trust a bound DTO and do not re-validate it. Python remains the backstop: its own rejection is
+mapped to 422 and its message is not echoed. Services additionally check that a Python response answers the request (same
+profile, seeds and strategy) and reject mismatches as `python_service_invalid_response`, or as
+`comparison_contract_violation` for comparisons. Nothing is saved before those checks pass.
 
 ## Strategy identifiers
 
@@ -69,7 +166,7 @@ Evidence is in `service/schemas.py`, `simulation/reward.py`, `ml/src/ppo_trainin
 | `rewardSpecification` | `RewardSpecification.to_dict()`; schema declares `dict[str, Any]`; today `objective`, `normalization`, `terminal_convention` (pinned by `simulation/tests/test_reward.py`) | Passed through verbatim as a map. No key is dropped or interpreted, and a future key appears without a code change. Keys keep their Python spelling. |
 | `actionMaskConfiguration` (comparisons) | `PPOConfig.__post_init__` rejects anything but `{"enabled": true, "rule": "susceptible_actions_only"}` | Typed (`enabled`, `rule`), because the shape is enforced. |
 | model `observation`, `actionSpace`, `actionMasking`, `inference` | Validated by `load_manifest` against the frozen manifest | Typed. Manifest file paths, the inference device, the Python `implementation` class name and `evaluation_utility` are not exposed. |
-| Metric definitions | Returned only inside each Python run response | Not in the DTOs yet (open question). |
+| Metric definitions | `metric_definitions` in every Python run response (`service/rollout.py`) | Exposed as `metricDefinitions` with kind, unit and aggregation; see Metrics above. |
 
 ## Validation and errors
 
@@ -90,8 +187,7 @@ All problem responses are RFC 9457 (`application/problem+json`) with `code` and 
 | Not found | 404 | `not_found`, `recommendation_not_found` |
 | Dependency unavailable | 503 | `model_unavailable`, `python_service_unavailable`, `python_service_timeout`, `database_unavailable` |
 | Upstream failure | 502 | `python_service_invalid_response` |
-| Internal | 500 | `internal_error`, `comparison_contract_violation` |
-| Not implemented | 501 | `persistence_not_available` |
+| Internal | 500 | `internal_error`, `comparison_contract_violation`, `persistence_failed` |
 
 Python errors map in `Infrastructure/Python/PythonServiceErrorMapper.cs`: `invalid_context` and
 `request_validation_error` to 422; `model_not_loaded`, `checkpoint_integrity_failure`, `model_contract_mismatch` and
@@ -110,8 +206,8 @@ members are ignored. The Python fixtures are regenerated with
 Fixtures are real captures and can go stale when the Python schema changes; regenerate them after any `service/` change.
 
 Readiness (`IDependencyHealthProbe`) reports `pythonService` and `model` separately: a reachable service with a model
-that failed verification is `pythonService` healthy, `model` unhealthy (`model_unavailable`). There is no `database`
-component until Stage D adds a database probe.
+that failed verification is `pythonService` healthy, `model` unhealthy (`model_unavailable`). The `database` component is
+described under Health below.
 
 A Python connect timeout can surface as `python_service_timeout` rather than `python_service_unavailable`; both are 503 and
 clients should treat them alike.
@@ -124,3 +220,72 @@ clients should treat them alike.
 - Each project has a committed `packages.lock.json`; set `CI=true` (or pass `--locked-mode`) to fail on drift.
 - Nullable reference types and warnings-as-errors apply to every project; analyzers run at `latest-recommended`.
   Test projects additionally disable CA1707 (underscored test names) and CA1861 (inline expected arrays).
+
+## Database configuration and migrations
+
+PostgreSQL is configured only through the environment. The connection string is a secret and is never committed;
+`appsettings*.json` contain no connection string, and a unit test enforces that.
+
+```powershell
+$env:ConnectionStrings__Amr = 'Host=localhost;Port=5432;Database=amr;Username=amr;Password=<local-dev-password>'
+```
+
+The API refuses to start without `ConnectionStrings__Amr`. `Database:CommandTimeoutSeconds` (30) and
+`Database:HealthTimeoutSeconds` (3) are in `appsettings.json`.
+
+**Migrations are explicit.** The API never creates or changes the schema on startup. An operator applies them with the
+pinned local tool (`backend/dotnet-tools.json`, `dotnet-ef` 10.0.13):
+
+```powershell
+cd backend
+dotnet tool restore
+dotnet tool run dotnet-ef database update --project src/Amr.Infrastructure --startup-project src/Amr.Api
+dotnet tool run dotnet-ef migrations list --project src/Amr.Infrastructure --startup-project src/Amr.Api
+dotnet tool run dotnet-ef migrations script --idempotent --project src/Amr.Infrastructure --startup-project src/Amr.Api -o amr-migrations.sql
+```
+
+The same `ConnectionStrings__Amr` variable is used by `dotnet ef` (through a design-time factory), so no credential is
+written to a file. The idempotent script can be reviewed and applied by a DBA instead; it is safe to apply repeatedly.
+New migrations are created with `dotnet ef migrations add <Name> ... --output-dir Persistence/Migrations`; a test fails if
+the model and the migrations disagree.
+
+**Local development and tests.** Use a disposable server, never a shared one. For example:
+
+```powershell
+docker run -d --name amr-test-pg -e POSTGRES_PASSWORD=<throwaway> -p 127.0.0.1:55432:5432 postgres:17-alpine
+$env:AMR_TEST_POSTGRES = 'Host=127.0.0.1;Port=55432;Username=postgres;Password=<throwaway>;Database=postgres'
+```
+
+`AMR_TEST_POSTGRES` is an admin connection string. Each database test class creates its own `amr_it_<guid>` database,
+applies the migrations, and drops the database afterwards. Without the variable the PostgreSQL tests are reported as
+skipped; with `AMR_REQUIRE_POSTGRES=true` a missing server fails them instead.
+
+## Health
+
+`GET /api/v1/health` reports `api`, `pythonService`, `model` and `database`. The `database` component is:
+
+| Status | `detail` | Meaning |
+|---|---|---|
+| healthy | none | Reachable and every migration applied |
+| unhealthy | `database_unavailable` | Cannot connect, authenticate or answer within the health timeout |
+| unhealthy | `database_migrations_pending` | Reachable, but the schema is behind the migrations (the API does not migrate) |
+
+Only these stable codes are reported; connection details never are. `GET /api/v1/health/live` does not depend on the
+database.
+
+## Live tests and CI
+
+`backend/scripts/run-live-tests.ps1` starts the real Python service, waits for `/internal/health` to report a ready
+model, sets `AMR_PYTHON_URL`, and runs the live tests with `AMR_REQUIRE_LIVE=true` and `AMR_REQUIRE_POSTGRES=true`, so a
+missing service or database fails the run instead of skipping tests. It stops the service in a `finally` block and exits
+with the test result. Prerequisites: the repository `.venv`, a disposable PostgreSQL server in `AMR_TEST_POSTGRES`, and the
+.NET SDK.
+
+```powershell
+.\backend\scripts\run-live-tests.ps1
+```
+
+**Limitation: no CI workflow is configured.** The repository contains no CI configuration, so the live tests run only when
+someone runs this script; nothing runs them automatically. Wiring the script into a pipeline (with a PostgreSQL service
+and the Python environment) is still to be done and is not claimed here.
+

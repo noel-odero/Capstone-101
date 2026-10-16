@@ -12,12 +12,13 @@ public sealed class RecommendationsController(IRecommendationService recommendat
 {
     /// <summary>
     /// PPO-selected actions of a stored simulation, with their feasibility and transition support. Simulation output, not
-    /// clinical advice. Needs stored runs: 501 until persistence is implemented; then 404 recommendation_not_found for any run without PPO steps.
+    /// clinical advice. 404 recommendation_not_found for an unknown id and for any run without PPO steps (a baseline
+    /// simulation or a comparison id); the cases are deliberately indistinguishable.
     /// </summary>
     [HttpGet("{simulationId:guid}")]
     [ProducesResponseType<RecommendationDto>(StatusCodes.Status200OK)]
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status404NotFound, AmrProblemDetails.ContentType)]
-    [ProducesResponseType<ProblemDetails>(StatusCodes.Status501NotImplemented, AmrProblemDetails.ContentType)]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status503ServiceUnavailable, AmrProblemDetails.ContentType)]
     public async Task<ActionResult<RecommendationDto>> Get(Guid simulationId, CancellationToken cancellationToken)
     {
         var recommendation = await recommendations.GetBySimulationAsync(simulationId, cancellationToken);
