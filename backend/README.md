@@ -83,8 +83,15 @@ locked-mode package restore.
 
 The script starts the Python service, waits for a ready model, sets `AMR_PYTHON_URL`, runs the live tests with
 `AMR_REQUIRE_LIVE=true` and `AMR_REQUIRE_POSTGRES=true`, and always stops the service. It needs `AMR_TEST_POSTGRES` in the
-environment and the repository `.venv`. **No CI workflow is configured**, so nothing runs these tests automatically yet;
-they run only when someone runs the script.
+environment and the repository `.venv` (or `-Python <path>`). It selects exactly the live test classes, so it does not repeat
+the rest of the suite.
+
+### CI
+
+`.github/workflows/ci.yml` runs on pull requests and on pushes to `main` and `backend`: the `dotnet` job (locked restore, build
+with warnings as errors, all non-live tests against a PostgreSQL service, `AMR_REQUIRE_POSTGRES=true`), the `python` job (full
+`pytest`) and the `live` job (this script, no skipping). The workflow has been linted and its commands replayed locally, but it
+has not yet run on GitHub, so the Linux-specific steps are unverified until the first run.
 
 ## Endpoint status
 

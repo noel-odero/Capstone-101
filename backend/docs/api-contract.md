@@ -90,8 +90,8 @@ the catalogue is rejected as `python_service_invalid_response` instead of being 
 
 | Metric | Kind | Unit | Aggregation | Python definition (verbatim) |
 |---|---|---|---|---|
-| `cumulativeResistanceBurden` | cumulative | resistant-antibiotic burden normalized by 7 antibiotics; simulated, lower is less burden | Sum over steps of the negated step reward; an all-resistant state is charged for the remaining horizon | Negative of the simulator's cumulative reward (ml.src.matched_policy_evaluation._episode_burden): sum over steps of resistant_count_after / 7, with an all-resistant state charged for the remaining horizon. Lower means less simulated resistance burden; it is not a clinical outcome. |
-| `cumulativeReward` | cumulative | simulator reward units | Sum of step rewards plus any terminal adjustment | Sum of simulator step rewards plus any terminal adjustment (ml.src.metrics). |
+| `cumulativeResistanceBurden` | cumulative | resistant-antibiotic burden normalized by 7 antibiotics; simulated, lower is less burden | Negated cumulative reward: the negated sum of step rewards plus the negated terminal adjustment, which is -horizon when the episode starts in the all-resistant terminal state and 0 otherwise (so a zero-step episode that starts all-resistant has burden equal to the horizon) | Negative of the simulator's cumulative reward (ml.src.matched_policy_evaluation._episode_burden): sum over steps of resistant_count_after / 7, with an all-resistant state charged for the remaining horizon. Lower means less simulated resistance burden; it is not a clinical outcome. |
+| `cumulativeReward` | cumulative | simulator reward units | Sum of step rewards plus the terminal adjustment, which is -horizon when the episode starts in the all-resistant terminal state and 0 otherwise | Sum of simulator step rewards plus any terminal adjustment (ml.src.metrics). |
 | `treatmentSteps` | count | steps | Number of actions taken before the episode ended | Number of actions taken before the episode ended. |
 | `initialResistantCount` | count | antibiotics, from 0 to 7 | Value at the start of the episode; not accumulated | Resistant antibiotics in the initial profile. |
 | `finalResistantCount` | count | antibiotics, from 0 to 7 | Value at the end of the episode; not accumulated | Resistant antibiotics in the final profile. |
@@ -103,9 +103,15 @@ the catalogue is rejected as `python_service_invalid_response` instead of being 
 | `unsupportedStepCount` | count | steps | Number of steps with transition_status unsupported_no_candidate | Steps with transition_status unsupported_no_candidate: the simulator had no candidate transition and left the profile unchanged. |
 | `cumulativeAntibioticExposure` | cumulative | antibiotic administrations | One per step, so it equals treatment_steps | Number of antibiotic administrations (one per step). |
 
-Unresolved for the scientific owners, not guessed here: Python describes `cumulativeReward` as including "any terminal
-adjustment" without defining it. The metric is passed through unchanged, and `cumulativeResistanceBurden` is defined as its
-negative, so the two inherit the same ambiguity. The `susceptibleActionRate` source field is internally named
+**Terminal adjustment.** The Python definition strings for `cumulativeReward` and `cumulativeResistanceBurden` do not say
+what the "terminal adjustment" is, and the burden string describes only the per-step sum. The code defines it:
+`ml/src/evaluation_runner.py` sets `terminal_reward_adjustment` to `-float(horizon)` when the episode starts in the
+all-resistant terminal state and to `0.0` otherwise, `EpisodeResult.cumulative_reward` is the sum of step rewards plus that
+adjustment, and the burden is its negative (`ml/src/matched_policy_evaluation.py`, `_episode_burden`). An episode that starts
+all-resistant executes zero steps yet reports burden `8.0` and reward `-8.0` for an eight-step horizon (see the
+`simulate_200_terminal` fixture). The aggregation column states this; the Python text is still passed through verbatim.
+The API assigns no further scientific meaning to the adjustment, and the rationale for choosing `-horizon` is not stated in
+the code, so it is left to the scientific owners. The `susceptibleActionRate` source field is internally named
 `treatment_effectiveness_rate`; the public name deliberately avoids implying efficacy.
 
 ## Susceptibility versus supported transition data
@@ -278,14 +284,23 @@ database.
 `backend/scripts/run-live-tests.ps1` starts the real Python service, waits for `/internal/health` to report a ready
 model, sets `AMR_PYTHON_URL`, and runs the live tests with `AMR_REQUIRE_LIVE=true` and `AMR_REQUIRE_POSTGRES=true`, so a
 missing service or database fails the run instead of skipping tests. It stops the service in a `finally` block and exits
-with the test result. Prerequisites: the repository `.venv`, a disposable PostgreSQL server in `AMR_TEST_POSTGRES`, and the
-.NET SDK.
+with the test result. Prerequisites: the repository `.venv` (or `-Python <path>`), a disposable PostgreSQL server in
+`AMR_TEST_POSTGRES`, and the .NET SDK. It runs on Windows PowerShell 5.1 and on PowerShell 7 (Windows and Linux).
 
 ```powershell
 .\backend\scripts\run-live-tests.ps1
 ```
 
-**Limitation: no CI workflow is configured.** The repository contains no CI configuration, so the live tests run only when
-someone runs this script; nothing runs them automatically. Wiring the script into a pipeline (with a PostgreSQL service
-and the Python environment) is still to be done and is not claimed here.
+**CI.** `.github/workflows/ci.yml` runs on pull requests and on pushes to `main` and `backend` with three independent jobs:
+
+| Job | Runner | What it runs |
+|---|---|---|
+| `dotnet` | ubuntu-24.04 + PostgreSQL 17 service | `dotnet restore --locked-mode`, `dotnet build -warnaserror`, then every unit and integration test except the live classes, with `AMR_REQUIRE_POSTGRES=true` |
+| `python` | windows-2025 | `ml/requirements-lock.txt` plus `service/requirements-dev.txt` (the lock is a Windows freeze), then the full `pytest` suite |
+| `live` | ubuntu-24.04 + PostgreSQL 17 service | `service/requirements.txt`, then `run-live-tests.ps1`, which runs only `LivePythonServiceTests` and `LiveEndToEndTests` with skipping disabled |
+
+The PostgreSQL service uses `POSTGRES_HOST_AUTH_METHOD=trust` on the job's private network, so no password or secret is
+stored. The workflow has been linted with `actionlint` and its commands replayed locally, but it has not yet run on GitHub;
+the Linux-specific parts (restore in locked mode on Linux, the PyPI Linux `torch` wheel, the service starting on Linux) are
+unverified until the first run.
 

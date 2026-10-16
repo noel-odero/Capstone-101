@@ -85,6 +85,63 @@ public class MetricCatalogueTests
     }
 
     [Fact]
+    public void A_zero_step_all_resistant_episode_has_burden_and_reward_equal_to_the_horizon_and_the_catalogue_says_so()
+    {
+        var run = JsonNode.Parse(PythonFixtures.Read("simulate_200_terminal"))!;
+        var metrics = run["result"]!["metrics"]!;
+        var horizon = run["provenance"]!["horizon"]!.GetValue<int>();
+
+        Assert.Equal(0, metrics["treatment_steps"]!.GetValue<int>());
+        Assert.Empty(run["result"]!["steps"]!.AsArray());
+        Assert.Equal(horizon, metrics["cumulative_resistance_burden"]!.GetValue<double>());
+        Assert.Equal(-horizon, metrics["cumulative_reward"]!.GetValue<double>());
+        foreach (var key in new[] { "cumulative_resistance_burden", "cumulative_reward" })
+        {
+            var aggregation = MetricCatalogue.Entries.Single(entry => entry.PythonKey == key).Aggregation;
+            Assert.Contains("-horizon", aggregation, StringComparison.Ordinal);
+            Assert.Contains("all-resistant terminal state", aggregation, StringComparison.Ordinal);
+        }
+    }
+
+    [Fact]
+    public void Without_the_terminal_adjustment_the_reward_is_exactly_the_sum_of_step_rewards_and_the_burden_is_its_negative()
+    {
+        var result = JsonNode.Parse(PythonFixtures.Read("simulate_200_ppo"))!["result"]!;
+        var stepRewards = result["steps"]!.AsArray().Sum(step => step!["reward"]!.GetValue<double>());
+        var metrics = result["metrics"]!;
+
+        Assert.Equal(stepRewards, metrics["cumulative_reward"]!.GetValue<double>(), precision: 9);
+        Assert.Equal(-stepRewards, metrics["cumulative_resistance_burden"]!.GetValue<double>(), precision: 9);
+    }
+
+    [Fact]
+    public void The_contract_document_publishes_exactly_the_catalogue_text_and_the_python_definition_of_every_metric()
+    {
+        var document = File.ReadAllText(Path.Combine(BackendRoot(), "docs", "api-contract.md"));
+        var python = PythonDefinitions("simulate_200_ppo");
+
+        foreach (var entry in MetricCatalogue.Entries)
+        {
+            var row = document.Split('\n').SingleOrDefault(line => line.StartsWith($"| `{JsonNamingPolicy.CamelCase.ConvertName(entry.PublicName)}` |", StringComparison.Ordinal));
+            Assert.NotNull(row);
+            Assert.Contains($"| {entry.Unit} |", row, StringComparison.Ordinal);
+            Assert.Contains($"| {entry.Aggregation} |", row, StringComparison.Ordinal);
+            Assert.EndsWith($"| {python[entry.PythonKey]} |", row.TrimEnd(), StringComparison.Ordinal);
+        }
+    }
+
+    private static string BackendRoot()
+    {
+        var directory = new DirectoryInfo(AppContext.BaseDirectory);
+        while (directory is not null && !File.Exists(Path.Combine(directory.FullName, "Amr.sln")))
+        {
+            directory = directory.Parent;
+        }
+
+        return directory?.FullName ?? throw new InvalidOperationException("Amr.sln was not found above the test output directory.");
+    }
+
+    [Fact]
     public void A_missing_extra_or_empty_definition_is_an_invalid_upstream_response()
     {
         var good = PythonDefinitions("simulate_200_ppo");

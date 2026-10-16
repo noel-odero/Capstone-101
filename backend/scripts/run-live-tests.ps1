@@ -6,7 +6,8 @@
   readiness, sets AMR_PYTHON_URL, and runs the live tests with AMR_REQUIRE_LIVE and AMR_REQUIRE_POSTGRES so a missing
   service or database FAILS the run instead of skipping tests. The service process is always stopped.
   Needs AMR_TEST_POSTGRES (an admin connection string of a disposable PostgreSQL server) in the environment.
-  Run from anywhere; paths are resolved from this script's location.
+  Run from anywhere; paths are resolved from this script's location. Works in Windows PowerShell 5.1 and PowerShell 7
+  on Windows and Linux; pass -Python when the interpreter is not the repository .venv.
 #>
 [CmdletBinding()]
 param(
@@ -16,10 +17,10 @@ param(
 )
 
 $ErrorActionPreference = 'Stop'
-$repoRoot = (Resolve-Path (Join-Path $PSScriptRoot '..\..')).Path
+$repoRoot = (Resolve-Path (Join-Path $PSScriptRoot '../..')).Path
 $backend = Join-Path $repoRoot 'backend'
 if (-not $Python) {
-    $Python = Join-Path $repoRoot '.venv\Scripts\python.exe'
+    $Python = Join-Path $repoRoot '.venv/Scripts/python.exe'
     if (-not (Test-Path $Python)) { $Python = 'python' }
 }
 if (-not $env:AMR_TEST_POSTGRES) {
@@ -60,7 +61,7 @@ try {
     Push-Location $backend
     try {
         $env:CI = 'true'
-        dotnet test tests/Amr.IntegrationTests --nologo --filter "FullyQualifiedName~Live"
+        dotnet test tests/Amr.IntegrationTests --nologo --filter "FullyQualifiedName~LivePythonServiceTests|FullyQualifiedName~LiveEndToEndTests"
         $exitCode = $LASTEXITCODE
     } finally {
         Pop-Location

@@ -7,7 +7,8 @@ namespace Amr.Application.Metrics;
 
 /// <summary>
 /// Canonical metadata for every metric in <see cref="StrategyMetricsDto"/>. Kind, unit and aggregation were verified
-/// against service/rollout.py (METRIC_DEFINITIONS and _strategy_result), ml/src/metrics.py and simulation/reward.py;
+/// against service/rollout.py (METRIC_DEFINITIONS and _strategy_result), ml/src/metrics.py, ml/src/evaluation_runner.py
+/// (the terminal adjustment) and simulation/reward.py;
 /// the definition text itself always comes from the Python response. A response whose metric names differ from this
 /// catalogue is rejected rather than guessed at, so a new or renamed metric is flagged for resolution.
 /// </summary>
@@ -22,10 +23,10 @@ public static class MetricCatalogue
     [
         new("cumulative_resistance_burden", nameof(StrategyMetricsDto.CumulativeResistanceBurden), MetricKind.Cumulative,
             "resistant-antibiotic burden normalized by 7 antibiotics; simulated, lower is less burden",
-            "Sum over steps of the negated step reward; an all-resistant state is charged for the remaining horizon"),
+            "Negated cumulative reward: the negated sum of step rewards plus the negated terminal adjustment, which is -horizon when the episode starts in the all-resistant terminal state and 0 otherwise (so a zero-step episode that starts all-resistant has burden equal to the horizon)"),
         new("cumulative_reward", nameof(StrategyMetricsDto.CumulativeReward), MetricKind.Cumulative,
             "simulator reward units",
-            "Sum of step rewards plus any terminal adjustment"),
+            "Sum of step rewards plus the terminal adjustment, which is -horizon when the episode starts in the all-resistant terminal state and 0 otherwise"),
         new("treatment_steps", nameof(StrategyMetricsDto.TreatmentSteps), MetricKind.Count,
             "steps",
             "Number of actions taken before the episode ended"),
