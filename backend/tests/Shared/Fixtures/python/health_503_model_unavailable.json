@@ -1,0 +1,9 @@
+{
+  "status": "unavailable",
+  "model_ready": false,
+  "service_version": "0.1.0",
+  "model_id": null,
+  "checkpoint_sha256": null,
+  "error_code": "checkpoint_integrity_failure",
+  "message": "Checkpoint integrity verification failed."
+}

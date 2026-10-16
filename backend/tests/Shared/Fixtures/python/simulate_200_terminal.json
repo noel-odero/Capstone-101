@@ -1,0 +1,124 @@
+{
+  "run_id": "6442e86b-233d-4f48-b6b1-17e7a3b6c6a9",
+  "kind": "simulation",
+  "created_at_utc": "2026-10-15T13:37:17.922836+00:00",
+  "provenance": {
+    "service_version": "0.1.0",
+    "model_id": "ppo_seed_12000",
+    "algorithm": "MaskablePPO",
+    "checkpoint_sha256": "d10c26185c9903d96d0f2003643b76be6df4f03c39e0d2e5f7945e763b7d9093",
+    "interaction_data_sha256": "7a5e3e1fe730676a0793674e4ff4aaf3c6ce1177ad5588eed4bb2e5d627edb44",
+    "scenario_id": "REF_UNIFORM_SUPPORTED",
+    "horizon": 8,
+    "reward_specification": {
+      "objective": "normalized_resistance_burden",
+      "normalization": 7,
+      "terminal_convention": "all_resistant_state_persists_to_horizon"
+    },
+    "action_mask_rule": "susceptible_actions_only",
+    "antibiotic_order": [
+      "CIPROFLOXACIN",
+      "NITROFURANTOIN",
+      "FOSFOMYCIN",
+      "TRIMETHOPRIM",
+      "GENTAMICIN",
+      "MECILLINAM",
+      "CEFTAZIDIME"
+    ],
+    "evaluation_utility": "ml.src.multi_seed_evaluation.run_multi_seed_evaluation"
+  },
+  "seed_configuration": {
+    "environment_seed": 1,
+    "environment_seed_source": "client",
+    "policy_seed": null,
+    "policy_seed_source": "not_applicable",
+    "notes": [
+      "PPO is deterministic; any supplied policy_seed is ignored."
+    ]
+  },
+  "result": {
+    "strategy": "ppo",
+    "display_label": "Frozen PPO Policy",
+    "implementation": "service.rollout.FrozenEnginePolicy (wraps ml.src.ppo_inference.FrozenPPOInferenceEngine)",
+    "initial_profile": [
+      1,
+      1,
+      1,
+      1,
+      1,
+      1,
+      1
+    ],
+    "final_profile": [
+      1,
+      1,
+      1,
+      1,
+      1,
+      1,
+      1
+    ],
+    "environment_seed": 1,
+    "policy_seed": null,
+    "termination_reason": "no_effective_antibiotic",
+    "states": [
+      {
+        "state_index": 0,
+        "treatment_step": 0,
+        "resistance_profile": [
+          1,
+          1,
+          1,
+          1,
+          1,
+          1,
+          1
+        ],
+        "resistant_antibiotics": [
+          "CIPROFLOXACIN",
+          "NITROFURANTOIN",
+          "FOSFOMYCIN",
+          "TRIMETHOPRIM",
+          "GENTAMICIN",
+          "MECILLINAM",
+          "CEFTAZIDIME"
+        ],
+        "resistant_count": 7,
+        "susceptible_count": 0,
+        "last_action_id": null,
+        "last_action_antibiotic": null,
+        "is_terminal": true
+      }
+    ],
+    "steps": [],
+    "metrics": {
+      "cumulative_resistance_burden": 8.0,
+      "cumulative_reward": -8.0,
+      "treatment_steps": 0,
+      "initial_resistant_count": 7,
+      "final_resistant_count": 7,
+      "final_susceptible_count": 0,
+      "change_in_susceptible_count": 0,
+      "resistance_emergence_events": 0,
+      "resistance_emergence_rate": null,
+      "susceptible_action_rate": null,
+      "unsupported_step_count": 0,
+      "cumulative_antibiotic_exposure": 0
+    }
+  },
+  "metric_definitions": {
+    "cumulative_resistance_burden": "Negative of the simulator's cumulative reward (ml.src.matched_policy_evaluation._episode_burden): sum over steps of resistant_count_after / 7, with an all-resistant state charged for the remaining horizon. Lower means less simulated resistance burden; it is not a clinical outcome.",
+    "cumulative_reward": "Sum of simulator step rewards plus any terminal adjustment (ml.src.metrics).",
+    "treatment_steps": "Number of actions taken before the episode ended.",
+    "initial_resistant_count": "Resistant antibiotics in the initial profile.",
+    "final_resistant_count": "Resistant antibiotics in the final profile.",
+    "final_susceptible_count": "Susceptible antibiotics in the final profile (ml.src.metrics future_effective_antibiotics).",
+    "change_in_susceptible_count": "final_susceptible_count minus the initial susceptible count.",
+    "resistance_emergence_events": "Steps after which the resistant count increased (ml.src.metrics).",
+    "resistance_emergence_rate": "resistance_emergence_events / treatment_steps; null when there are no steps.",
+    "susceptible_action_rate": "Fraction of steps whose selected drug was susceptible in the simulator (ml.src.metrics treatment_effectiveness_rate). The susceptible-only mask makes this 1.0 for both strategies, and it is not clinical efficacy; null when there are no steps.",
+    "unsupported_step_count": "Steps with transition_status unsupported_no_candidate: the simulator had no candidate transition and left the profile unchanged.",
+    "cumulative_antibiotic_exposure": "Number of antibiotic administrations (one per step)."
+  },
+  "disclaimer": "Simulation output only. It is not clinical advice, a validated treatment recommendation, or a statement about clinical efficacy."
+}

@@ -1,0 +1,7 @@
+{
+  "error": {
+    "code": "checkpoint_integrity_failure",
+    "message": "Checkpoint integrity verification failed.",
+    "request_id": "c78b2c1d-36dc-48f1-9d4b-f29ab747a2b8"
+  }
+}

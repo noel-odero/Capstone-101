@@ -1,0 +1,17 @@
+{
+  "error": {
+    "code": "request_validation_error",
+    "message": "The request body failed validation.",
+    "request_id": "107727af-42f5-4099-9e77-937d70e2197d",
+    "details": [
+      {
+        "loc": [
+          "body",
+          "resistance_profile"
+        ],
+        "message": "List should have at least 7 items after validation, not 6",
+        "type": "too_short"
+      }
+    ]
+  }
+}

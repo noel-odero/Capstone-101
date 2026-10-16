@@ -1,0 +1,7 @@
+{
+  "error": {
+    "code": "invalid_context",
+    "message": "resistance_profile values must be the integers 0 or 1.",
+    "request_id": "09c50be4-2b58-4d28-96a4-ef84b2cfd469"
+  }
+}

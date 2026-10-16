@@ -1,0 +1,69 @@
+{
+  "manifest_version": 1,
+  "model_id": "ppo_seed_12000",
+  "algorithm": "MaskablePPO",
+  "checkpoint_sha256": "d10c26185c9903d96d0f2003643b76be6df4f03c39e0d2e5f7945e763b7d9093",
+  "manifest_checkpoint_sha256": "d10c26185c9903d96d0f2003643b76be6df4f03c39e0d2e5f7945e763b7d9093",
+  "interaction_data_sha256": "7a5e3e1fe730676a0793674e4ff4aaf3c6ce1177ad5588eed4bb2e5d627edb44",
+  "scenario_id": "REF_UNIFORM_SUPPORTED",
+  "horizon": 8,
+  "antibiotic_order": [
+    "CIPROFLOXACIN",
+    "NITROFURANTOIN",
+    "FOSFOMYCIN",
+    "TRIMETHOPRIM",
+    "GENTAMICIN",
+    "MECILLINAM",
+    "CEFTAZIDIME"
+  ],
+  "observation": {
+    "shape": [
+      15
+    ],
+    "dtype": "float32",
+    "layout": {
+      "resistance_indicators": [
+        0,
+        7
+      ],
+      "last_action_one_hot": [
+        7,
+        14
+      ],
+      "treatment_step": [
+        14,
+        15
+      ]
+    },
+    "resistance_encoding": {
+      "susceptible": 0,
+      "resistant": 1
+    }
+  },
+  "action_space": {
+    "type": "Discrete",
+    "n": 7
+  },
+  "action_masking": {
+    "rule": "susceptible_actions_only"
+  },
+  "inference": {
+    "deterministic": true,
+    "device": "cpu"
+  },
+  "provenance_files": {
+    "config": "artifacts/ppo/ppo_seed_12000/config.json",
+    "environment_manifest": "artifacts/ppo/ppo_seed_12000/environment_manifest.json",
+    "training_summary": "artifacts/ppo/ppo_seed_12000/training_summary.json",
+    "checkpoint_manifest": "artifacts/ppo/checkpoint_manifest.json"
+  },
+  "transition_status_definitions": {
+    "unsupported_no_candidate": "The simulator has no candidate transition for this action in this state and leaves the resistance profile unchanged. This is a data gap, not evidence that the antibiotic is effective.",
+    "candidate_transition_available": "The simulator has at least one modeled transition outcome (cross-resistance, collateral sensitivity or neutral) for this action in this state. The profile may still be unchanged.",
+    "cross_resistance": "Sampled outcome: the target drug became resistant.",
+    "collateral_sensitivity": "Sampled outcome: the target drug became susceptible.",
+    "neutral": "Sampled outcome: a modeled neutral interaction; the profile is unchanged."
+  },
+  "service_version": "0.1.0",
+  "disclaimer": "Simulation output only. It is not clinical advice, a validated treatment recommendation, or a statement about clinical efficacy."
+}

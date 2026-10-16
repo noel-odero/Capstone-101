@@ -1,0 +1,12 @@
+{
+  "error": {
+    "code": "comparison_contract_violation",
+    "message": "The paired runs did not satisfy the comparison contract; no result was returned.",
+    "request_id": "7870ced5-34fc-4489-8a16-82904e6df081",
+    "details": [
+      {
+        "check": "existing_matched_run_validation"
+      }
+    ]
+  }
+}

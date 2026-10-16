@@ -20,6 +20,8 @@ experiments/ppo_baseline_config.json  PPO configuration
 ml/src/                               PPO training, evaluation, Greedy baseline, study tooling
 ml/tests/                             ML pipeline tests
 simulation/                           Resistance state, actions, transitions, environment, reward
+service/                              Internal FastAPI scientific service (see service/README.md)
+backend/                              ASP.NET Core public API with PostgreSQL run storage (see backend/README.md)
 tests/                                Simulation and data tests
 ```
 
@@ -54,7 +56,7 @@ Shared files:
 
 * `protocol_lock.json`: study protocol lock.
 * `checkpoint_manifest.json`: per-checkpoint source paths, SHA-256 hashes, sizes, and archive match status.
-* `SHA256SUMS.txt`: hashes for every file under `artifacts/ppo/`.
+* `SHA256SUMS.txt`: hashes for every file under `artifacts/ppo/` except itself. Binary files (`final_model.zip`) are hashed as raw bytes. Text files (`.json`, `.txt`, `.csv`, `.md`) are hashed after CRLF to LF normalization, so the same hash holds for Windows (CRLF) and Linux (LF) checkouts.
 
 Per-episode training logs (`training_episodes.json`) are not included in this repository.
 To verify a checkpoint, compute its hash and compare it with `checkpoint_manifest.json`:
@@ -64,6 +66,14 @@ Get-FileHash -Algorithm SHA256 artifacts\ppo\ppo_seed_1000\final_model.zip
 ```
 
 Load a checkpoint in Python with `load_ppo_model` from [ml/src/ppo_training.py](ml/src/ppo_training.py).
+
+To verify every file against `SHA256SUMS.txt` under that policy, from the repository root (exit code 0 means all verified):
+
+```powershell
+.\.venv\Scripts\python.exe -m ml.src.artifact_checksums
+```
+
+On a Linux checkout, `cd artifacts/ppo && sha256sum -c SHA256SUMS.txt` gives the same result because the files are already LF. The hashes embedded in `checkpoint_manifest.json` for `protocol_lock.json` and the per-seed provenance files are not covered by this policy and were left unchanged.
 
 ## Study figures
 
