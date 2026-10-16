@@ -22,7 +22,7 @@ public class DependencyDirectionTests
 
     private static string[] ProjectReferences(string name) =>
         Project(name).Descendants("ProjectReference")
-            .Select(element => Path.GetFileNameWithoutExtension((string)element.Attribute("Include")!))
+            .Select(element => Path.GetFileNameWithoutExtension(((string)element.Attribute("Include")!).Replace('\\', '/')))
             .Order()
             .ToArray();
 
