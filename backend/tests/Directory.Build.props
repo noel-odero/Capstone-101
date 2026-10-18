@@ -1,0 +1,13 @@
+<Project>
+  <Import Project="$([MSBuild]::GetPathOfFileAbove('Directory.Build.props', '$(MSBuildThisFileDirectory)../'))" />
+  <PropertyGroup>
+    <!-- Underscored test names read as sentences; inline expected arrays are clearer than shared fields. -->
+    <NoWarn>$(NoWarn);CA1707;CA1861</NoWarn>
+  </PropertyGroup>
+  <!-- Helpers and real Python responses shared by both test projects (see Shared/Fixtures/generate_python_fixtures.py). -->
+  <ItemGroup>
+    <Compile Include="$(MSBuildThisFileDirectory)Shared\*.cs" Link="Shared\%(Filename)%(Extension)" />
+    <None Include="$(MSBuildThisFileDirectory)Shared\Fixtures\python\*.json" Link="Fixtures\python\%(Filename)%(Extension)" CopyToOutputDirectory="PreserveNewest" />
+    <Using Include="Amr.TestSupport" />
+  </ItemGroup>
+</Project>

@@ -1,0 +1,43 @@
+{
+  "antibiotics": [
+    {
+      "action_id": 0,
+      "name": "CIPROFLOXACIN",
+      "drug_class": "Fluoroquinolone"
+    },
+    {
+      "action_id": 1,
+      "name": "NITROFURANTOIN",
+      "drug_class": "Nitrofuran"
+    },
+    {
+      "action_id": 2,
+      "name": "FOSFOMYCIN",
+      "drug_class": "Phosphonic acid derivative"
+    },
+    {
+      "action_id": 3,
+      "name": "TRIMETHOPRIM",
+      "drug_class": "Diaminopyrimidine"
+    },
+    {
+      "action_id": 4,
+      "name": "GENTAMICIN",
+      "drug_class": "Aminoglycoside"
+    },
+    {
+      "action_id": 5,
+      "name": "MECILLINAM",
+      "drug_class": "Beta-lactam (penicillin)"
+    },
+    {
+      "action_id": 6,
+      "name": "CEFTAZIDIME",
+      "drug_class": "Beta-lactam (cephalosporin)"
+    }
+  ],
+  "resistance_encoding": {
+    "susceptible": 0,
+    "resistant": 1
+  }
+}

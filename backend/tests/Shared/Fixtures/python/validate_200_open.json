@@ -1,0 +1,62 @@
+{
+  "valid": true,
+  "resistance_profile": [
+    1,
+    0,
+    0,
+    1,
+    0,
+    0,
+    0
+  ],
+  "resistant_antibiotics": [
+    "CIPROFLOXACIN",
+    "TRIMETHOPRIM"
+  ],
+  "susceptible_antibiotics": [
+    "NITROFURANTOIN",
+    "FOSFOMYCIN",
+    "GENTAMICIN",
+    "MECILLINAM",
+    "CEFTAZIDIME"
+  ],
+  "resistant_count": 2,
+  "susceptible_option_count": 5,
+  "feasible_actions": [
+    {
+      "action_id": 1,
+      "antibiotic": "NITROFURANTOIN",
+      "has_candidate_transition": false
+    },
+    {
+      "action_id": 2,
+      "antibiotic": "FOSFOMYCIN",
+      "has_candidate_transition": false
+    },
+    {
+      "action_id": 4,
+      "antibiotic": "GENTAMICIN",
+      "has_candidate_transition": false
+    },
+    {
+      "action_id": 5,
+      "antibiotic": "MECILLINAM",
+      "has_candidate_transition": false
+    },
+    {
+      "action_id": 6,
+      "antibiotic": "CEFTAZIDIME",
+      "has_candidate_transition": false
+    }
+  ],
+  "feasible_action_ids": [
+    1,
+    2,
+    4,
+    5,
+    6
+  ],
+  "is_terminal": false,
+  "terminal_reason": null,
+  "horizon": 8
+}
