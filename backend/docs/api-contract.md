@@ -46,7 +46,8 @@ has `isPersisted: true`.
 The message says the simulation ran but no record exists, and no id is issued to the client. The failure is logged at
 error level with the Python run id and the request's `X-Correlation-ID`, so the orphaned upstream execution can be found.
 Python is called once per request: there are no automatic retries of simulation or comparison POSTs, and a failed save does
-not re-run Python. Client cancellation during the save rolls the transaction back, so nothing is stored.
+not re-run Python. If the client cancels during the save, the transaction is abandoned and normally rolls back, but a
+cancellation that races the commit can leave the run stored without the client receiving its id.
 
 **Failed and partial runs.** Only completed runs are stored. Python either returns a full result or an error, so there is no
 partial result. A failed or contract-violating run (`comparison_contract_violation`, an invalid or mismatched Python
@@ -283,8 +284,10 @@ database.
 
 `backend/scripts/run-live-tests.ps1` starts the real Python service, waits for `/internal/health` to report a ready
 model, sets `AMR_PYTHON_URL`, and runs the live tests with `AMR_REQUIRE_LIVE=true` and `AMR_REQUIRE_POSTGRES=true`, so a
-missing service or database fails the run instead of skipping tests. It stops the service in a `finally` block and exits
-with the test result. Prerequisites: the repository `.venv` (or `-Python <path>`), a disposable PostgreSQL server in
+missing service or database fails the run instead of skipping tests. Before running, it lists the tests its filter selects
+and fails if either live class has none; afterwards it fails if the reported total differs from the listed count. It stops
+the service in a `finally` block and exits with the test result. Prerequisites: the repository `.venv` (or
+`-Python <path>`), a disposable PostgreSQL server in
 `AMR_TEST_POSTGRES`, and the .NET SDK. It runs on Windows PowerShell 5.1 and on PowerShell 7 (Windows and Linux).
 
 ```powershell
@@ -300,7 +303,23 @@ with the test result. Prerequisites: the repository `.venv` (or `-Python <path>`
 | `live` | ubuntu-24.04 + PostgreSQL 17 service | `service/requirements.txt`, then `run-live-tests.ps1`, which runs only `LivePythonServiceTests` and `LiveEndToEndTests` with skipping disabled |
 
 The PostgreSQL service uses `POSTGRES_HOST_AUTH_METHOD=trust` on the job's private network, so no password or secret is
-stored. The workflow has been linted with `actionlint` and its commands replayed locally, but it has not yet run on GitHub;
-the Linux-specific parts (restore in locked mode on Linux, the PyPI Linux `torch` wheel, the service starting on Linux) are
-unverified until the first run.
+stored. All three jobs completed successfully on GitHub for the push to `backend` at `e11e0e5` (run #2) and for pull
+request #1 (run #3), according to the Actions run pages. The job logs were not inspected, so the remote test counts and
+skip counts are not independently confirmed. Branch protection and required status checks have not been verified.
+
+## Known limitations for frontend integration
+
+These are accepted prototype scope decisions or behaviors to design around. None is a known defect in the implemented
+behavior; each would need its own approved change.
+
+| Area | Kind | Behavior | What the frontend should do |
+|---|---|---|---|
+| Browser origin / CORS | Scope decision | No CORS policy, HTTPS redirection or host restriction is configured (`AllowedHosts` is `*`). A page on a different origin is blocked by the browser. | Use a same-origin or development proxy, or request a CORS policy with an explicit allowed origin before cross-origin use. |
+| Authentication and rate limiting | Scope decision | None. Every route is anonymous and unthrottled. | Treat the API as a trusted local or private-network service; do not expose it publicly as is. |
+| POST retry and idempotency | Scope decision | `POST /simulations` and `POST /comparisons` have no idempotency key and are never retried server-side. A client retry after a timeout runs Python again and creates a new run with a new id. | Do not retry automatically. Disable the submit control while a request is in flight and let the user resubmit deliberately. |
+| Id only after 201 | Behavior | The run id is issued only with the 201 response. If the save fails (503 `database_unavailable` or 500 `persistence_failed`) the run has no record and no id. A client that cancels or disconnects can, rarely, leave a stored run it never learned the id of. | Show the failure and offer a new run; find stray runs through the recent list. |
+| Recent runs | Behavior | `GET /simulations/recent` returns simulations and comparisons together (`kind`), newest first, `pageSize` at most 50. There is no comparison-only list. The count and the page are separate queries, so concurrent writes can shift page boundaries. | Filter by `kind` on the client; do not assume a page set is a stable snapshot. |
+| OpenAPI | Scope decision | No OpenAPI or Swagger document is generated. Controllers declare response types, but the published contract is this document. | Code against this document and the problem-details shape below; generated clients are not available. |
+| Error handling | Behavior | Every failure is `application/problem+json` with a stable `code` and `correlationId` (see Validation and errors). 422 is validation, 404 unknown run or route, 503 `database_unavailable`, `database_migrations_pending` (health only), `model_unavailable`, `python_service_unavailable` and `python_service_timeout`, 502 `python_service_invalid_response`, 500 `persistence_failed`, `comparison_contract_violation` and `internal_error`. A client abort is logged and answered with a non-standard 499 that the aborting client never sees. | Branch on `code`, not on `detail` text; show the correlation id for support; treat 503 as retryable by the user and 500 as not. |
+| Scientific meaning | Contract | One run is one stochastic rollout, not a statistical result. A drug can be susceptible yet have no candidate transition (`unsupported_no_candidate`); this is not the same as ineffective. Metric definitions are returned with each run. | Keep unsupported-transition status and metric definitions visible next to results, and label recommendations as policy choices, not clinical advice. |
 

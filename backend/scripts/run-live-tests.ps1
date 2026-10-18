@@ -4,7 +4,8 @@
 .DESCRIPTION
   Provider-neutral: any CI system (or a developer) can call this script. It starts the Python service, waits for
   readiness, sets AMR_PYTHON_URL, and runs the live tests with AMR_REQUIRE_LIVE and AMR_REQUIRE_POSTGRES so a missing
-  service or database FAILS the run instead of skipping tests. The service process is always stopped.
+  service or database FAILS the run instead of skipping tests, and a filter that matches no tests (or no tests in one of
+  the live classes) also fails. The service process is always stopped.
   Needs AMR_TEST_POSTGRES (an admin connection string of a disposable PostgreSQL server) in the environment.
   Run from anywhere; paths are resolved from this script's location. Works in Windows PowerShell 5.1 and PowerShell 7
   on Windows and Linux; pass -Python when the interpreter is not the repository .venv.
@@ -61,8 +62,23 @@ try {
     Push-Location $backend
     try {
         $env:CI = 'true'
-        dotnet test tests/Amr.IntegrationTests --nologo --filter "FullyQualifiedName~LivePythonServiceTests|FullyQualifiedName~LiveEndToEndTests"
+        $liveClasses = 'LivePythonServiceTests', 'LiveEndToEndTests'
+        $filter = ($liveClasses | ForEach-Object { "FullyQualifiedName~$_" }) -join '|'
+
+        # dotnet test exits 0 when a filter matches nothing, so the selection is checked explicitly.
+        $listed = @(dotnet test tests/Amr.IntegrationTests --nologo --list-tests --filter $filter)
+        if ($LASTEXITCODE -ne 0) { throw 'Listing the live tests failed.' }
+        $names = @($listed | Where-Object { $_ -match '^\s+Amr\.IntegrationTests\.\w+\.' })
+        foreach ($class in $liveClasses) {
+            if (-not ($names | Where-Object { $_ -match "\.$class\." })) { throw "The live test filter matched no tests in $class." }
+        }
+
+        dotnet test tests/Amr.IntegrationTests --nologo --no-build --filter $filter | Tee-Object -Variable testOutput
         $exitCode = $LASTEXITCODE
+        $total = [regex]::Match(($testOutput -join "`n"), 'Total:\s+(\d+)')
+        if ($exitCode -eq 0 -and (-not $total.Success -or [int]$total.Groups[1].Value -ne $names.Count)) {
+            throw "Expected $($names.Count) live tests but the run reported $($total.Groups[1].Value)."
+        }
     } finally {
         Pop-Location
     }

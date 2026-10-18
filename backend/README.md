@@ -5,7 +5,8 @@ comparison, model lookup and profile check, stores completed runs in PostgreSQL,
 scientific logic.
 
 Contract decisions (ids, `201 Created`, `isPersisted`, metric definitions, unsupported transitions, migrations, health,
-live tests): [docs/api-contract.md](docs/api-contract.md).
+live tests): [docs/api-contract.md](docs/api-contract.md). Limits to plan around before building a frontend (CORS,
+authentication, retries, OpenAPI, errors): [Known limitations for frontend integration](docs/api-contract.md#known-limitations-for-frontend-integration).
 
 ## Layout
 
@@ -84,14 +85,16 @@ locked-mode package restore.
 The script starts the Python service, waits for a ready model, sets `AMR_PYTHON_URL`, runs the live tests with
 `AMR_REQUIRE_LIVE=true` and `AMR_REQUIRE_POSTGRES=true`, and always stops the service. It needs `AMR_TEST_POSTGRES` in the
 environment and the repository `.venv` (or `-Python <path>`). It selects exactly the live test classes, so it does not repeat
-the rest of the suite.
+the rest of the suite. It also fails when the filter selects no tests in either live class, because `dotnet test` itself
+exits 0 for an empty selection.
 
 ### CI
 
 `.github/workflows/ci.yml` runs on pull requests and on pushes to `main` and `backend`: the `dotnet` job (locked restore, build
 with warnings as errors, all non-live tests against a PostgreSQL service, `AMR_REQUIRE_POSTGRES=true`), the `python` job (full
-`pytest`) and the `live` job (this script, no skipping). The workflow has been linted and its commands replayed locally, but it
-has not yet run on GitHub, so the Linux-specific steps are unverified until the first run.
+`pytest`) and the `live` job (this script, no skipping). The three jobs completed successfully on GitHub for the push to
+`backend` at `e11e0e5` (run #2) and for pull request #1 (run #3), according to the Actions run pages. The job logs were not
+inspected, so the remote test counts and skip counts are not independently confirmed.
 
 ## Endpoint status
 
