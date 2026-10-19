@@ -22,6 +22,60 @@ namespace Amr.Infrastructure.Persistence.Migrations
 
             NpgsqlModelBuilderExtensions.UseIdentityByDefaultColumns(modelBuilder);
 
+            modelBuilder.Entity("Amr.Infrastructure.Persistence.Entities.AppUser", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<DateTimeOffset>("CreatedAtUtc")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at_utc");
+
+                    b.Property<string>("DisplayName")
+                        .IsRequired()
+                        .HasMaxLength(80)
+                        .HasColumnType("character varying(80)")
+                        .HasColumnName("display_name");
+
+                    b.Property<string>("Email")
+                        .IsRequired()
+                        .HasMaxLength(254)
+                        .HasColumnType("character varying(254)")
+                        .HasColumnName("email");
+
+                    b.Property<int>("FailedSignInCount")
+                        .HasColumnType("integer")
+                        .HasColumnName("failed_sign_in_count");
+
+                    b.Property<DateTimeOffset?>("LockedUntilUtc")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("locked_until_utc");
+
+                    b.Property<string>("NormalizedEmail")
+                        .IsRequired()
+                        .HasMaxLength(254)
+                        .HasColumnType("character varying(254)")
+                        .HasColumnName("normalized_email");
+
+                    b.Property<string>("PasswordHash")
+                        .IsRequired()
+                        .HasMaxLength(256)
+                        .HasColumnType("character varying(256)")
+                        .HasColumnName("password_hash");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("NormalizedEmail")
+                        .IsUnique()
+                        .HasDatabaseName("ux_users_normalized_email");
+
+                    b.ToTable("users", null, t =>
+                        {
+                            t.HasCheckConstraint("ck_users_failed_sign_in_count", "failed_sign_in_count >= 0");
+                        });
+                });
+
             modelBuilder.Entity("Amr.Infrastructure.Persistence.Entities.ExperimentRun", b =>
                 {
                     b.Property<Guid>("Id")
@@ -70,6 +124,12 @@ namespace Amr.Infrastructure.Persistence.Migrations
                         .HasColumnType("uuid")
                         .HasColumnName("model_version_id");
 
+                    b.Property<string>("OwnerId")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("character varying(200)")
+                        .HasColumnName("owner_id");
+
                     b.Property<string>("PairingSemantics")
                         .HasColumnType("text")
                         .HasColumnName("pairing_semantics");
@@ -114,6 +174,10 @@ namespace Amr.Infrastructure.Persistence.Migrations
                     b.HasIndex("CreatedAtUtc", "Id")
                         .IsDescending()
                         .HasDatabaseName("ix_experiment_runs_recent");
+
+                    b.HasIndex("OwnerId", "CreatedAtUtc", "Id")
+                        .IsDescending(false, true, true)
+                        .HasDatabaseName("ix_experiment_runs_owner_recent");
 
                     b.ToTable("experiment_runs", null, t =>
                         {

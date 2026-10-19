@@ -29,7 +29,7 @@ public class SchemaConstraintTests(PostgresDatabaseFixture db) : IClassFixture<P
     {
         var simulation = (await SampleDtos.Simulation(strategy)) with { Id = Guid.NewGuid() };
         var model = RunEntityMapper.ToEntity(simulation.Provenance, Now);
-        return (model, RunEntityMapper.ToEntity(simulation, model.Id, Now));
+        return (model, RunEntityMapper.ToEntity(simulation, model.Id, Now, "test:owner"));
     }
 
     private async Task<Guid> SaveGraphAsync()
@@ -73,7 +73,7 @@ public class SchemaConstraintTests(PostgresDatabaseFixture db) : IClassFixture<P
             "SELECT conrelid::regclass::text, confrelid::regclass::text, confdeltype::text FROM pg_constraint WHERE contype = 'f' ORDER BY 1",
             reader => (reader.GetString(0), reader.GetString(1), reader.GetString(2)));
 
-        Assert.Equal(new[] { "__EFMigrationsHistory", "experiment_runs", "model_versions", "step_traces", "strategy_runs" }, tables);
+        Assert.Equal(new[] { "__EFMigrationsHistory", "experiment_runs", "model_versions", "step_traces", "strategy_runs", "users" }, tables);
         Assert.Equal(
             new[] { ("experiment_runs", "model_versions", "r"), ("step_traces", "strategy_runs", "c"), ("strategy_runs", "experiment_runs", "c") },
             keys.OrderBy(key => key.Item1, StringComparer.Ordinal));

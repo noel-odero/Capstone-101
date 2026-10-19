@@ -24,12 +24,15 @@ public sealed class AmrDbContext(DbContextOptions<AmrDbContext> options) : DbCon
 
     public DbSet<StepTrace> StepTraces => Set<StepTrace>();
 
+    public DbSet<AppUser> Users => Set<AppUser>();
+
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         ConfigureModelVersion(modelBuilder);
         ConfigureExperimentRun(modelBuilder);
         ConfigureStrategyRun(modelBuilder);
         ConfigureStepTrace(modelBuilder);
+        ConfigureUser(modelBuilder);
         ApplySnakeCaseNames(modelBuilder);
     }
 
@@ -71,6 +74,7 @@ public sealed class AmrDbContext(DbContextOptions<AmrDbContext> options) : DbCon
             });
             entity.HasKey(run => run.Id);
             entity.Property(run => run.Id).ValueGeneratedNever();
+            entity.Property(run => run.OwnerId).HasMaxLength(200).IsRequired();
             entity.Property(run => run.Kind).HasConversion(SnakeCaseEnum<ExperimentKind>()).HasMaxLength(16);
             entity.Property(run => run.Status).HasConversion(SnakeCaseEnum<RunStatus>()).HasMaxLength(16);
             entity.Property(run => run.MetricDefinitionsJson).HasColumnType("jsonb");
@@ -82,6 +86,9 @@ public sealed class AmrDbContext(DbContextOptions<AmrDbContext> options) : DbCon
             entity.HasIndex(run => new { run.CreatedAtUtc, run.Id })
                 .IsDescending(true, true)
                 .HasDatabaseName("ix_experiment_runs_recent");
+            entity.HasIndex(run => new { run.OwnerId, run.CreatedAtUtc, run.Id })
+                .IsDescending(false, true, true)
+                .HasDatabaseName("ix_experiment_runs_owner_recent");
         });
 
     private static void ConfigureStrategyRun(ModelBuilder modelBuilder) =>
@@ -125,6 +132,19 @@ public sealed class AmrDbContext(DbContextOptions<AmrDbContext> options) : DbCon
                 .WithMany(strategy => strategy.StepTraces)
                 .HasForeignKey(step => step.StrategyRunId)
                 .OnDelete(DeleteBehavior.Cascade);
+        });
+
+    private static void ConfigureUser(ModelBuilder modelBuilder) =>
+        modelBuilder.Entity<AppUser>(entity =>
+        {
+            entity.ToTable("users", table => table.HasCheckConstraint("ck_users_failed_sign_in_count", "failed_sign_in_count >= 0"));
+            entity.HasKey(user => user.Id);
+            entity.Property(user => user.Id).ValueGeneratedNever();
+            entity.Property(user => user.Email).HasMaxLength(254);
+            entity.Property(user => user.NormalizedEmail).HasMaxLength(254);
+            entity.Property(user => user.DisplayName).HasMaxLength(80);
+            entity.Property(user => user.PasswordHash).HasMaxLength(256);
+            entity.HasIndex(user => user.NormalizedEmail).IsUnique().HasDatabaseName("ux_users_normalized_email");
         });
 
     private static ValueConverter<TEnum, string> SnakeCaseEnum<TEnum>()

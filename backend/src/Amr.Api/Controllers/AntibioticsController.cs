@@ -1,3 +1,4 @@
+﻿using Microsoft.AspNetCore.Authorization;
 using Amr.Api.Errors;
 using Amr.Api.Routing;
 using Amr.Application.DTOs.Antibiotics;
@@ -7,6 +8,7 @@ using Microsoft.AspNetCore.Mvc;
 namespace Amr.Api.Controllers;
 
 [Route(ApiRoutes.Antibiotics)]
+[AllowAnonymous]
 public sealed class AntibioticsController(IModelInfoService models) : ApiControllerBase
 {
     /// <summary>The seven antibiotics in canonical action order.</summary>

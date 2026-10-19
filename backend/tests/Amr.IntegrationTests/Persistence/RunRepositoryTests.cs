@@ -23,7 +23,10 @@ public class RunRepositoryTests(PostgresDatabaseFixture db) : IClassFixture<Post
         return options;
     }
 
-    private static RunRepository Repository(AmrDbContext context) => new(context, TimeProvider.System, NullLogger<RunRepository>.Instance);
+    private const string Owner = "test:owner-a";
+
+    private static RunRepository Repository(AmrDbContext context, string? owner = Owner) =>
+        new(context, TimeProvider.System, new Amr.TestSupport.FixedCurrentUser(owner), NullLogger<RunRepository>.Instance);
 
     private static void AssertSameJson<T>(T expected, T actual) =>
         Assert.True(
@@ -50,6 +53,39 @@ public class RunRepositoryTests(PostgresDatabaseFixture db) : IClassFixture<Post
         await using var read = db.CreateContext();
         var found = await Repository(read).FindSimulationAsync(simulation.Id, CancellationToken.None);
         AssertSameJson(simulation with { IsPersisted = true }, found!);
+    }
+
+    [PostgresFact]
+    public async Task Another_users_run_cannot_be_found_or_listed_and_the_owner_is_stored()
+    {
+        var simulation = await NewSimulationAsync();
+        var comparison = await NewComparisonAsync();
+        await using (var write = db.CreateContext())
+        {
+            await Repository(write).SaveSimulationAsync(simulation, CancellationToken.None);
+            await Repository(write).SaveComparisonAsync(comparison, CancellationToken.None);
+        }
+
+        await using var read = db.CreateContext();
+        Assert.NotNull(await Repository(read).FindSimulationAsync(simulation.Id, CancellationToken.None));
+        Assert.Null(await Repository(read, "test:owner-b").FindSimulationAsync(simulation.Id, CancellationToken.None));
+        Assert.Null(await Repository(read, "test:owner-b").FindComparisonAsync(comparison.Id, CancellationToken.None));
+        var others = await Repository(read, "test:nobody-else").ListRecentAsync(new RecentRunsQuery { Page = 1, PageSize = 50 }, CancellationToken.None);
+        Assert.Equal(0, others.TotalCount);
+        var mine = await Repository(read).ListRecentAsync(new RecentRunsQuery { Page = 1, PageSize = 50 }, CancellationToken.None);
+        Assert.Contains(mine.Items, item => item.Id == simulation.Id);
+        Assert.Equal(Owner, (await read.ExperimentRuns.SingleAsync(run => run.Id == simulation.Id)).OwnerId);
+    }
+
+    [PostgresFact]
+    public async Task Storage_requires_an_authenticated_user()
+    {
+        await using var context = db.CreateContext();
+        var simulation = await NewSimulationAsync();
+
+        await Assert.ThrowsAsync<InvalidOperationException>(() => Repository(context, owner: null).SaveSimulationAsync(simulation, CancellationToken.None));
+        await Assert.ThrowsAsync<InvalidOperationException>(() => Repository(context, owner: "").FindSimulationAsync(simulation.Id, CancellationToken.None));
+        await Assert.ThrowsAsync<InvalidOperationException>(() => Repository(context, owner: null).ListRecentAsync(new RecentRunsQuery(), CancellationToken.None));
     }
 
     [PostgresFact]

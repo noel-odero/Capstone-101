@@ -16,4 +16,5 @@ public static class ApiRoutes
     public const string Simulations = Base + "/simulations";
     public const string Comparisons = Base + "/comparisons";
     public const string Recommendations = Base + "/recommendations";
+    public const string Auth = Base + "/auth";
 }

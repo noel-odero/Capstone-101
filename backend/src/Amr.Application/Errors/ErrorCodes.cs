@@ -15,4 +15,10 @@ public static class ErrorCodes
     public const string PersistenceFailed = "persistence_failed";
     public const string ComparisonContractViolation = "comparison_contract_violation";
     public const string InternalError = "internal_error";
+    public const string AuthenticationRequired = "authentication_required";
+    public const string AccessDenied = "access_denied";
+    public const string CsrfValidationFailed = "csrf_validation_failed";
+    public const string InvalidCredentials = "invalid_credentials";
+    public const string TooManyAttempts = "too_many_attempts";
+    public const string EmailAlreadyRegistered = "email_already_registered";
 }

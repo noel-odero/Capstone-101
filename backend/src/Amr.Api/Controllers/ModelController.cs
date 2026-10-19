@@ -1,3 +1,4 @@
+﻿using Microsoft.AspNetCore.Authorization;
 using Amr.Api.Errors;
 using Amr.Api.Routing;
 using Amr.Application.DTOs.Model;
@@ -7,6 +8,7 @@ using Microsoft.AspNetCore.Mvc;
 namespace Amr.Api.Controllers;
 
 [Route(ApiRoutes.Model)]
+[AllowAnonymous]
 public sealed class ModelController(IModelInfoService models) : ApiControllerBase
 {
     /// <summary>Identity and verified provenance of the frozen model.</summary>
