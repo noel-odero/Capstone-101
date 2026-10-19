@@ -1,0 +1,1 @@
+{"status":"healthy","ready":true,"components":[{"name":"api","status":"healthy","detail":null},{"name":"pythonService","status":"healthy","detail":null},{"name":"model","status":"healthy","detail":null},{"name":"database","status":"healthy","detail":null}]}

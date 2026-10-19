@@ -1,0 +1,115 @@
+/*
+  Design tokens. Components reference these semantic names rather than raw colours.
+  Breakpoints cannot be custom properties; they are used literally in media queries:
+  small phone < 640px, tablet >= 640px, laptop >= 960px (desktop sidebar), wide >= 1280px.
+*/
+:root {
+  --font-sans: 'Inter Variable', system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', sans-serif;
+  --font-mono: ui-monospace, 'SFMono-Regular', Menlo, Consolas, monospace;
+
+  /* Surfaces and text */
+  --color-bg: #f3f6fd;
+  --color-surface: #ffffff;
+  --color-surface-subtle: #f6f8fd;
+  --color-border: #e3e9f5;
+  --color-border-strong: #c2cde2;
+  --color-text: #101a33;
+  --color-text-muted: #546280;
+  --color-text-inverse: #ffffff;
+  --color-ink: #172239;
+  --color-hero-from: #dfe6fb;
+  --color-hero-to: #f4f7ff;
+
+  /* Navigation */
+  --color-nav-bg: #131f3a;
+  --color-nav-border: #243455;
+  --color-nav-text: #c8d3ea;
+  --color-nav-text-active: #ffffff;
+  --color-nav-active-bg: #22345c;
+  --color-nav-muted: #8e9cbb;
+
+  /* Interaction */
+  --color-primary: #4256e8;
+  --color-primary-hover: #3445cf;
+  --color-primary-soft: #eaedff;
+  --color-focus: #4256e8;
+
+  /* Scientific status: always paired with a text label and an icon. */
+  --color-susceptible-fg: #14532d;
+  --color-susceptible-bg: #dcfce7;
+  --color-susceptible-border: #7fd49b;
+  --color-susceptible-solid: #15803d;
+  --color-resistant-fg: #7f1d1d;
+  --color-resistant-bg: #fee2e2;
+  --color-resistant-border: #f0a3a3;
+  --color-resistant-solid: #b91c1c;
+  --color-warning-fg: #78350f;
+  --color-warning-bg: #fef3c7;
+  --color-warning-border: #ecc65a;
+  --color-warning-solid: #b45309;
+  --color-unsupported-fg: #4c1d95;
+  --color-unsupported-bg: #ede9fe;
+  --color-unsupported-border: #b7a3f0;
+  --color-unsupported-solid: #6d28d9;
+  --color-info-fg: #1e3a8a;
+  --color-info-bg: #e8efff;
+  --color-info-border: #a9c0f5;
+  --color-error-fg: #7f1d1d;
+  --color-error-bg: #fef2f2;
+  --color-error-border: #f0a3a3;
+  --color-neutral-fg: #334155;
+  --color-neutral-bg: #eef2f7;
+  --color-neutral-border: #c9d3e1;
+
+  /* Chart series, shared by every page */
+  --color-series-ppo: #1d4ed8;
+  --color-series-baseline: #c2410c;
+
+  /* Type scale */
+  --text-xs: 0.75rem;
+  --text-sm: 0.875rem;
+  --text-base: 1rem;
+  --text-lg: 1.125rem;
+  --text-xl: 1.375rem;
+  --text-2xl: 1.75rem;
+  --text-3xl: 2.125rem;
+  --leading-tight: 1.25;
+  --leading-normal: 1.55;
+
+  /* Spacing scale (4px base) */
+  --space-1: 0.25rem;
+  --space-2: 0.5rem;
+  --space-3: 0.75rem;
+  --space-4: 1rem;
+  --space-5: 1.25rem;
+  --space-6: 1.5rem;
+  --space-8: 2rem;
+  --space-10: 2.5rem;
+  --space-12: 3rem;
+
+  /* Shape and depth */
+  --radius-sm: 0.375rem;
+  --radius-md: 0.625rem;
+  --radius-lg: 0.875rem;
+  --radius-pill: 999px;
+  --shadow-sm: 0 1px 2px rgba(15, 23, 42, 0.05);
+  --shadow-md: 0 4px 14px rgba(15, 23, 42, 0.08);
+
+  /* Layout */
+  --content-max: 76rem;
+  --sidebar-width: 16rem;
+  --page-gutter: var(--space-4);
+  --focus-ring: 0 0 0 3px #ffffff, 0 0 0 5px var(--color-focus);
+}
+
+@media (min-width: 640px) {
+  :root {
+    --page-gutter: var(--space-6);
+  }
+}
+
+@media (min-width: 960px) {
+  :root {
+    --page-gutter: var(--space-8);
+  }
+}

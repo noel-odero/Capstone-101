@@ -1,0 +1,1 @@
+{"type":"urn:amr:problem:not_found","title":"Not Found","status":404,"detail":"No simulation has this id.","instance":"/api/v1/simulations/00000000-0000-0000-0000-000000000000","code":"not_found","correlationId":"cc99a18b21f948e39c7903e940c84c34"}

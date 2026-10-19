@@ -1,0 +1,1 @@
+{"type":"urn:amr:problem:validation_failed","title":"One or more validation errors occurred.","status":422,"instance":"/api/v1/comparisons","errors":{"resistanceProfile":["A resistance profile must have exactly 7 values."]},"code":"validation_failed","correlationId":"186c165165924fca8b9df03ae26bb0b7"}
