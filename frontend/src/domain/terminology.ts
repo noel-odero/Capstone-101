@@ -8,6 +8,8 @@ import type { StepTrace, StrategyId } from './types'
 
 export const APP_NAME = 'AMR Decision Support'
 export const APP_SUBTITLE = 'Explore how antibiotic sequencing affects simulated resistance.'
+/** Where the project is based; shown on the Home page. It is not data about any patient. */
+export const PROJECT_LOCATION = 'Kigali, Rwanda'
 export const PROTOTYPE_STATEMENT =
   'A research and educational prototype. Results come from a simplified simulation and are not clinical treatment guidance.'
 

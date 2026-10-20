@@ -15,9 +15,7 @@ import { profileToCode } from '@/domain/profile'
 import { GLOSSARY } from '@/domain/terminology'
 import { useAntibiotics } from '@/hooks/useAntibiotics'
 import { useComparison } from '@/hooks/useComparison'
-import { KeyMetricsTable } from './KeyMetricsTable'
 import { StatePanel } from './StatePanel'
-import { StepDetails } from './StepDetails'
 import { TrajectoryChart } from './TrajectoryChart'
 import styles from './simulation.module.css'
 
@@ -96,10 +94,6 @@ export function SimulationPage() {
               <CardHeader titleId="chart-title" title="Resistance trajectory" />
               <TrajectoryChart ppo={ppo} baseline={baseline} selectedStep={selectedStep} onSelectStep={setSelectedStep} />
             </Card>
-            <Card aria-labelledby="metrics-title">
-              <CardHeader titleId="metrics-title" title="Key metrics" />
-              <KeyMetricsTable ppo={ppo} baseline={baseline} definitions={data.metricDefinitions} />
-            </Card>
           </div>
         </div>
       ) : antibiotics.isError ? (
@@ -107,10 +101,6 @@ export function SimulationPage() {
       ) : (
         <LoadingState label="Loading the antibiotic catalogue" lines={3} block />
       )}
-
-      {antibiotics.data && !noSteps ? (
-        <StepDetails comparison={data} ppo={ppo} baseline={baseline} antibiotics={antibiotics.data} selectedStep={selectedStep} onSelectStep={setSelectedStep} />
-      ) : null}
 
       <div style={{ marginTop: 'var(--space-5)' }}>
         <ScientificLimitationsNotice />

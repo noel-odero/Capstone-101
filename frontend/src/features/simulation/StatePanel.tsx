@@ -1,12 +1,11 @@
 import { Pause, Play } from 'lucide-react'
 import { lazy, Suspense, useEffect, useState } from 'react'
-import { StatusIndicator } from '@/components/ui/StatusIndicator'
 import { LoadingState } from '@/components/ui/LoadingState'
 import type { AntibioticEntry } from '@/domain/antibiotics'
 import { drugLabel } from '@/domain/antibiotics'
 import { RESISTANT } from '@/domain/profile'
 import { actionsFromSteps, lastStepOf, profilesOf, stepAt } from '@/domain/trajectory'
-import { STRATEGY_NAMES, terminationLabel, transitionSupportLabel } from '@/domain/terminology'
+import { STRATEGY_NAMES, terminationLabel } from '@/domain/terminology'
 import type { StrategyId, StrategyResult } from '@/domain/types'
 import styles from './simulation.module.css'
 
@@ -96,15 +95,9 @@ export function StatePanel({ ppo, baseline, antibiotics, selectedStep, onSelectS
       <p className={styles['caption']} aria-live="polite">
         <strong>{shownStep === 0 ? 'Initial state' : `Step ${shownStep}`}</strong>
         {trace ? (
-          <>
-            <span>
-              {STRATEGY_NAMES[strategy]} {strategy === 'ppo' ? 'selected' : 'sampled'} {drugLabel(antibiotics, trace.antibiotic)}
-            </span>
-            <StatusIndicator
-              kind={trace.hasCandidateTransition ? 'supported' : 'unsupported'}
-              label={transitionSupportLabel(trace.hasCandidateTransition)}
-            />
-          </>
+          <span>
+            {STRATEGY_NAMES[strategy]} {strategy === 'ppo' ? 'selected' : 'sampled'} {drugLabel(antibiotics, trace.antibiotic)}
+          </span>
         ) : shownStep < selectedStep ? (
           <span>Episode ended: {terminationLabel(result.terminationReason)}</span>
         ) : null}

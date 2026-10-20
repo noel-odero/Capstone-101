@@ -1,6 +1,9 @@
 import '@testing-library/jest-dom/vitest'
-import { cleanup } from '@testing-library/react'
+import { cleanup, configure } from '@testing-library/react'
 import { afterEach, vi } from 'vitest'
+
+// Pages load lazily; the 1s default is too tight when the whole suite runs in parallel.
+configure({ asyncUtilTimeout: 5000 })
 
 afterEach(() => {
   cleanup()
@@ -29,6 +32,7 @@ if (typeof window.matchMedia !== 'function') {
 }
 
 window.HTMLElement.prototype.scrollIntoView = () => {}
+window.scrollTo = () => {}
 
 // jsdom has no canvas: report "no WebGL" quietly so the scene's fallback is what renders in tests.
 HTMLCanvasElement.prototype.getContext = () => null

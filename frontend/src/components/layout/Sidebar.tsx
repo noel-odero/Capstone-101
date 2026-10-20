@@ -38,7 +38,7 @@ export function AccountFooter() {
         </span>
         <span className={styles['userText']}>
           <span className={styles['userName']}>{name}</span>
-          <span>Research workspace</span>
+          <span className={styles['userEmail']}>{user?.email}</span>
         </span>
       </div>
       <button type="button" className={styles['signOut']} onClick={() => void signOut()} disabled={signingOut}>

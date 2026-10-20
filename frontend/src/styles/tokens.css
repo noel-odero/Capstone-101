@@ -97,19 +97,19 @@
 
   /* Layout */
   --content-max: 76rem;
-  --sidebar-width: 16rem;
+  --sidebar-width: 15rem;
   --page-gutter: var(--space-4);
   --focus-ring: 0 0 0 3px #ffffff, 0 0 0 5px var(--color-focus);
 }
 
 @media (min-width: 640px) {
   :root {
-    --page-gutter: var(--space-6);
+    --page-gutter: var(--space-5);
   }
 }
 
 @media (min-width: 960px) {
   :root {
-    --page-gutter: var(--space-8);
+    --page-gutter: var(--space-6);
   }
 }

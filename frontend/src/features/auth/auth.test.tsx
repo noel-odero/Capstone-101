@@ -172,7 +172,10 @@ describe('email and password authentication', () => {
 
   it('submits once however many times the button is pressed, and never retries by itself', async () => {
     const api = mockFetch(routesFor(anonymous))
-    const respond = api.fetchMock.getMockImplementation()!
+    const respond = api.fetchMock.getMockImplementation()
+    if (!respond) {
+      throw new Error('The mock has no implementation to delegate to.')
+    }
     let release: () => void = () => undefined
     api.fetchMock.mockImplementation(async (input, init) => {
       if (String(input).endsWith('/auth/sign-in')) {
@@ -253,7 +256,7 @@ describe('email and password authentication', () => {
 
     await waitFor(() => expect(router.state.location.pathname).toBe('/'))
     expect(screen.queryByText('Ada Researcher')).not.toBeInTheDocument()
-    await waitFor(() => expect(screen.getByRole('link', { name: 'Sign in' })).toBeInTheDocument())
+    await waitFor(() => expect(within(screen.getByRole('banner')).getByRole('link', { name: 'Sign in' })).toBeInTheDocument())
     await router.navigate('/app')
     await waitFor(() => expect(router.state.location.pathname).toBe('/'))
   })

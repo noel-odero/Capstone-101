@@ -16,8 +16,13 @@
 }
 
 /* Brand */
-.brandOnDark {
+.brand.brandOnDark {
   color: #fff;
+}
+
+.brandOnDark .brandName {
+  font-size: var(--text-sm);
+  white-space: nowrap;
 }
 
 .brand {
@@ -55,7 +60,7 @@
 }
 
 .mainRegion {
-  padding-block: var(--space-6) var(--space-12);
+  padding-block: var(--space-4) var(--space-8);
 }
 
 .mainRegion:focus,
@@ -145,6 +150,12 @@
   color: #fff;
   font-size: var(--text-sm);
   font-weight: 650;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.userEmail {
+  overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
@@ -241,13 +252,18 @@
   padding-inline: var(--page-gutter);
 }
 
+/* The workspace uses the width it has; only the public pages are held to a reading width. */
+.mainRegion .container {
+  max-width: none;
+}
+
 .pageHeader {
   display: flex;
   flex-wrap: wrap;
-  align-items: flex-end;
+  align-items: flex-start;
   justify-content: space-between;
   gap: var(--space-4);
-  margin-bottom: var(--space-6);
+  margin-bottom: var(--space-5);
 }
 
 .pageHeading {
@@ -448,6 +464,6 @@
   }
 
   .mainRegion {
-    padding-block: var(--space-8) var(--space-12);
+    padding-block: var(--space-6) var(--space-8);
   }
 }

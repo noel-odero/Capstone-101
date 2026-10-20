@@ -81,12 +81,12 @@ export function ResistanceStateScene({ entries, profile, previousProfile = null,
       label={`${summary} Drag to rotate.`}
       background={SCENE_COLORS.panel}
       fallback={<ResistanceStateFallback entries={entries} profile={profile} changed={changed} selectedActionIndex={selectedActionIndex} />}
-      camera={{ position: [0, 0, 8.2], fov: 40 }}
+      camera={{ position: [0, 0, 8.9], fov: 40 }}
       rotateByDefault={false}
     >
       {() => (
         <group>
-          <group rotation={[0.2, 0.3, 1.1]} scale={0.62}>
+          <group rotation={[0.2, 0.3, 1.1]} scale={0.85}>
             <EcoliBody />
           </group>
           {entries.map((entry) => {

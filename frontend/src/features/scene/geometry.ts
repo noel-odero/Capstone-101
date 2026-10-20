@@ -46,6 +46,65 @@ export function capsuleSurfacePoints(count: number, radius: number, halfLength: 
   })
 }
 
+const length = (vector: Point3) => Math.hypot(vector[0], vector[1], vector[2])
+const normalize = (vector: Point3): Point3 => {
+  const size = length(vector) || 1
+  return [vector[0] / size, vector[1] / size, vector[2] / size]
+}
+const cross = (a: Point3, b: Point3): Point3 => [a[1] * b[2] - a[2] * b[1], a[2] * b[0] - a[0] * b[2], a[0] * b[1] - a[1] * b[0]]
+
+/** The outward direction at a point on the capsule surface: radial on the cylinder, away from the cap's centre on the caps. */
+export function surfaceNormal(position: Point3, halfLength: number): Point3 {
+  const [x, y, z] = position
+  if (Math.abs(y) <= halfLength) {
+    return normalize([x, 0, z])
+  }
+  return normalize([x, y - Math.sign(y) * halfLength, z])
+}
+
+export interface FlagellumShape {
+  length: number
+  segments: number
+  /** Radius of the corkscrew, reached gradually along the filament. */
+  amplitude: number
+  turns: number
+  phase: number
+  /** Direction (angle around the filament's axis) and strength (fraction of length) of the slow sideways drift. */
+  bendAngle: number
+  bend: number
+}
+
+/** A wavy filament leaving the surface at `origin` along `normal`: a corkscrew that starts on the body and drifts to one side. */
+export function flagellumPath(origin: Point3, normal: Point3, shape: FlagellumShape): Point3[] {
+  const axis = normalize(normal)
+  const helper: Point3 = Math.abs(axis[0]) < 0.9 ? [1, 0, 0] : [0, 1, 0]
+  const u = normalize(cross(axis, helper))
+  const v = cross(axis, u)
+  const drift: Point3 = [
+    u[0] * Math.cos(shape.bendAngle) + v[0] * Math.sin(shape.bendAngle),
+    u[1] * Math.cos(shape.bendAngle) + v[1] * Math.sin(shape.bendAngle),
+    u[2] * Math.cos(shape.bendAngle) + v[2] * Math.sin(shape.bendAngle),
+  ]
+
+  return Array.from({ length: shape.segments + 1 }, (_, index) => {
+    const t = index / shape.segments
+    const angle = Math.PI * 2 * shape.turns * t + shape.phase
+    const wave = shape.amplitude * Math.min(1, t * 4) * (0.5 + 0.5 * t)
+    const along = shape.length * t
+    const sideways = shape.bend * shape.length * t * t
+    return [
+      origin[0] + axis[0] * along + drift[0] * sideways + (u[0] * Math.cos(angle) + v[0] * Math.sin(angle)) * wave,
+      origin[1] + axis[1] * along + drift[1] * sideways + (u[1] * Math.cos(angle) + v[1] * Math.sin(angle)) * wave,
+      origin[2] + axis[2] * along + drift[2] * sideways + (u[2] * Math.cos(angle) + v[2] * Math.sin(angle)) * wave,
+    ] as const
+  })
+}
+
+/** Short straight hairs (fimbriae) standing on the surface: where each starts and which way it points. */
+export function fimbriaPlacements(count: number, radius: number, halfLength: number, seed: number): { position: Point3; normal: Point3; scale: number }[] {
+  return capsuleSurfacePoints(count, radius, halfLength, seed).map(({ position, scale }) => ({ position, normal: surfaceNormal(position, halfLength), scale }))
+}
+
 /** Where marker `index` of `count` sits on a circle around the bacterium: the first at the top, then clockwise. */
 export function markerPosition(index: number, count: number, radius: number): Point3 {
   const angle = -Math.PI / 2 + (index * Math.PI * 2) / count

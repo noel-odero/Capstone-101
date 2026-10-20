@@ -10,10 +10,11 @@ import { Card, CardHeader } from '@/components/ui/Card'
 import { EmptyState } from '@/components/ui/EmptyState'
 import { ErrorState } from '@/components/ui/ErrorState'
 import { LoadingState } from '@/components/ui/LoadingState'
-import { buildMetricRows, formatMetricValue } from '@/domain/metrics'
+import { Tooltip } from '@/components/ui/Tooltip'
+import { buildMetricRows, formatMetricValue, metricDefinitionFor } from '@/domain/metrics'
 import { formatProfileSummary } from '@/domain/formatters'
 import { profileToCode } from '@/domain/profile'
-import { STRATEGY_NAMES } from '@/domain/terminology'
+import { STRATEGY_NAMES, terminationLabel } from '@/domain/terminology'
 import type { Comparison, ResistanceProfile } from '@/domain/types'
 import { useAntibiotics } from '@/hooks/useAntibiotics'
 import { useComparison } from '@/hooks/useComparison'
@@ -56,10 +57,10 @@ function Outcomes({ comparison }: { comparison: Comparison }) {
   const rows = buildMetricRows(ppo.metrics, baseline.metrics)
   return (
     <Card aria-labelledby="outcomes-title">
-      <CardHeader titleId="outcomes-title" title="Outcomes of each sequence" description="Returned simulation metrics. They describe the simulator, not patients." />
+      <CardHeader titleId="outcomes-title" title="Key metrics" description="Returned simulation metrics. They describe the simulator, not patients." />
       <div className="scroll-x">
         <table className={styles['outcomes']}>
-          <caption className="visually-hidden">Outcomes of the PPO-selected sequence and the baseline sequence</caption>
+          <caption className="visually-hidden">Key metrics of the PPO-selected sequence and the baseline sequence</caption>
           <thead>
             <tr>
               <th scope="col">Metric</th>
@@ -68,13 +69,26 @@ function Outcomes({ comparison }: { comparison: Comparison }) {
             </tr>
           </thead>
           <tbody>
-            {rows.map((row) => (
-              <tr key={row.key}>
-                <th scope="row">{row.label}</th>
-                <td>{formatMetricValue(row.key, row.ppo)}</td>
-                <td>{formatMetricValue(row.key, row.baseline)}</td>
-              </tr>
-            ))}
+            {rows.map((row) => {
+              const definition = metricDefinitionFor(comparison.metricDefinitions, row.key)
+              return (
+                <tr key={row.key}>
+                  <th scope="row">
+                    <span className="row" style={{ gap: '0.25rem', flexWrap: 'nowrap' }}>
+                      {row.label}
+                      {definition ? <Tooltip label={`Definition of ${row.label}`}>{definition.definition}</Tooltip> : null}
+                    </span>
+                  </th>
+                  <td>{formatMetricValue(row.key, row.ppo)}</td>
+                  <td>{formatMetricValue(row.key, row.baseline)}</td>
+                </tr>
+              )
+            })}
+            <tr>
+              <th scope="row">Ended</th>
+              <td style={{ fontSize: 'var(--text-xs)' }}>{terminationLabel(ppo.terminationReason)}</td>
+              <td style={{ fontSize: 'var(--text-xs)' }}>{terminationLabel(baseline.terminationReason)}</td>
+            </tr>
           </tbody>
         </table>
       </div>

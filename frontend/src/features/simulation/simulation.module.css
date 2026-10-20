@@ -107,7 +107,6 @@
   display: flex;
   flex-direction: column;
   gap: var(--space-3);
-  min-height: 32rem;
   padding: var(--space-4);
   border-radius: var(--radius-lg);
   background: var(--color-panel, #0b1326);
@@ -156,8 +155,8 @@
 }
 
 .scene {
-  flex: 1;
-  min-height: 20rem;
+  flex: none;
+  height: 17rem;
 }
 
 .sceneLegend {
@@ -281,57 +280,6 @@
 .chartBox {
   width: 100%;
   height: 16rem;
-}
-
-.metricsTable {
-  width: 100%;
-  font-size: var(--text-sm);
-}
-
-.metricsTable th,
-.metricsTable td {
-  padding: var(--space-2) var(--space-3);
-  text-align: left;
-  border-bottom: 1px solid var(--color-border);
-}
-
-.metricsTable td {
-  font-variant-numeric: tabular-nums;
-  font-weight: 650;
-}
-
-.metricsTable thead th {
-  color: var(--color-text-muted);
-  font-size: var(--text-xs);
-  text-transform: uppercase;
-  letter-spacing: 0.04em;
-}
-
-.details {
-  margin-top: var(--space-5);
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-3);
-}
-
-.detailColumns {
-  display: grid;
-  gap: var(--space-5);
-}
-
-@media (min-width: 960px) {
-  .detailColumns {
-    grid-template-columns: 1fr 1fr;
-  }
-}
-
-.stepChips {
-  display: flex;
-  flex-wrap: wrap;
-  gap: var(--space-2);
-  margin: 0;
-  padding: 0;
-  list-style: none;
 }
 
 .stepChip {
