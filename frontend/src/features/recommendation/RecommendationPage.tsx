@@ -15,12 +15,14 @@ import { buildMetricRows, formatMetricValue, metricDefinitionFor } from '@/domai
 import { formatProfileSummary } from '@/domain/formatters'
 import { profileToCode } from '@/domain/profile'
 import { STRATEGY_NAMES, terminationLabel } from '@/domain/terminology'
+import type { AntibioticEntry } from '@/domain/antibiotics'
 import type { Comparison, ResistanceProfile } from '@/domain/types'
 import { useAntibiotics } from '@/hooks/useAntibiotics'
 import { useComparison } from '@/hooks/useComparison'
 import { useRecommendation } from '@/hooks/useRecommendation'
 import { useSimulation } from '@/hooks/useSimulation'
 import { SequenceCard } from './SequenceCard'
+import { SequenceOrder } from './SequenceOrder'
 import { useStepParam } from './useStepParam'
 import styles from './recommendation.module.css'
 
@@ -49,7 +51,7 @@ function NotFound({ title }: { title: string }) {
   )
 }
 
-function Outcomes({ comparison }: { comparison: Comparison }) {
+function Outcomes({ comparison, antibiotics, selectedStep }: { comparison: Comparison; antibiotics: readonly AntibioticEntry[]; selectedStep: number }) {
   const { ppo, baseline } = comparison
   if (!ppo || !baseline) {
     return null
@@ -92,6 +94,14 @@ function Outcomes({ comparison }: { comparison: Comparison }) {
           </tbody>
         </table>
       </div>
+      <SequenceOrder
+        antibiotics={antibiotics}
+        selectedStep={selectedStep}
+        rows={[
+          { label: STRATEGY_NAMES.ppo, steps: ppo.steps, highlighted: true },
+          { label: STRATEGY_NAMES.random_susceptible_baseline, steps: baseline.steps },
+        ]}
+      />
     </Card>
   )
 }
@@ -149,7 +159,6 @@ function ComparisonRecommendation({ id }: { id: string }) {
             antibiotics={antibiotics.data}
             selectedStep={step}
             onSelectStep={setStep}
-            verb={`${STRATEGY_NAMES.ppo} selected`}
           />
           <SequenceCard
             title="Random Susceptible Baseline sequence"
@@ -159,10 +168,9 @@ function ComparisonRecommendation({ id }: { id: string }) {
             antibiotics={antibiotics.data}
             selectedStep={step}
             onSelectStep={setStep}
-            verb={`${STRATEGY_NAMES.random_susceptible_baseline} sampled`}
           />
         </div>
-        <Outcomes comparison={data} />
+        <Outcomes comparison={data} antibiotics={antibiotics.data} selectedStep={step} />
         <p className="muted" style={{ fontSize: 'var(--text-xs)' }}>
           {data.singleRunCaveat}
         </p>
@@ -216,12 +224,12 @@ function SimulationRecommendation({ id }: { id: string }) {
           antibiotics={antibiotics.data}
           selectedStep={step}
           onSelectStep={setStep}
-          verb={`${STRATEGY_NAMES.ppo} selected`}
         />
         {simulation.data?.result ? (
           <Card aria-labelledby="sim-outcome-title">
             <CardHeader titleId="sim-outcome-title" title="Outcome of this sequence" />
             <OutcomeSummary result={simulation.data.result} definitions={simulation.data.metricDefinitions} />
+            <SequenceOrder antibiotics={antibiotics.data} selectedStep={step} rows={[{ label: STRATEGY_NAMES.ppo, steps: data.steps, highlighted: true }]} />
           </Card>
         ) : simulation.isError ? (
           <ErrorState error={simulation.error} title="The run's metrics could not be loaded" onRetry={() => void simulation.refetch()} />
