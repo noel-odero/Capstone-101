@@ -1,54 +1,49 @@
-import { ContentContainer } from '@/components/layout/ContentContainer'
-import { SequenceMatrix } from '@/components/scientific/SequenceMatrix'
-import { parseProfileCode } from '@/domain/profile'
-import { useAntibiotics } from '@/hooks/useAntibiotics'
-import type { ResistanceProfile } from '@/domain/types'
+import { Link } from 'react-router'
+import { FiArrowRight, FiMaximize2 } from 'react-icons/fi'
+import { useAuth } from '@/features/auth/useAuth'
 import styles from './landing.module.css'
-
-/** ILLUSTRATIVE ONLY: invented to show how the matrix reads. It is not model output and is labelled as such on screen. */
-const ILLUSTRATIVE_CODES = [
-  '0100000',
-  '0100000',
-  '0100000',
-  '0100100',
-  '0100100',
-  '1100100',
-  '1100100',
-  '1101100',
-  '1101110',
-] as const
-
-const ILLUSTRATIVE_PROFILES = ILLUSTRATIVE_CODES.map((code) => parseProfileCode(code)).filter(
-  (profile): profile is ResistanceProfile => profile !== null,
-)
-
 export function LandingVisualizationPreview() {
-  const antibiotics = useAntibiotics()
-
+  const auth = useAuth()
+  const destination = auth.status === 'authenticated' ? '/app' : '/auth/sign-in?returnTo=%2Fapp'
   return (
-    <ContentContainer>
-      <section className={`${styles['section']} ${styles['preview']}`} aria-labelledby="preview-title">
-        <div className={styles['sectionHead']} style={{ marginBottom: 0 }}>
-          <h2 id="preview-title">See resistance change, step by step</h2>
-          <p>
-            Every run is shown as a grid of the seven antibiotics across eight steps, next to a 3D view of the same state. This
-            sample is only a drawing of the layout.
-          </p>
+    <section className={styles['previewSection']} aria-labelledby="preview-title">
+      <div className={styles['previewCopy']}>
+        <span className={styles['eyebrow']}>INSIDE THE WORKBENCH</span>
+        <h2 id="preview-title">
+          From resistance profiles
+          <br />
+          to simulated outcomes.
+        </h2>
+        <p>
+          A clear view of a complex question. Set a starting profile, compare PPO with the Random
+          Susceptible Baseline, and inspect how the modeled state changes after each simulated
+          decision.
+        </p>
+        <Link className={styles['methodLink']} to={destination}>
+          Explore the workbench <FiArrowRight />
+        </Link>
+      </div>
+      <figure className={styles['workbenchFrame']}>
+        <div className={styles['previewToolbar']}>
+          <span>
+            <i />
+            <i />
+            <i />
+          </span>
+          <span>StewardLab / Simulation</span>
+          <FiMaximize2 />
         </div>
-        {antibiotics.data ? (
-          <SequenceMatrix
-            caption="Resistance trajectory"
-            tag="Illustrative demo data"
-            entries={antibiotics.data}
-            profiles={ILLUSTRATIVE_PROFILES}
-            selectedStep={4}
-          />
-        ) : (
-          <p className="muted" role="status">
-            {antibiotics.isPending ? 'Loading the preview' : 'The preview needs the API, which is not reachable right now.'}
-          </p>
-        )}
-      </section>
-    </ContentContainer>
+        <img
+          src="/images/workbench-preview.png"
+          alt="Actual workbench interface showing a seven-antibiotic profile, interactive 3D urinary tract, strategy trajectories and comparison metrics"
+          width="1440"
+          height="1050"
+          loading="lazy"
+        />
+        <figcaption>
+          Workbench preview · A single illustrative run, not an aggregate evaluation.
+        </figcaption>
+      </figure>
+    </section>
   )
 }

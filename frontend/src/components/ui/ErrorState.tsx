@@ -1,4 +1,4 @@
-import { CircleAlert } from 'lucide-react'
+import { FiAlertCircle as CircleAlert } from 'react-icons/fi'
 import type { ReactNode } from 'react'
 import { errorTitle, normalizeError } from '@/api/api-errors'
 import { Button } from './Button'
@@ -15,7 +15,13 @@ export interface ErrorStateProps {
   children?: ReactNode
 }
 
-export function ErrorState({ error, title, onRetry, retryLabel = 'Try again', children }: ErrorStateProps) {
+export function ErrorState({
+  error,
+  title,
+  onRetry,
+  retryLabel = 'Try again',
+  children,
+}: ErrorStateProps) {
   const apiError = normalizeError(error)
   const fieldErrors = Object.entries(apiError.fieldErrors)
 

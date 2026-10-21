@@ -1,4 +1,4 @@
-import { Menu, X } from 'lucide-react'
+import { FiMenu as Menu, FiX as X } from 'react-icons/fi'
 import { useEffect, useRef } from 'react'
 import { useLocation } from 'react-router'
 import { Brand } from './Brand'
@@ -19,7 +19,12 @@ export function MobileNavigation() {
   return (
     <header className={styles['mobileBar']}>
       <Brand to="/app" />
-      <button type="button" className={styles['menuButton']} onClick={() => dialogRef.current?.showModal()} aria-label="Open navigation menu">
+      <button
+        type="button"
+        className={styles['menuButton']}
+        onClick={() => dialogRef.current?.showModal()}
+        aria-label="Open navigation menu"
+      >
         <Menu size={22} aria-hidden="true" />
       </button>
       <dialog
@@ -34,7 +39,12 @@ export function MobileNavigation() {
       >
         <div className={styles['drawerHeader']}>
           <Brand to="/app" />
-          <button type="button" className={styles['menuButton']} onClick={close} aria-label="Close navigation menu">
+          <button
+            type="button"
+            className={styles['menuButton']}
+            onClick={close}
+            aria-label="Close navigation menu"
+          >
             <X size={22} aria-hidden="true" />
           </button>
         </div>

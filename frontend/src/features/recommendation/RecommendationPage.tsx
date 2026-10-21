@@ -11,6 +11,7 @@ import { EmptyState } from '@/components/ui/EmptyState'
 import { ErrorState } from '@/components/ui/ErrorState'
 import { LoadingState } from '@/components/ui/LoadingState'
 import { Tooltip } from '@/components/ui/Tooltip'
+import { Disclosure } from '@/components/ui/Disclosure'
 import { buildMetricRows, formatMetricValue, metricDefinitionFor } from '@/domain/metrics'
 import { formatProfileSummary } from '@/domain/formatters'
 import { profileToCode } from '@/domain/profile'
@@ -21,21 +22,27 @@ import { useAntibiotics } from '@/hooks/useAntibiotics'
 import { useComparison } from '@/hooks/useComparison'
 import { useRecommendation } from '@/hooks/useRecommendation'
 import { useSimulation } from '@/hooks/useSimulation'
-import { SequenceCard } from './SequenceCard'
+import { SequenceCard, SequenceExplanation } from './SequenceCard'
 import { SequenceOrder } from './SequenceOrder'
 import { useStepParam } from './useStepParam'
 import styles from './recommendation.module.css'
 
-function Frame({ children, initialProfile }: { children: ReactNode; initialProfile?: ResistanceProfile }) {
+function Frame({
+  children,
+  initialProfile,
+}: {
+  children: ReactNode
+  initialProfile?: ResistanceProfile
+}) {
   return (
     <ContentContainer>
       <PageHeader
-        title="Recommendations"
-        subtitle="The PPO-selected sequence, shown with the alternative from the same run."
+        title="Recommended Antibiotic Sequence"
+        subtitle="Based on the starting resistance profile and predicted evolution."
         action={
-          <ButtonLink to={initialProfile ? `/app/simulation/new?profile=${profileToCode(initialProfile)}` : '/app/simulation/new'} variant="dark">
-            Run New Simulation
-          </ButtonLink>
+          initialProfile ? (
+            <span className={styles['profileBadge']}>Profile: {profileToCode(initialProfile)}</span>
+          ) : undefined
         }
       />
       {children}
@@ -46,12 +53,24 @@ function Frame({ children, initialProfile }: { children: ReactNode; initialProfi
 function NotFound({ title }: { title: string }) {
   return (
     <Frame>
-      <EmptyState title={title} description="Open a run from your history, or start a new simulation." action={<ButtonLink to="/app/history">Go to history</ButtonLink>} />
+      <EmptyState
+        title={title}
+        description="Open a run from your history, or start a new simulation."
+        action={<ButtonLink to="/app/history">Go to history</ButtonLink>}
+      />
     </Frame>
   )
 }
 
-function Outcomes({ comparison, antibiotics, selectedStep }: { comparison: Comparison; antibiotics: readonly AntibioticEntry[]; selectedStep: number }) {
+function Outcomes({
+  comparison,
+  antibiotics,
+  selectedStep,
+}: {
+  comparison: Comparison
+  antibiotics: readonly AntibioticEntry[]
+  selectedStep: number
+}) {
   const { ppo, baseline } = comparison
   if (!ppo || !baseline) {
     return null
@@ -59,10 +78,16 @@ function Outcomes({ comparison, antibiotics, selectedStep }: { comparison: Compa
   const rows = buildMetricRows(ppo.metrics, baseline.metrics)
   return (
     <Card aria-labelledby="outcomes-title">
-      <CardHeader titleId="outcomes-title" title="Key metrics" description="Returned simulation metrics. They describe the simulator, not patients." />
+      <CardHeader
+        titleId="outcomes-title"
+        title="Key metrics"
+        description="Returned simulation metrics. They describe the simulator, not patients."
+      />
       <div className="scroll-x">
         <table className={styles['outcomes']}>
-          <caption className="visually-hidden">Key metrics of the PPO-selected sequence and the baseline sequence</caption>
+          <caption className="visually-hidden">
+            Key metrics of the PPO-selected sequence and the baseline sequence
+          </caption>
           <thead>
             <tr>
               <th scope="col">Metric</th>
@@ -78,7 +103,11 @@ function Outcomes({ comparison, antibiotics, selectedStep }: { comparison: Compa
                   <th scope="row">
                     <span className="row" style={{ gap: '0.25rem', flexWrap: 'nowrap' }}>
                       {row.label}
-                      {definition ? <Tooltip label={`Definition of ${row.label}`}>{definition.definition}</Tooltip> : null}
+                      {definition ? (
+                        <Tooltip label={`Definition of ${row.label}`}>
+                          {definition.definition}
+                        </Tooltip>
+                      ) : null}
                     </span>
                   </th>
                   <td>{formatMetricValue(row.key, row.ppo)}</td>
@@ -88,8 +117,12 @@ function Outcomes({ comparison, antibiotics, selectedStep }: { comparison: Compa
             })}
             <tr>
               <th scope="row">Ended</th>
-              <td style={{ fontSize: 'var(--text-xs)' }}>{terminationLabel(ppo.terminationReason)}</td>
-              <td style={{ fontSize: 'var(--text-xs)' }}>{terminationLabel(baseline.terminationReason)}</td>
+              <td style={{ fontSize: 'var(--text-xs)' }}>
+                {terminationLabel(ppo.terminationReason)}
+              </td>
+              <td style={{ fontSize: 'var(--text-xs)' }}>
+                {terminationLabel(baseline.terminationReason)}
+              </td>
             </tr>
           </tbody>
         </table>
@@ -130,7 +163,11 @@ function ComparisonRecommendation({ id }: { id: string }) {
   if (antibiotics.isError) {
     return (
       <Frame>
-        <ErrorState error={antibiotics.error} title="The antibiotic catalogue could not be loaded" onRetry={() => void antibiotics.refetch()} />
+        <ErrorState
+          error={antibiotics.error}
+          title="The antibiotic catalogue could not be loaded"
+          onRetry={() => void antibiotics.refetch()}
+        />
       </Frame>
     )
   }
@@ -144,8 +181,12 @@ function ComparisonRecommendation({ id }: { id: string }) {
   return (
     <Frame initialProfile={ppo.initialProfile}>
       <p className="muted" style={{ marginBottom: 'var(--space-4)' }}>
-        Initial profile <strong style={{ fontFamily: 'var(--font-mono)', letterSpacing: '0.1em' }}>{profileToCode(ppo.initialProfile)}</strong> (
-        {formatProfileSummary(ppo.initialProfile)}) &middot; <Link to={`/app/simulation/${data.id}`}>Open the simulation</Link>
+        Initial profile{' '}
+        <strong style={{ fontFamily: 'var(--font-mono)', letterSpacing: '0.1em' }}>
+          {profileToCode(ppo.initialProfile)}
+        </strong>{' '}
+        ({formatProfileSummary(ppo.initialProfile)}) &middot;{' '}
+        <Link to={`/app/simulation/${data.id}`}>Open the simulation</Link>
       </p>
       <div className="stack-lg">
         <div className={styles['grid']}>
@@ -160,6 +201,17 @@ function ComparisonRecommendation({ id }: { id: string }) {
             selectedStep={step}
             onSelectStep={setStep}
           />
+          <SequenceExplanation />
+        </div>
+        <div className={styles['newRun']}>
+          <ButtonLink
+            to={`/app/simulation/new?profile=${profileToCode(ppo.initialProfile)}`}
+            variant="dark"
+          >
+            Run New Simulation
+          </ButtonLink>
+        </div>
+        <Disclosure summary="Compare baseline sequence and detailed metrics">
           <SequenceCard
             title="Random Susceptible Baseline sequence"
             initialProfile={baseline.initialProfile}
@@ -169,12 +221,14 @@ function ComparisonRecommendation({ id }: { id: string }) {
             selectedStep={step}
             onSelectStep={setStep}
           />
-        </div>
-        <Outcomes comparison={data} antibiotics={antibiotics.data} selectedStep={step} />
+          <Outcomes comparison={data} antibiotics={antibiotics.data} selectedStep={step} />
+          <p className="muted" style={{ fontSize: 'var(--text-xs)' }}>
+            {data.singleRunCaveat}
+          </p>
+        </Disclosure>
         <p className="muted" style={{ fontSize: 'var(--text-xs)' }}>
-          {data.singleRunCaveat}
+          A research prototype, not clinical guidance. <Link to="/limitations">Limitations</Link>
         </p>
-        <ScientificLimitationsNotice />
       </div>
     </Frame>
   )
@@ -205,7 +259,11 @@ function SimulationRecommendation({ id }: { id: string }) {
   if (antibiotics.isError) {
     return (
       <Frame>
-        <ErrorState error={antibiotics.error} title="The antibiotic catalogue could not be loaded" onRetry={() => void antibiotics.refetch()} />
+        <ErrorState
+          error={antibiotics.error}
+          title="The antibiotic catalogue could not be loaded"
+          onRetry={() => void antibiotics.refetch()}
+        />
       </Frame>
     )
   }
@@ -214,32 +272,59 @@ function SimulationRecommendation({ id }: { id: string }) {
   return (
     <Frame initialProfile={data.initialProfile}>
       <div className="stack-lg">
-        <SequenceCard
-          title="PPO-selected sequence"
-          badge="PPO-selected"
-          highlighted
-          initialProfile={data.initialProfile}
-          steps={data.steps}
-          terminationReason={data.terminationReason}
-          antibiotics={antibiotics.data}
-          selectedStep={step}
-          onSelectStep={setStep}
-        />
-        {simulation.data?.result ? (
-          <Card aria-labelledby="sim-outcome-title">
-            <CardHeader titleId="sim-outcome-title" title="Outcome of this sequence" />
-            <OutcomeSummary result={simulation.data.result} definitions={simulation.data.metricDefinitions} />
-            <SequenceOrder antibiotics={antibiotics.data} selectedStep={step} rows={[{ label: STRATEGY_NAMES.ppo, steps: data.steps, highlighted: true }]} />
-          </Card>
-        ) : simulation.isError ? (
-          <ErrorState error={simulation.error} title="The run's metrics could not be loaded" onRetry={() => void simulation.refetch()} />
-        ) : (
-          <LoadingState label="Loading the run's metrics" lines={2} />
-        )}
+        <div className={styles['grid']}>
+          <SequenceCard
+            title="PPO-selected sequence"
+            badge="PPO-selected"
+            highlighted
+            initialProfile={data.initialProfile}
+            steps={data.steps}
+            terminationReason={data.terminationReason}
+            antibiotics={antibiotics.data}
+            selectedStep={step}
+            onSelectStep={setStep}
+          />
+          <SequenceExplanation />
+        </div>
+        <div className={styles['newRun']}>
+          <ButtonLink
+            to={`/app/simulation/new?profile=${profileToCode(data.initialProfile)}`}
+            variant="dark"
+          >
+            Run New Simulation
+          </ButtonLink>
+        </div>
+        <Disclosure summary="Inspect sequence outcomes and metrics">
+          {simulation.data?.result ? (
+            <Card aria-labelledby="sim-outcome-title">
+              <CardHeader titleId="sim-outcome-title" title="Outcome of this sequence" />
+              <OutcomeSummary
+                result={simulation.data.result}
+                definitions={simulation.data.metricDefinitions}
+              />
+              <SequenceOrder
+                antibiotics={antibiotics.data}
+                selectedStep={step}
+                rows={[{ label: STRATEGY_NAMES.ppo, steps: data.steps, highlighted: true }]}
+              />
+            </Card>
+          ) : simulation.isError ? (
+            <ErrorState
+              error={simulation.error}
+              title="The run's metrics could not be loaded"
+              onRetry={() => void simulation.refetch()}
+            />
+          ) : (
+            <LoadingState label="Loading the run's metrics" lines={2} />
+          )}
+          <p className="muted" style={{ fontSize: 'var(--text-xs)' }}>
+            {data.interpretation}
+          </p>
+          <ScientificLimitationsNotice />
+        </Disclosure>
         <p className="muted" style={{ fontSize: 'var(--text-xs)' }}>
-          {data.interpretation}
+          A research prototype, not clinical guidance. <Link to="/limitations">Limitations</Link>
         </p>
-        <ScientificLimitationsNotice />
       </div>
     </Frame>
   )
@@ -259,4 +344,3 @@ export function RecommendationPage() {
   }
   return <NotFound title="Nothing to show" />
 }
-

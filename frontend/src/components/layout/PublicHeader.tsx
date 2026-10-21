@@ -1,14 +1,15 @@
-import { Menu, X } from 'lucide-react'
-import { useState } from 'react'
+import { FiMenu as Menu, FiX as X } from 'react-icons/fi'
+import { useState, type ReactNode } from 'react'
 import { NavLink, useLocation } from 'react-router'
 import { ButtonLink } from '@/components/ui/Button'
+import { ThemeControl } from '@/components/ui/ThemeControl'
 import { publicNavigation, SIGN_IN_PATH, WORKSPACE_PATH } from '@/config/navigation'
 import { useAuth } from '@/features/auth/useAuth'
 import { Brand } from './Brand'
 import { ContentContainer } from './ContentContainer'
 import styles from './layout.module.css'
 
-export function PublicHeader() {
+export function PublicHeader({ appearance }: { appearance?: ReactNode } = {}) {
   const auth = useAuth()
   const location = useLocation()
   // The menu is remembered with the page it was opened on, so navigating closes it without an effect.
@@ -39,6 +40,7 @@ export function PublicHeader() {
             ))}
           </nav>
           <div className={styles['publicActions']}>
+            {appearance ?? <ThemeControl />}
             {account}
             <button
               type="button"
@@ -54,7 +56,11 @@ export function PublicHeader() {
         </div>
       </ContentContainer>
       {open ? (
-        <nav id="public-mobile-nav" className={styles['publicMobileNav']} aria-label="Primary (mobile)">
+        <nav
+          id="public-mobile-nav"
+          className={styles['publicMobileNav']}
+          aria-label="Primary (mobile)"
+        >
           {publicNavigation.map((link) => (
             <NavLink key={link.to} to={link.to} className={styles['publicNavLink']}>
               {link.label}

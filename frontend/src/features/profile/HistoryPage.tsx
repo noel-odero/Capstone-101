@@ -19,12 +19,34 @@ export function HistoryPage() {
 
   return (
     <ContentContainer>
-      <PageHeader title="E. coli Profile" subtitle="Your treatment history: every simulation you have run." action={<ButtonLink to="/app/simulation/new" variant="dark">Run Simulation</ButtonLink>} />
+      <PageHeader
+        title="Experiment History"
+        subtitle="Reopen your saved simulations and strategy comparisons."
+        action={
+          <ButtonLink to="/app/simulation/new" variant="dark">
+            New Experiment
+          </ButtonLink>
+        }
+      />
       <ProfileTabs />
       {runs.isPending ? <LoadingState label="Loading your history" lines={4} /> : null}
-      {runs.isError ? <ErrorState error={runs.error} title="Your history could not be loaded" onRetry={() => void runs.refetch()} /> : null}
+      {runs.isError ? (
+        <ErrorState
+          error={runs.error}
+          title="Your history could not be loaded"
+          onRetry={() => void runs.refetch()}
+        />
+      ) : null}
       {runs.data && runs.data.totalCount === 0 ? (
-        <EmptyState title="No simulations yet" description="Your simulations will be listed here." action={<ButtonLink to="/app/simulation/new" variant="dark">Run Simulation</ButtonLink>} />
+        <EmptyState
+          title="No simulations yet"
+          description="Your simulations will be listed here."
+          action={
+            <ButtonLink to="/app/simulation/new" variant="dark">
+              Run Simulation
+            </ButtonLink>
+          }
+        />
       ) : null}
       {runs.data && runs.data.totalCount > 0 ? (
         <Card as="div" flush>

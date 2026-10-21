@@ -1,0 +1,246 @@
+.home {
+  padding: 1rem 0;
+}
+.welcome {
+  max-width: 42rem;
+  padding: 1.5rem 0 3rem;
+}
+.eyebrow {
+  color: var(--color-text-muted);
+  font: 0.65rem var(--font-mono);
+  letter-spacing: 0.13em;
+  text-transform: uppercase;
+  margin: 0 0 1.25rem;
+}
+.welcome h1 {
+  margin: 0 0 1.5rem;
+  font-size: clamp(2.2rem, 4vw, 3.25rem);
+  line-height: 1.12;
+  letter-spacing: -0.045em;
+  font-weight: 500;
+  color: var(--color-text);
+}
+.welcome h1 span {
+  color: var(--color-primary);
+}
+.intro {
+  max-width: 36rem;
+  margin: 0;
+  font-size: 1rem;
+  line-height: 1.85;
+  color: var(--color-text-muted);
+}
+.journey {
+  margin: 0.5rem 0 3.5rem;
+}
+.steps {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 2rem;
+}
+.step {
+  color: var(--color-text);
+  text-decoration: none;
+  min-width: 0;
+}
+.stepIcon {
+  color: var(--color-text-muted);
+  margin-bottom: 0.9rem;
+}
+.step h3 {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  color: inherit;
+  font-size: 1rem;
+  font-weight: 500;
+  margin: 0 0 0.6rem;
+}
+.step h3 svg {
+  color: var(--color-text-muted);
+  flex-shrink: 0;
+}
+.step p {
+  color: var(--color-text-muted);
+  font-size: 0.85rem;
+  line-height: 1.8;
+  margin: 0;
+  max-width: 29ch;
+}
+.step:hover h3,
+.launchLink:hover {
+  color: var(--color-primary);
+}
+.step:focus-visible,
+.launchLink:focus-visible,
+.laptop:focus-visible {
+  outline: 2px solid var(--color-focus);
+  outline-offset: 6px;
+}
+.launch {
+  display: grid;
+  grid-template-columns: minmax(0, 0.8fr) minmax(0, 1.2fr);
+  align-items: center;
+  gap: 2rem;
+  padding: 0.5rem 0 1.5rem;
+}
+.launchCopy h2 {
+  color: var(--color-text);
+  font-size: clamp(1.5rem, 2.5vw, 2rem);
+  font-weight: 500;
+  letter-spacing: -0.035em;
+  margin: 0 0 1rem;
+}
+.launchCopy > p:not(.eyebrow) {
+  color: var(--color-text-muted);
+  font-size: 0.9rem;
+  line-height: 1.9;
+  max-width: 35ch;
+}
+.launchLink {
+  display: inline-flex;
+  align-items: center;
+  gap: 1rem;
+  color: var(--color-text);
+  font-size: 0.95rem;
+  text-decoration: none;
+  padding: 0.9rem 0;
+  margin-top: 0.5rem;
+}
+.laptop {
+  display: block;
+  width: min(100%, 460px);
+  justify-self: start;
+  align-self: center;
+  min-width: 0;
+  text-decoration: none;
+  padding-top: 1rem;
+}
+.screen {
+  position: relative;
+  margin: 0 5%;
+  padding: 13px 7px 7px;
+  background: #101725;
+  border: 1px solid #45516b;
+  border-radius: 12px 12px 3px 3px;
+  box-shadow: 0 15px 35px #14253b22;
+}
+.screen img {
+  display: block;
+  width: 100%;
+  aspect-ratio: 1.5;
+  object-fit: cover;
+  object-position: top;
+  border-radius: 3px;
+}
+.camera {
+  position: absolute;
+  width: 3px;
+  height: 3px;
+  border-radius: 50%;
+  background: #7892b5;
+  top: 5px;
+  left: 50%;
+}
+.keyboard {
+  height: 12px;
+  background: linear-gradient(#a6b1c4, #6c7a93);
+  border-radius: 1px 1px 50% 50% / 1px 1px 10px 10px;
+  position: relative;
+}
+.keyboard::before {
+  content: '';
+  display: block;
+  margin: auto;
+  width: 16%;
+  height: 4px;
+  background: #55617a;
+  border-radius: 0 0 5px 5px;
+}
+.footnote {
+  color: var(--color-text-muted);
+  font-size: 0.7rem;
+  margin-top: 1.5rem;
+}
+.footnote a {
+  color: inherit;
+}
+@media (max-width: 700px) {
+  .steps {
+    grid-template-columns: 1fr;
+    gap: 1.6rem;
+  }
+  .step {
+    display: grid;
+    grid-template-columns: 24px 1fr;
+    column-gap: 1rem;
+  }
+  .stepIcon {
+    grid-row: span 2;
+    margin-top: 0.1rem;
+  }
+  .step p {
+    max-width: none;
+  }
+  .journey {
+    margin-bottom: 2.5rem;
+  }
+  .launch {
+    grid-template-columns: 1fr;
+    gap: 1rem;
+  }
+  .welcome {
+    padding-top: 0.5rem;
+  }
+  .intro {
+    font-size: 0.93rem;
+  }
+}
+
+@media (min-width: 960px) and (max-height: 900px) {
+  .home {
+    padding: 0;
+  }
+  .welcome {
+    padding: 1rem 0 2rem;
+  }
+  .welcome h1 {
+    font-size: clamp(2rem, 3vw, 2.6rem);
+    margin-bottom: 1.25rem;
+  }
+  .eyebrow {
+    margin-bottom: 0.75rem;
+  }
+  .intro {
+    font-size: 0.9rem;
+    line-height: 1.7;
+  }
+  .journey {
+    margin: 0.25rem 0 1.75rem;
+  }
+  .stepIcon {
+    margin-bottom: 0.5rem;
+  }
+  .step p {
+    line-height: 1.6;
+    font-size: 0.8rem;
+  }
+  .launch {
+    padding-bottom: 0.5rem;
+    gap: 1.5rem;
+  }
+  .launchCopy h2 {
+    font-size: 1.65rem;
+  }
+  .launchCopy > p:not(.eyebrow) {
+    line-height: 1.7;
+    font-size: 0.85rem;
+  }
+  .laptop {
+    max-width: 420px;
+    justify-self: start;
+  }
+  .footnote {
+    margin-top: 0.75rem;
+  }
+}

@@ -1,38 +1,38 @@
-/*
+﻿/*
   Design tokens. Components reference these semantic names rather than raw colours.
   Breakpoints cannot be custom properties; they are used literally in media queries:
   small phone < 640px, tablet >= 640px, laptop >= 960px (desktop sidebar), wide >= 1280px.
 */
 :root {
-  --font-sans: 'Inter Variable', system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', sans-serif;
-  --font-mono: ui-monospace, 'SFMono-Regular', Menlo, Consolas, monospace;
+  --font-sans: 'IBM Plex Sans', system-ui, -apple-system, 'Segoe UI', sans-serif;
+  --font-mono: 'IBM Plex Mono', ui-monospace, monospace;
 
   /* Surfaces and text */
-  --color-bg: #f3f6fd;
+  --color-bg: #fafafa;
   --color-surface: #ffffff;
-  --color-surface-subtle: #f6f8fd;
-  --color-border: #e3e9f5;
-  --color-border-strong: #c2cde2;
-  --color-text: #101a33;
-  --color-text-muted: #546280;
+  --color-surface-subtle: #f5f5f5;
+  --color-border: #e5e5e5;
+  --color-border-strong: #d4d4d4;
+  --color-text: #171717;
+  --color-text-muted: #666666;
   --color-text-inverse: #ffffff;
-  --color-ink: #172239;
-  --color-hero-from: #dfe6fb;
-  --color-hero-to: #f4f7ff;
+  --color-ink: #171717;
+  --color-hero-from: #fafafa;
+  --color-hero-to: #fafafa;
 
   /* Navigation */
-  --color-nav-bg: #131f3a;
-  --color-nav-border: #243455;
-  --color-nav-text: #c8d3ea;
-  --color-nav-text-active: #ffffff;
-  --color-nav-active-bg: #22345c;
-  --color-nav-muted: #8e9cbb;
+  --color-nav-bg: #ffffff;
+  --color-nav-border: #e5e5e5;
+  --color-nav-text: #666666;
+  --color-nav-text-active: #171717;
+  --color-nav-active-bg: #f0f0f0;
+  --color-nav-muted: #737373;
 
   /* Interaction */
-  --color-primary: #4256e8;
-  --color-primary-hover: #3445cf;
-  --color-primary-soft: #eaedff;
-  --color-focus: #4256e8;
+  --color-primary: #171717;
+  --color-primary-hover: #333333;
+  --color-primary-soft: #f0f0f0;
+  --color-focus: #737373;
 
   /* Scientific status: always paired with a text label and an icon. */
   --color-susceptible-fg: #14532d;
@@ -47,19 +47,19 @@
   --color-warning-bg: #fef3c7;
   --color-warning-border: #ecc65a;
   --color-warning-solid: #b45309;
-  --color-unsupported-fg: #4c1d95;
-  --color-unsupported-bg: #ede9fe;
-  --color-unsupported-border: #b7a3f0;
-  --color-unsupported-solid: #6d28d9;
-  --color-info-fg: #1e3a8a;
-  --color-info-bg: #e8efff;
-  --color-info-border: #a9c0f5;
+  --color-unsupported-fg: #525252;
+  --color-unsupported-bg: #f5f5f5;
+  --color-unsupported-border: #a3a3a3;
+  --color-unsupported-solid: #737373;
+  --color-info-fg: #404040;
+  --color-info-bg: #f5f5f5;
+  --color-info-border: #d4d4d4;
   --color-error-fg: #7f1d1d;
   --color-error-bg: #fef2f2;
   --color-error-border: #f0a3a3;
-  --color-neutral-fg: #334155;
-  --color-neutral-bg: #eef2f7;
-  --color-neutral-border: #c9d3e1;
+  --color-neutral-fg: #525252;
+  --color-neutral-bg: #f5f5f5;
+  --color-neutral-border: #d4d4d4;
 
   /* Chart series, shared by every page */
   --color-series-ppo: #1d4ed8;
@@ -88,18 +88,18 @@
   --space-12: 3rem;
 
   /* Shape and depth */
-  --radius-sm: 0.375rem;
-  --radius-md: 0.625rem;
-  --radius-lg: 0.875rem;
-  --radius-pill: 999px;
-  --shadow-sm: 0 1px 2px rgba(15, 23, 42, 0.05);
-  --shadow-md: 0 4px 14px rgba(15, 23, 42, 0.08);
+  --radius-sm: 0.25rem;
+  --radius-md: 0.375rem;
+  --radius-lg: 0.5rem;
+  --radius-pill: 0.375rem;
+  --shadow-sm: none;
+  --shadow-md: 0 2px 8px rgb(0 0 0 / 0.06);
 
   /* Layout */
   --content-max: 76rem;
-  --sidebar-width: 15rem;
+  --sidebar-width: 14.5rem;
   --page-gutter: var(--space-4);
-  --focus-ring: 0 0 0 3px #ffffff, 0 0 0 5px var(--color-focus);
+  --focus-ring: 0 0 0 2px var(--color-surface), 0 0 0 4px var(--color-focus);
 }
 
 @media (min-width: 640px) {
@@ -112,4 +112,89 @@
   :root {
     --page-gutter: var(--space-6);
   }
+}
+
+/* Neutral dashboard surfaces with a distinct, darker navigation rail. */
+:root[data-theme='dark'] {
+  color-scheme: dark;
+  --color-bg: #232325;
+  --color-surface: #2b2b2e;
+  --color-surface-subtle: #303033;
+  --color-border: #3c3c40;
+  --color-border-strong: #515157;
+  --color-text: #f5f5f3;
+  --color-text-muted: #b4b4bb;
+  --color-text-inverse: #172321;
+  --color-ink: #a8d8cc;
+  --color-hero-from: #232325;
+  --color-hero-to: #2b2b2e;
+  --color-nav-bg: #171719;
+  --color-nav-border: #3c3c40;
+  --color-nav-text: #c7c7cd;
+  --color-nav-text-active: #f5f5f3;
+  --color-nav-active-bg: #333337;
+  --color-nav-muted: #b4b4bb;
+  --color-primary: #a8d8cc;
+  --color-primary-hover: #c8e9e0;
+  --color-primary-soft: #293e38;
+  --color-focus: #91cdbb;
+  --color-susceptible-fg: #86efac;
+  --color-susceptible-bg: #0c2115;
+  --color-susceptible-border: #225536;
+  --color-susceptible-solid: #4ade80;
+  --color-resistant-fg: #fca5a5;
+  --color-resistant-bg: #2a1212;
+  --color-resistant-border: #643030;
+  --color-resistant-solid: #f87171;
+  --color-warning-fg: #fcd34d;
+  --color-warning-bg: #261d0b;
+  --color-warning-border: #66501c;
+  --color-warning-solid: #fbbf24;
+  --color-unsupported-fg: #b3b3b3;
+  --color-unsupported-bg: #171717;
+  --color-unsupported-border: #737373;
+  --color-unsupported-solid: #a3a3a3;
+  --color-info-fg: #d4d4d4;
+  --color-info-bg: #141414;
+  --color-info-border: #404040;
+  --color-error-fg: #fca5a5;
+  --color-error-bg: #211010;
+  --color-error-border: #643030;
+  --color-neutral-fg: #b3b3b3;
+  --color-neutral-bg: #171717;
+  --color-neutral-border: #404040;
+  --color-series-ppo: #60a5fa;
+  --color-series-baseline: #fb923c;
+  --shadow-md: none;
+}
+:root[data-theme='light'] {
+  color-scheme: light;
+}
+:root {
+  --color-bg: #f5f5f3;
+  --color-surface: #ffffff;
+  --color-surface-subtle: #f4f4f1;
+  --color-border: #e3e3df;
+  --color-border-strong: #cdcdc7;
+  --color-text: #242427;
+  --color-text-muted: #65656c;
+  --color-ink: #29292d;
+  --color-primary: #276f62;
+  --color-primary-hover: #1c574d;
+  --color-primary-soft: #e6f1ed;
+  --color-focus: #438d7e;
+  --color-nav-bg: #eaeae5;
+  --color-nav-border: #d7d7d1;
+  --color-nav-text: #53535b;
+  --color-nav-text-active: #242427;
+  --color-nav-active-bg: #dadad4;
+  --color-nav-muted: #65656c;
+  --color-series-ppo: #347cff;
+  --color-series-baseline: #f6a313;
+  --radius-md: 0.55rem;
+  --radius-lg: 0.7rem;
+  --sidebar-width: 15.5rem;
+  --shadow-sm: 0 3px 14px rgb(42 77 128 / 3%);
+  --shadow-md: 0 6px 24px rgb(42 77 128 / 6%);
+  --page-gutter: 2rem;
 }

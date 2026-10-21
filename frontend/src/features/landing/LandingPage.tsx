@@ -1,39 +1,23 @@
-import { Link } from 'react-router'
-import { ContentContainer } from '@/components/layout/ContentContainer'
-import { REPOSITORY_URL } from '@/config/navigation'
-import { CapabilitiesSection } from './CapabilitiesSection'
+import { useEffect } from 'react'
 import { HeroSection } from './HeroSection'
-import { HowItWorksSection } from './HowItWorksSection'
-import { LandingVisualizationPreview } from './LandingVisualizationPreview'
-import { ResearchProblemSection } from './ResearchProblemSection'
-import styles from './landing.module.css'
-
 export function LandingPage() {
+  useEffect(() => {
+    const previousTitle = document.title
+    const description = document.querySelector('meta[name="description"]')
+    const previousDescription = description?.getAttribute('content')
+    document.title = 'StewardLab | Antibiotic stewardship research'
+    description?.setAttribute(
+      'content',
+      'Simulate resistance evolution, compare antibiotic selection strategies, and explore the assumptions behind simulated E. coli resistance outcomes.',
+    )
+    return () => {
+      document.title = previousTitle
+      if (previousDescription != null) description?.setAttribute('content', previousDescription)
+    }
+  }, [])
   return (
     <>
       <HeroSection />
-      <CapabilitiesSection />
-      <ResearchProblemSection />
-      <HowItWorksSection />
-      <LandingVisualizationPreview />
-      <ContentContainer>
-        <section className={styles['limits']} aria-labelledby="limits-title">
-          <h2 id="limits-title">Scope and limits</h2>
-          <ul>
-            <li>A simplified simulation: seven antibiotics, binary resistance, a fixed eight-step horizon.</li>
-            <li>Susceptible means susceptible in the simulation. It is not clinical efficacy.</li>
-            <li>Not clinically validated. Not for choosing treatment for anyone.</li>
-          </ul>
-          <div className={styles['links']}>
-            <Link to="/limitations">Read the limitations</Link>
-            <Link to="/methodology">Methodology</Link>
-            <Link to="/documentation">Documentation</Link>
-            <a href={REPOSITORY_URL} rel="noreferrer noopener" target="_blank">
-              Source on GitHub
-            </a>
-          </div>
-        </section>
-      </ContentContainer>
     </>
   )
 }

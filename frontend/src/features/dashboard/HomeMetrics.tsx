@@ -1,108 +1,80 @@
-import { ArrowDown, ArrowRight, ArrowUp, Gauge, Pill, ShieldCheck, Stethoscope, type LucideIcon } from 'lucide-react'
+import { FiActivity, FiGitBranch, FiCheckCircle, FiShield } from 'react-icons/fi'
 import { ErrorState } from '@/components/ui/ErrorState'
-import { cx } from '@/components/ui/cx'
-import {
-  countDelta,
-  formatRate,
-  percentDelta,
-  rateDelta,
-  type Delta,
-  type RunFigures,
-} from '@/domain/homeFigures'
-import { useHomeMetrics } from './useHomeMetrics'
+import { Tooltip } from '@/components/ui/Tooltip'
+import { useProfileRun } from '@/features/profile/useProfileRun'
 import styles from './dashboard.module.css'
 
-type IconTone = 'slate' | 'blue' | 'indigo' | 'green'
-
-interface CardSpec {
-  label: string
-  icon: LucideIcon
-  tone: IconTone
-  value: (latest: RunFigures) => string | null
-  delta: (latest: RunFigures, previous: RunFigures) => Delta | null
-}
-
-/** Each card is one number from the latest PPO result; the change is against the run before it. Nothing is estimated. */
-const CARDS: readonly CardSpec[] = [
-  {
-    label: 'Current Resistance Burden',
-    icon: Gauge,
-    tone: 'slate',
-    value: (latest) => latest.burden.toFixed(2),
-    delta: (latest, previous) => percentDelta(latest.burden, previous.burden, false),
-  },
-  {
-    label: 'New Resistant Drugs',
-    icon: Pill,
-    tone: 'blue',
-    value: (latest) => String(latest.newResistant),
-    delta: (latest, previous) => percentDelta(latest.newResistant, previous.newResistant, false),
-  },
-  {
-    label: 'Effective Treatments',
-    icon: Stethoscope,
-    tone: 'indigo',
-    value: (latest) => formatRate(latest.susceptibleActionRate),
-    delta: (latest, previous) =>
-      latest.susceptibleActionRate === null || previous.susceptibleActionRate === null
-        ? null
-        : rateDelta(latest.susceptibleActionRate, previous.susceptibleActionRate, true),
-  },
-  {
-    label: 'Remaining Susceptible Options',
-    icon: ShieldCheck,
-    tone: 'green',
-    value: (latest) => String(latest.remainingSusceptible),
-    delta: (latest, previous) => countDelta(latest.remainingSusceptible, previous.remainingSusceptible, true),
-  },
-]
-
-const DIRECTION_WORDS = { up: 'Up', down: 'Down', flat: 'Unchanged' } as const
-const DIRECTION_ICONS = { up: ArrowUp, down: ArrowDown, flat: ArrowRight } as const
-
-function DeltaBadge({ delta }: { delta: Delta }) {
-  const Icon = DIRECTION_ICONS[delta.direction]
-  return (
-    <span className={cx(styles['delta'], styles[delta.tone])}>
-      <Icon size={12} aria-hidden="true" />
-      <span className="visually-hidden">{DIRECTION_WORDS[delta.direction]} </span>
-      {delta.text}
-    </span>
-  )
-}
-
-function Card({ spec, latest, previous, loading }: { spec: CardSpec; latest: RunFigures | null; previous: RunFigures | null; loading: boolean }) {
-  const Icon = spec.icon
-  const value = latest ? spec.value(latest) : null
-  const delta = latest && previous ? spec.delta(latest, previous) : null
-  const caption = loading ? 'Loading' : !latest ? 'Run a simulation to see this' : previous ? 'vs. last simulation' : 'First simulation'
-  return (
-    <article className={styles['metric']} aria-busy={loading || undefined}>
-      <span className={cx(styles['metricIcon'], styles[spec.tone])}>
-        <Icon size={18} aria-hidden="true" />
-      </span>
-      <h2 className={styles['metricLabel']}>{spec.label}</h2>
-      <p className={styles['metricRow']}>
-        <span className={styles['metricValue']}>{value ?? '\u2014'}</span>
-        {delta ? <DeltaBadge delta={delta} /> : null}
-      </p>
-      <p className={styles['metricCaption']}>{caption}</p>
-    </article>
-  )
-}
-
+/** Values belong to the latest PPO run; unrelated experiments are never compared. */
 export function HomeMetrics() {
-  const state = useHomeMetrics()
-
-  if (state.status === 'error') {
-    return <ErrorState error={state.error} title="Your latest run could not be loaded" onRetry={state.retry} />
-  }
-  const latest = state.status === 'ready' ? state.latest : null
-  const previous = state.status === 'ready' ? state.previous : null
+  const state = useProfileRun()
+  if (state.status === 'error')
+    return (
+      <ErrorState
+        error={state.error}
+        title="Your latest run could not be loaded"
+        onRetry={state.retry}
+      />
+    )
+  const metrics = state.status === 'ready' ? state.run.ppo.metrics : null
+  const cards = [
+    {
+      label: 'Resistance burden',
+      icon: FiActivity,
+      value: metrics?.cumulativeResistanceBurden.toFixed(2),
+      caption: 'Normalized by seven antibiotics',
+      definition:
+        'Cumulative simulated resistance burden returned by the API, including terminal adjustment. Lower means less simulated burden.',
+    },
+    {
+      label: 'Resistance emergence',
+      icon: FiGitBranch,
+      value: metrics?.resistanceEmergenceEvents,
+      caption: 'Steps with an increased resistant count',
+      definition:
+        'Counts steps whose resistant-antibiotic count increased, not individual antibiotics.',
+    },
+    {
+      label: 'Susceptible action rate',
+      icon: FiCheckCircle,
+      value:
+        metrics?.susceptibleActionRate == null
+          ? undefined
+          : `${Math.round(metrics.susceptibleActionRate * 100)}%`,
+      caption: 'Selected actions susceptible in the model',
+      definition:
+        'Share of selected actions that were susceptible in the simulator. This is enforced by the action mask and does not measure clinical treatment effectiveness.',
+    },
+    {
+      label: 'Susceptible options',
+      icon: FiShield,
+      value: metrics?.finalSusceptibleCount,
+      caption: 'Remaining at the end of the run',
+      definition:
+        'Antibiotics marked susceptible in the final simulated profile. This is not clinical efficacy.',
+    },
+  ]
   return (
-    <section className={styles['metrics']} aria-label="Latest simulation">
-      {CARDS.map((spec) => (
-        <Card key={spec.label} spec={spec} latest={latest} previous={previous} loading={state.status === 'loading'} />
+    <section
+      className={styles['metrics']}
+      aria-label="Latest PPO simulation"
+      aria-busy={state.status === 'loading'}
+    >
+      {cards.map(({ label, icon: Icon, value, caption, definition }) => (
+        <article key={label} className={styles['metric']}>
+          <Icon size={19} className={styles['metricIcon']} aria-hidden="true" />
+          <h2 className={styles['metricLabel']}>
+            {label}
+            <Tooltip label={`Definition of ${label}`}>{definition}</Tooltip>
+          </h2>
+          <p className={styles['metricValue']}>{value ?? '\u2014'}</p>
+          <p className={styles['metricCaption']}>
+            {state.status === 'loading'
+              ? 'Loading latest run'
+              : !metrics
+                ? 'Run an experiment to see results'
+                : caption}
+          </p>
+        </article>
       ))}
     </section>
   )

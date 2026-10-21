@@ -1,4 +1,4 @@
-import { Bug } from 'lucide-react'
+import { FiHexagon as Bug } from 'react-icons/fi'
 import { Card } from '@/components/ui/Card'
 import { formatDateTime, shortId } from '@/domain/formatters'
 import { PROJECT_LOCATION } from '@/domain/terminology'

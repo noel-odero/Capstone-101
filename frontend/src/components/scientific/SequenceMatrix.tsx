@@ -1,4 +1,4 @@
-import { Check, X } from 'lucide-react'
+import { FiCheck as Check, FiX as X } from 'react-icons/fi'
 import type { AntibioticEntry } from '@/domain/antibiotics'
 import { RESISTANT } from '@/domain/profile'
 import type { ResistanceProfile } from '@/domain/types'
@@ -23,7 +23,15 @@ export interface SequenceMatrixProps {
  * Antibiotics (rows) by treatment step (columns). Each dot is green with a check when susceptible and red with a cross when
  * resistant; a ringed dot marks the antibiotic selected at that step. The values are exactly the profiles supplied.
  */
-export function SequenceMatrix({ caption, entries, profiles, actions, selectedStep, onSelectStep, tag }: SequenceMatrixProps) {
+export function SequenceMatrix({
+  caption,
+  entries,
+  profiles,
+  actions,
+  selectedStep,
+  onSelectStep,
+  tag,
+}: SequenceMatrixProps) {
   return (
     <div>
       <div className={styles['wrap']}>
@@ -37,9 +45,23 @@ export function SequenceMatrix({ caption, entries, profiles, actions, selectedSt
                 Antibiotic
               </th>
               {profiles.map((_, step) => (
-                <th scope="col" key={step} className={cx(styles['stepHead'], selectedStep === step && styles['selectedColumn'], selectedStep === step && styles['selectedTop'])}>
+                <th
+                  scope="col"
+                  key={step}
+                  className={cx(
+                    styles['stepHead'],
+                    selectedStep === step && styles['selectedColumn'],
+                    selectedStep === step && styles['selectedTop'],
+                  )}
+                >
                   {onSelectStep ? (
-                    <button type="button" className={styles['stepButton']} aria-pressed={selectedStep === step} aria-label={`Step ${step}`} onClick={() => onSelectStep(step)}>
+                    <button
+                      type="button"
+                      className={styles['stepButton']}
+                      aria-pressed={selectedStep === step}
+                      aria-label={`Step ${step}`}
+                      onClick={() => onSelectStep(step)}
+                    >
                       {step}
                     </button>
                   ) : (
@@ -64,11 +86,23 @@ export function SequenceMatrix({ caption, entries, profiles, actions, selectedSt
                       className={cx(
                         styles['cell'],
                         selectedStep === step && styles['selectedColumn'],
-                        selectedStep === step && row === entries.length - 1 && styles['selectedBottom'],
+                        selectedStep === step &&
+                          row === entries.length - 1 &&
+                          styles['selectedBottom'],
                       )}
                     >
-                      <span className={cx(styles['dot'], resistant ? styles['resistant'] : styles['susceptible'], selectedAction && styles['action'])}>
-                        {resistant ? <X size={11} strokeWidth={3} aria-hidden="true" /> : <Check size={11} strokeWidth={3} aria-hidden="true" />}
+                      <span
+                        className={cx(
+                          styles['dot'],
+                          resistant ? styles['resistant'] : styles['susceptible'],
+                          selectedAction && styles['action'],
+                        )}
+                      >
+                        {resistant ? (
+                          <X size={11} strokeWidth={3} aria-hidden="true" />
+                        ) : (
+                          <Check size={11} strokeWidth={3} aria-hidden="true" />
+                        )}
                         <span className="visually-hidden">
                           {resistant ? 'Resistant' : 'Susceptible'}
                           {selectedAction ? ', selected action' : ''}

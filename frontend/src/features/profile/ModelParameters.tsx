@@ -1,4 +1,4 @@
-import { Play } from 'lucide-react'
+import { FiPlay as Play } from 'react-icons/fi'
 import { ButtonLink } from '@/components/ui/Button'
 import { Card, CardHeader } from '@/components/ui/Card'
 import { profileToCode } from '@/domain/profile'
@@ -28,7 +28,10 @@ export function ModelParameters({ run }: { run: ProfileRun }) {
           </div>
         ))}
       </dl>
-      <ButtonLink to={`/app/simulation/new?profile=${profileToCode(run.ppo.initialProfile)}`} className={styles['runButton']}>
+      <ButtonLink
+        to={`/app/simulation/new?profile=${profileToCode(run.ppo.initialProfile)}`}
+        className={styles['runButton']}
+      >
         <Play size={16} aria-hidden="true" /> Run New Simulation
       </ButtonLink>
     </Card>

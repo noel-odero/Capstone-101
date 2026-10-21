@@ -1,4 +1,4 @@
-import { Info } from 'lucide-react'
+import { FiInfo as Info } from 'react-icons/fi'
 import { Link } from 'react-router'
 import { LIMITATIONS_PATH } from '@/config/navigation'
 import { GLOSSARY, PROTOTYPE_STATEMENT } from '@/domain/terminology'
@@ -20,7 +20,10 @@ const LIMITATIONS: readonly string[] = [
   'Nothing here is clinically validated. The application uses no patient data and must not be used to choose antibiotics for anyone.',
 ]
 
-export function ScientificLimitationsNotice({ detailed = false, id }: ScientificLimitationsNoticeProps) {
+export function ScientificLimitationsNotice({
+  detailed = false,
+  id,
+}: ScientificLimitationsNoticeProps) {
   return (
     <div className={styles['notice']} role="note" id={id}>
       <Info size={18} aria-hidden="true" />

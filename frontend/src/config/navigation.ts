@@ -1,9 +1,15 @@
-import { ChartLine, House, ListChecks, Microscope, type LucideIcon } from 'lucide-react'
+import {
+  FiTrendingUp as ChartLine,
+  FiHome as House,
+  FiList as ListChecks,
+  FiCrosshair as Microscope,
+} from 'react-icons/fi'
+import type { IconType } from 'react-icons'
 
 export interface NavigationItem {
   to: string
   label: string
-  icon: LucideIcon
+  icon: IconType
   /** Match the exact path only (Home would otherwise be active on every workspace page). */
   end?: boolean
   /** Other paths under which this item stays highlighted. */
@@ -15,7 +21,12 @@ export const workspaceNavigation: readonly NavigationItem[] = [
   { to: '/app', label: 'Home', icon: House, end: true },
   { to: '/app/simulation', label: 'Simulation', icon: ChartLine },
   { to: '/app/recommendations', label: 'Recommendations', icon: ListChecks },
-  { to: '/app/profile', label: 'E. coli Profile', icon: Microscope, alsoActiveFor: ['/app/history'] },
+  {
+    to: '/app/profile',
+    label: 'E. coli Profile',
+    icon: Microscope,
+    alsoActiveFor: ['/app/history'],
+  },
 ]
 
 export interface PublicLink {

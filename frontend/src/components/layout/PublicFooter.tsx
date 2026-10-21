@@ -5,7 +5,22 @@ import { Brand } from './Brand'
 import { ContentContainer } from './ContentContainer'
 import styles from './layout.module.css'
 
-export function PublicFooter() {
+export function PublicFooter({ compact = false }: { compact?: boolean }) {
+  if (compact) {
+    return (
+      <footer className={styles.compactFooter}>
+        <p>Research and simulation only.</p>
+        <nav aria-label="Footer resources">
+          <Link to="/methodology">Methodology</Link>
+          <Link to="/limitations">Limitations</Link>
+          <Link to="/privacy">Privacy</Link>
+          <a href={REPOSITORY_URL} rel="noreferrer noopener" target="_blank">
+            Source
+          </a>
+        </nav>
+      </footer>
+    )
+  }
   return (
     <footer className={styles['footer']}>
       <ContentContainer>
@@ -13,8 +28,8 @@ export function PublicFooter() {
           <div>
             <Brand />
             <p className={styles['footerBlurb']} style={{ marginTop: 'var(--space-3)' }}>
-              A research and educational prototype exploring reinforcement learning for antibiotic sequencing under simulated
-              resistance.
+              A research and educational prototype exploring reinforcement learning for antibiotic
+              sequencing under simulated resistance.
             </p>
           </div>
           <nav className={styles['footerColumn']} aria-labelledby="footer-learn">
@@ -57,7 +72,8 @@ export function PublicFooter() {
           </nav>
         </div>
         <p className={styles['footerNote']}>
-          {APP_NAME} is not a clinical tool. Results come from a simplified simulation and are not treatment guidance.
+          {APP_NAME} is not a clinical tool. Results come from a simplified simulation and are not
+          treatment guidance.
         </p>
       </ContentContainer>
     </footer>

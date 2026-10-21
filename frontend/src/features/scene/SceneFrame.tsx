@@ -18,7 +18,10 @@ function ContextLossGuard({ onLost }: { onLost: () => void }) {
   return null
 }
 
-class SceneErrorBoundary extends Component<{ fallback: ReactNode; children: ReactNode }, { failed: boolean }> {
+class SceneErrorBoundary extends Component<
+  { fallback: ReactNode; children: ReactNode },
+  { failed: boolean }
+> {
   override state = { failed: false }
 
   static getDerivedStateFromError() {
@@ -44,6 +47,8 @@ export interface SceneFrameProps {
   camera?: { position: [number, number, number]; fov: number }
   /** Rotation starts on unless the user prefers reduced motion. */
   rotateByDefault?: boolean
+  /** Keep rendering for animated scene contents, independently of camera rotation. */
+  animated?: boolean
 }
 
 /**
@@ -60,6 +65,7 @@ export function SceneFrame({
   background,
   camera = { position: [0, 0.4, 7], fov: 40 },
   rotateByDefault = true,
+  animated = false,
 }: SceneFrameProps) {
   const webGlAvailable = useMemo(() => detectWebGl(), [])
   const [autoRotate] = useState(() => rotateByDefault && !prefersReducedMotion())
@@ -73,11 +79,16 @@ export function SceneFrame({
 
   return (
     <div className={styles['frame']}>
-      <div className={`${styles['canvasBox']} ${className ?? ''}`} role="img" aria-label={label} style={background ? { background } : undefined}>
+      <div
+        className={`${styles['canvasBox']} ${className ?? ''}`}
+        role="img"
+        aria-label={label}
+        style={background ? { background } : undefined}
+      >
         {ready ? null : <p className={styles['loading']}>Preparing 3D view&hellip;</p>}
         <SceneErrorBoundary fallback={fallback}>
           <Canvas
-            frameloop={autoRotate ? 'always' : 'demand'}
+            frameloop={autoRotate || (animated && !prefersReducedMotion()) ? 'always' : 'demand'}
             dpr={[1, 2]}
             camera={camera}
             gl={{ antialias: true, alpha: true, powerPreference: 'low-power' }}
@@ -85,8 +96,8 @@ export function SceneFrame({
           >
             <ambientLight intensity={0.9} />
             <directionalLight position={[3, 4, 5]} intensity={1.8} />
-            <directionalLight position={[-4, -2, -3]} color="#8aa4ff" intensity={0.9} />
-            <pointLight position={[0, 2, -4]} color="#c4b5fd" intensity={30} />
+            <directionalLight position={[-4, -2, -3]} color="#ffffff" intensity={0.9} />
+            <pointLight position={[0, 2, -4]} color="#ffffff" intensity={30} />
             {children({ autoRotate })}
             <OrbitControls
               makeDefault

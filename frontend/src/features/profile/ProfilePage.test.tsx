@@ -1,11 +1,15 @@
-import { screen, within } from '@testing-library/react'
+﻿import { fireEvent, screen, within } from '@testing-library/react'
 import { describe, expect, it } from 'vitest'
 import { profileToCode } from '@/domain/profile'
 import { baseRoutes, mockFetch } from '@/test/mock-api'
 import { fixtures, rawFixtures } from '@/test/fixtures/api-fixtures'
 import { renderApp } from '@/test/test-utils'
 
-const session = { isAuthenticated: true, user: { displayName: 'Ada Researcher', email: 'ada@example.org' }, csrfToken: 'token' }
+const session = {
+  isAuthenticated: true,
+  user: { displayName: 'Ada Researcher', email: 'ada@example.org' },
+  csrfToken: 'token',
+}
 const run = rawFixtures.recentRuns.items.find((item) => item.kind === 'comparison')
 if (!run) {
   throw new Error('The captured recent runs have no comparison.')
@@ -26,18 +30,31 @@ describe('E. coli Profile page', () => {
     renderApp('/app/profile')
 
     const initial = fixtures.comparison.ppo?.initialProfile ?? []
-    expect(await screen.findByRole('heading', { name: 'Resistance Profile' })).toBeInTheDocument()
+    expect(
+      await screen.findByRole(
+        'heading',
+        { name: 'Current Resistance Profile' },
+        { timeout: 10000 },
+      ),
+    ).toBeInTheDocument()
+    fireEvent.click(screen.getByText('Explore resistance evolution and model details'))
     expect(screen.getByLabelText(`Profile ${profileToCode(initial)}`)).toBeInTheDocument()
 
-    const drugs = within(screen.getByRole('list', { name: 'Resistance of each antibiotic' })).getAllByRole('listitem')
+    const drugs = within(
+      screen.getByRole('list', { name: 'Resistance of each antibiotic' }),
+    ).getAllByRole('listitem')
     expect(drugs).toHaveLength(7)
     initial.forEach((state, index) => {
-      expect(drugs[index]).toHaveAccessibleName(new RegExp(state === 1 ? 'resistant$' : 'susceptible$'))
+      expect(drugs[index]).toHaveAccessibleName(
+        new RegExp(state === 1 ? 'resistant$' : 'susceptible$'),
+      )
     })
 
     const resistant = initial.filter((state) => state === 1).length
     expect(screen.getByLabelText('Resistance level')).toHaveTextContent(`${resistant} / 7`)
-    expect(screen.getByRole('list', { name: 'PPO-selected antibiotics in order' }).children.length).toBe(fixtures.comparison.ppo?.steps.length)
+    expect(
+      screen.getByRole('list', { name: 'PPO-selected antibiotics in order' }).children.length,
+    ).toBe(fixtures.comparison.ppo?.steps.length)
   })
 
   it('links to the recommendations of this run and to the treatment history', async () => {
@@ -45,22 +62,36 @@ describe('E. coli Profile page', () => {
     renderApp('/app/profile')
 
     const tabs = await screen.findByRole('navigation', { name: 'Profile sections' })
-    expect(within(tabs).getByRole('link', { name: 'Resistance evolution' })).toHaveAttribute('aria-current', 'page')
-    expect(within(tabs).getByRole('link', { name: 'Treatment recommendations' })).toHaveAttribute('href', `/app/recommendations/comparison/${runId}`)
-    expect(within(tabs).getByRole('link', { name: 'Treatment history' })).toHaveAttribute('href', '/app/history')
+    expect(within(tabs).getByRole('link', { name: 'Resistance evolution' })).toHaveAttribute(
+      'aria-current',
+      'page',
+    )
+    expect(within(tabs).getByRole('link', { name: 'Policy-selected sequence' })).toHaveAttribute(
+      'href',
+      `/app/recommendations/comparison/${runId}`,
+    )
+    expect(within(tabs).getByRole('link', { name: 'Experiment History' })).toHaveAttribute(
+      'href',
+      '/app/history',
+    )
   })
 
   it('reads the key insights and the model parameters from the run, and starts a new simulation from this profile', async () => {
     mockFetch(routes())
     renderApp('/app/profile')
 
+    await screen.findByRole('heading', { name: 'Current Resistance Profile' })
+    fireEvent.click(screen.getByText('Explore resistance evolution and model details'))
     const insights = await screen.findByRole('region', { name: 'Key insights' })
     expect(within(insights).getAllByRole('heading', { level: 3 })).toHaveLength(3)
     const parameters = screen.getByRole('region', { name: 'Model parameters' })
     expect(parameters).toHaveTextContent(rawFixtures.comparison.provenance.algorithm)
     expect(parameters).toHaveTextContent(`${rawFixtures.comparison.provenance.horizon} steps`)
     const initial = fixtures.comparison.ppo?.initialProfile ?? []
-    expect(screen.getByRole('link', { name: 'Run New Simulation' })).toHaveAttribute('href', `/app/simulation/new?profile=${profileToCode(initial)}`)
+    expect(screen.getByRole('link', { name: 'Run New Simulation' })).toHaveAttribute(
+      'href',
+      `/app/simulation/new?profile=${profileToCode(initial)}`,
+    )
   })
 
   it('invites a first simulation instead of showing numbers when there are no runs, and disables the recommendations tab', async () => {
@@ -68,7 +99,9 @@ describe('E. coli Profile page', () => {
     renderApp('/app/profile')
 
     expect(await screen.findByText('No profile yet')).toBeInTheDocument()
-    expect(screen.queryByRole('heading', { name: 'Resistance Profile' })).not.toBeInTheDocument()
+    expect(
+      screen.queryByRole('heading', { name: 'Current Resistance Profile' }),
+    ).not.toBeInTheDocument()
   })
 
   it('keeps the same tabs on the history page, with the history tab current', async () => {
@@ -76,7 +109,13 @@ describe('E. coli Profile page', () => {
     renderApp('/app/history')
 
     const tabs = await screen.findByRole('navigation', { name: 'Profile sections' })
-    expect(within(tabs).getByRole('link', { name: 'Treatment history' })).toHaveAttribute('aria-current', 'page')
-    expect(within(tabs).getByRole('link', { name: 'Resistance evolution' })).toHaveAttribute('href', '/app/profile')
+    expect(within(tabs).getByRole('link', { name: 'Experiment History' })).toHaveAttribute(
+      'aria-current',
+      'page',
+    )
+    expect(within(tabs).getByRole('link', { name: 'Resistance evolution' })).toHaveAttribute(
+      'href',
+      '/app/profile',
+    )
   })
 })

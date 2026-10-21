@@ -48,9 +48,9 @@
   place-items: center;
   width: 2.75rem;
   height: 2.75rem;
-  border-radius: 50%;
-  background: var(--color-primary-soft);
-  color: var(--color-primary);
+  border-radius: var(--radius-md);
+  background: transparent;
+  color: var(--color-text-muted);
 }
 
 .runFacts {
@@ -158,11 +158,11 @@
 }
 
 .dotSusceptible {
-  background: #22b45a;
+  background: var(--color-susceptible-solid);
 }
 
 .dotResistant {
-  background: #ef4444;
+  background: var(--color-resistant-solid);
 }
 
 .levelCard {
@@ -315,18 +315,18 @@
 }
 
 .tone-good {
-  background: var(--color-susceptible-bg);
-  color: var(--color-susceptible-fg);
+  background: transparent;
+  color: var(--color-text-muted);
 }
 
 .tone-info {
-  background: var(--color-info-bg);
-  color: var(--color-info-fg);
+  background: transparent;
+  color: var(--color-text-muted);
 }
 
 .tone-warn {
-  background: var(--color-resistant-bg);
-  color: var(--color-resistant-fg);
+  background: transparent;
+  color: var(--color-text-muted);
 }
 
 .params {
@@ -357,4 +357,188 @@
 .runButton {
   width: 100%;
   justify-content: center;
+}
+.overviewIdentity {
+  display: flex;
+  align-items: center;
+  gap: 1.2rem;
+  padding: 1.25rem;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  background: var(--color-surface);
+  margin-bottom: 1rem;
+}
+.overviewAvatar {
+  display: grid;
+  place-items: center;
+  width: 62px;
+  height: 62px;
+  flex-shrink: 0;
+  border-radius: 50%;
+  background: linear-gradient(145deg, #e3edfc, #a7c3e8);
+  color: #668fbe;
+}
+.overviewIdentity h2 {
+  font-size: 1.1rem;
+  margin-bottom: 0.5rem;
+}
+.overviewIdentity p {
+  font-size: 0.78rem;
+  color: var(--color-text-muted);
+}
+.overviewIdentity p span {
+  margin: 0 0.5rem;
+  color: #bfd0e7;
+}
+.overviewIdentity a {
+  margin-left: auto;
+}
+.overviewGrid {
+  display: grid;
+  grid-template-columns: 1.3fr 1fr;
+  gap: 1rem;
+  margin-top: 1rem;
+}
+.overviewCard {
+  padding: 1rem;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  background: var(--color-surface);
+  min-width: 0;
+}
+.overviewCard h2 {
+  font-size: 0.85rem;
+  font-weight: 500;
+}
+.axisCaption {
+  text-align: center;
+  color: var(--color-text-muted);
+  font-size: 0.7rem;
+}
+.activityList {
+  list-style: none;
+  margin: 1.4rem 0 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 1.4rem;
+  font-size: 0.78rem;
+}
+.activityList li {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.8rem;
+  position: relative;
+}
+.activityList li > svg {
+  color: #15bd91;
+  width: 12px;
+  margin-top: 3px;
+}
+.activityList li:not(:last-child)::after {
+  content: '';
+  position: absolute;
+  left: 5px;
+  top: 20px;
+  height: 25px;
+  border-left: 1px solid var(--color-border);
+}
+.activityList p {
+  color: var(--color-text-muted);
+  font-size: 0.73rem;
+  margin-top: 0.3rem;
+}
+.strip {
+  grid-template-columns: 1fr;
+}
+.profileCard {
+  grid-template-columns: 1fr;
+  gap: 1rem;
+}
+.profileCard .identity {
+  display: none;
+}
+.profileCard::before {
+  content: 'Current Resistance Profile';
+  font-size: 0.85rem;
+  font-weight: 500;
+}
+.levelCard {
+  display: none;
+}
+.drugs {
+  justify-content: flex-start;
+  gap: 1.5rem;
+}
+.drugs li {
+  border: 0;
+  background: var(--color-surface-subtle);
+  padding: 0.5rem;
+  border-radius: 0.6rem;
+  min-width: 48px;
+}
+.state {
+  background: #ddfaed;
+  color: #00996b;
+  border-radius: 0.4rem;
+  padding: 0.15rem 0.4rem;
+  justify-content: center;
+}
+.drugs li[aria-label$='resistant'] .state {
+  background: #fff0ef;
+  color: #e55555;
+}
+.abbr {
+  font-size: 0.7rem;
+}
+.tabs {
+  margin-bottom: 1rem;
+}
+.tab[aria-current='page'] {
+  border-color: #347cff;
+  color: #285fd3;
+}
+@media (max-width: 700px) {
+  .overviewGrid {
+    grid-template-columns: 1fr;
+  }
+  .overviewIdentity {
+    flex-wrap: wrap;
+  }
+  .overviewIdentity a {
+    margin-left: 0;
+  }
+  .drugs {
+    gap: 0.5rem;
+    flex-wrap: wrap;
+  }
+}
+.profileCard::before {
+  content: none;
+}
+.stripHeading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+}
+.stripCount {
+  font-size: 0.7rem;
+  color: var(--color-text-muted);
+}
+.dotSusceptible,
+.dotResistant {
+  display: none;
+}
+.drugs {
+  display: flex;
+  justify-content: flex-start;
+  gap: 1.2rem;
+}
+.drugs li {
+  flex: none;
+  min-width: 48px;
+}
+.overviewGrid {
+  margin-top: 0;
 }

@@ -1,9 +1,7 @@
-import { SequenceMatrix } from '@/components/scientific/SequenceMatrix'
+﻿import { FiCheck, FiInfo } from 'react-icons/fi'
 import { Card, CardHeader } from '@/components/ui/Card'
-import { cx } from '@/components/ui/cx'
+import { drugLabel } from '@/domain/antibiotics'
 import type { AntibioticEntry } from '@/domain/antibiotics'
-import { actionsFromSteps, profilesFromSteps } from '@/domain/trajectory'
-import { terminationLabel } from '@/domain/terminology'
 import type { ResistanceProfile, StepTrace } from '@/domain/types'
 import styles from './recommendation.module.css'
 
@@ -18,24 +16,77 @@ export interface SequenceCardProps {
   selectedStep: number
   onSelectStep: (step: number) => void
 }
-
-/** One strategy's sequence: the resistance matrix with the selected action ringed. The order of antibiotics is shown under Key metrics. */
-export function SequenceCard({ title, badge, highlighted = false, initialProfile, steps, terminationReason, antibiotics, selectedStep, onSelectStep }: SequenceCardProps) {
-  const ordered = [...steps].sort((left, right) => left.treatmentStepAfter - right.treatmentStepAfter)
-  const profiles = profilesFromSteps(initialProfile, steps)
-  const shown = Math.min(selectedStep, profiles.length - 1)
-
+export function SequenceCard({
+  title,
+  highlighted = false,
+  steps,
+  antibiotics,
+  selectedStep,
+  onSelectStep,
+}: SequenceCardProps) {
+  const ordered = [...steps].sort((a, b) => a.treatmentStepAfter - b.treatmentStepAfter)
   return (
-    <Card className={cx(highlighted && styles['recommended'])} aria-label={title}>
-      <CardHeader
-        title={title}
-        headingLevel="h2"
-        description={ordered.length === 0 ? terminationLabel(terminationReason) : `${ordered.length} steps. ${terminationLabel(terminationReason)}.`}
-        actions={badge ? <span className={styles['badge']}>{badge}</span> : undefined}
-      />
-      <div className="stack">
-        <SequenceMatrix caption={`${title}: resistance by step`} entries={antibiotics} profiles={profiles} actions={actionsFromSteps(ordered)} selectedStep={shown} onSelectStep={onSelectStep} />
-      </div>
+    <Card className={styles['sequenceListCard']} aria-label={title}>
+      <CardHeader title={highlighted ? 'Top Recommendation' : title} />
+      <ol className={styles['sequenceList']} aria-label={title}>
+        {ordered.map((step, index) => (
+          <li key={step.stepIndex}>
+            <button
+              type="button"
+              aria-pressed={selectedStep === step.treatmentStepAfter}
+              onClick={() => onSelectStep(step.treatmentStepAfter)}
+            >
+              <span className={styles['sequenceNumber']}>{index + 1}</span>
+              <span>
+                <strong>{drugLabel(antibiotics, step.antibiotic)}</strong>
+                {highlighted && index === 0 ? <em>PPO-selected</em> : null}
+                <small>
+                  {step.hasCandidateTransition
+                    ? 'Transition data available'
+                    : 'No candidate transition data'}{' '}
+                  <span>·</span> Step {step.treatmentStepAfter}
+                </small>
+              </span>
+            </button>
+          </li>
+        ))}
+        {!ordered.length ? (
+          <li className={styles['noSequence']}>No feasible actions remain for this profile.</li>
+        ) : null}
+      </ol>
     </Card>
+  )
+}
+export function SequenceExplanation() {
+  return (
+    <div className={styles['explanation']}>
+      <Card>
+        <CardHeader title="Why this sequence?" />
+        <ul className={styles['reasons']}>
+          <li>
+            <FiCheck /> Selects from susceptible antibiotics
+          </li>
+          <li>
+            <FiCheck /> Considers the evolving resistance profile
+          </li>
+          <li>
+            <FiCheck /> Uses a frozen reinforcement learning policy
+          </li>
+          <li>
+            <FiCheck /> Makes each simulated step inspectable
+          </li>
+        </ul>
+      </Card>
+      <Card>
+        <div className={styles['explanationNote']}>
+          <FiInfo size={22} />
+          <p>
+            This sequence is based on your starting resistance profile and simulated outcomes using
+            our reinforcement learning model. It is a research output, not a treatment
+            recommendation.
+          </p>
+        </div>
+      </Card>
+    </div>
   )
 }

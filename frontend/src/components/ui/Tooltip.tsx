@@ -1,52 +1,41 @@
-import { Info } from 'lucide-react'
-import { useId, useState, type KeyboardEvent, type ReactNode } from 'react'
-import { cx } from './cx'
+import * as Primitive from '@radix-ui/react-tooltip'
+import { FiInfo } from 'react-icons/fi'
+import { useState, type ReactNode } from 'react'
 import styles from './ui.module.css'
 
 export interface TooltipProps {
-  /** Accessible name of the info button, for example "Definition of cumulative resistance burden". */
   label: string
   children: ReactNode
   align?: 'start' | 'end'
 }
 
-/**
- * An info button whose explanation opens on hover and keyboard focus and closes with Escape. Anything essential must
- * also appear in the page text: this only supplies extra definitions.
- */
+/** Radix supplies focus, Escape, collision detection and portal positioning. */
 export function Tooltip({ label, children, align = 'start' }: TooltipProps) {
-  const id = useId()
   const [open, setOpen] = useState(false)
-
-  const onKeyDown = (event: KeyboardEvent) => {
-    if (event.key === 'Escape') {
-      setOpen(false)
-    }
-  }
-
   return (
-    <span
-      className={styles['tooltip']}
-      onMouseEnter={() => setOpen(true)}
-      onMouseLeave={() => setOpen(false)}
-      onKeyDown={onKeyDown}
-    >
-      <button
-        type="button"
-        className={styles['tooltipTrigger']}
-        aria-label={label}
-        aria-describedby={open ? id : undefined}
-        onFocus={() => setOpen(true)}
-        onBlur={() => setOpen(false)}
-        onClick={() => setOpen((current) => !current)}
-      >
-        <Info size={15} aria-hidden="true" />
-      </button>
-      {open ? (
-        <span role="tooltip" id={id} className={cx(styles['tooltipContent'], align === 'end' && styles['tooltipEnd'])}>
-          {children}
-        </span>
-      ) : null}
-    </span>
+    <Primitive.Provider delayDuration={0}>
+      <Primitive.Root open={open} onOpenChange={setOpen}>
+        <Primitive.Trigger asChild>
+          <button
+            type="button"
+            className={styles['tooltipTrigger']}
+            aria-label={label}
+            onClick={() => setOpen(true)}
+          >
+            <FiInfo size={15} aria-hidden="true" />
+          </button>
+        </Primitive.Trigger>
+        <Primitive.Portal>
+          <Primitive.Content
+            sideOffset={6}
+            align={align}
+            collisionPadding={16}
+            className={styles['tooltipContent']}
+          >
+            {children}
+          </Primitive.Content>
+        </Primitive.Portal>
+      </Primitive.Root>
+    </Primitive.Provider>
   )
 }

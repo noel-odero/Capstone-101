@@ -1,8 +1,9 @@
-import { LogOut } from 'lucide-react'
+import { FiLogOut as LogOut } from 'react-icons/fi'
 import { NavLink, useLocation } from 'react-router'
 import { workspaceNavigation } from '@/config/navigation'
 import { useAuth } from '@/features/auth/useAuth'
 import { Brand } from './Brand'
+import { ThemeControl } from '@/components/ui/ThemeControl'
 import { cx } from '@/components/ui/cx'
 import styles from './layout.module.css'
 
@@ -15,7 +16,12 @@ export function WorkspaceNavLinks({ onNavigate }: { onNavigate?: () => void }) {
           const extra = alsoActiveFor?.some((path) => pathname.startsWith(path)) ?? false
           return (
             <li key={to}>
-              <NavLink to={to} end={end} className={cx(styles['navLink'], extra && styles['navLinkActive'])} onClick={onNavigate}>
+              <NavLink
+                to={to}
+                end={end}
+                className={cx(styles['navLink'], extra && styles['navLinkActive'])}
+                onClick={onNavigate}
+              >
                 <Icon size={18} aria-hidden="true" />
                 <span>{label}</span>
               </NavLink>
@@ -32,6 +38,10 @@ export function AccountFooter() {
   const name = user?.displayName ?? 'Signed in'
   return (
     <div className={styles['sidebarFooter']}>
+      <div className={styles['appearance']}>
+        <span>Appearance</span>
+        <ThemeControl />
+      </div>
       <div className={styles['userCard']}>
         <span className={styles['avatar']} aria-hidden="true">
           {name.charAt(0).toUpperCase()}
@@ -40,11 +50,18 @@ export function AccountFooter() {
           <span className={styles['userName']}>{name}</span>
           <span className={styles['userEmail']}>{user?.email}</span>
         </span>
+        <button
+          type="button"
+          className={styles['signOut']}
+          onClick={() => void signOut()}
+          disabled={signingOut}
+          aria-label={signingOut ? 'Signing out' : 'Sign out'}
+          title={signingOut ? 'Signing out' : 'Sign out'}
+          aria-busy={signingOut || undefined}
+        >
+          <LogOut size={14} aria-hidden="true" />
+        </button>
       </div>
-      <button type="button" className={styles['signOut']} onClick={() => void signOut()} disabled={signingOut}>
-        <LogOut size={14} aria-hidden="true" />
-        {signingOut ? 'Signing out' : 'Sign out'}
-      </button>
     </div>
   )
 }

@@ -1,4 +1,4 @@
-import { CircleDashed } from 'lucide-react'
+import { FiMinusCircle as CircleDashed } from 'react-icons/fi'
 import { GLOSSARY } from '@/domain/terminology'
 import styles from './scientific.module.css'
 
@@ -25,16 +25,23 @@ export function TransitionSupportNotice({ summaries, antibiotic }: TransitionSup
       <CircleDashed size={18} aria-hidden="true" />
       <div className={styles['noticeBody']}>
         <strong>No supported transition data</strong>
-        {antibiotic ? <p>{antibiotic} is susceptible in this state, but the simulator has no candidate transition data for it.</p> : null}
+        {antibiotic ? (
+          <p>
+            {antibiotic} is susceptible in this state, but the simulator has no candidate transition
+            data for it.
+          </p>
+        ) : null}
         {summaries?.map((summary) => (
           <p key={summary.strategyName}>
-            {summary.strategyName}: {summary.count} of {summary.total} selected actions had no supported transition data.
+            {summary.strategyName}: {summary.count} of {summary.total} selected actions had no
+            supported transition data.
           </p>
         ))}
         <p>{GLOSSARY.unsupported}</p>
         {summaries ? (
           <p>
-            Such steps cannot add resistance in the simulation, so read the resistance burden together with this count.
+            Such steps cannot add resistance in the simulation, so read the resistance burden
+            together with this count.
           </p>
         ) : null}
       </div>

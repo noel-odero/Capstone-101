@@ -52,7 +52,7 @@
 
 .stepButton[aria-pressed='true'] {
   background: var(--color-primary);
-  color: #fff;
+  color: var(--color-text-inverse);
 }
 
 .rowHead {
@@ -79,7 +79,7 @@
 }
 
 .selectedColumn {
-  background: #e3f1fc;
+  background: var(--color-primary-soft);
 }
 
 .selectedTop {
@@ -106,15 +106,17 @@
 }
 
 .susceptible {
-  background: #4caf6a;
+  background: var(--color-susceptible-solid);
 }
 
 .resistant {
-  background: #e5605c;
+  background: var(--color-resistant-solid);
 }
 
 .action {
-  box-shadow: 0 0 0 2px #fff, 0 0 0 4px var(--color-primary);
+  box-shadow:
+    0 0 0 2px var(--color-surface),
+    0 0 0 4px var(--color-primary);
 }
 
 .legend {

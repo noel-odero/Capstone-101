@@ -17,7 +17,7 @@
 
 /* Brand */
 .brand.brandOnDark {
-  color: #fff;
+  color: var(--color-text);
 }
 
 .brandOnDark .brandName {
@@ -35,7 +35,7 @@
 
 .brandName {
   font-size: var(--text-base);
-  font-weight: 700;
+  font-weight: 600;
   line-height: 1.2;
 }
 
@@ -92,7 +92,7 @@
 }
 
 .navLink:hover {
-  background: rgba(255, 255, 255, 0.06);
+  background: var(--color-nav-active-bg);
   color: var(--color-nav-text-active);
 }
 
@@ -106,7 +106,7 @@
 .navLink:focus-visible,
 .menuButton:focus-visible,
 .userMenu button:focus-visible {
-  box-shadow: 0 0 0 2px var(--color-nav-bg), 0 0 0 4px #93c5fd;
+  box-shadow: var(--focus-ring);
 }
 
 .sidebarFooter {
@@ -133,12 +133,13 @@
   height: 2.25rem;
   border-radius: 50%;
   background: var(--color-nav-active-bg);
-  color: #fff;
+  color: var(--color-text);
   font-size: var(--text-sm);
   font-weight: 700;
 }
 
 .userText {
+  flex: 1;
   display: flex;
   flex-direction: column;
   min-width: 0;
@@ -147,7 +148,7 @@
 
 .userName {
   overflow: hidden;
-  color: #fff;
+  color: var(--color-text);
   font-size: var(--text-sm);
   font-weight: 650;
   text-overflow: ellipsis;
@@ -163,10 +164,12 @@
 .signOut {
   display: inline-flex;
   align-items: center;
-  gap: var(--space-2);
+  justify-content: center;
+  flex: 0 0 2.25rem;
+  width: 2.25rem;
   min-height: 2.25rem;
-  padding: 0 var(--space-3);
-  border: 1px solid var(--color-nav-border);
+  padding: 0;
+  border: 0;
   border-radius: var(--radius-md);
   background: transparent;
   color: var(--color-nav-text);
@@ -176,8 +179,16 @@
 }
 
 .signOut:hover {
-  background: rgba(255, 255, 255, 0.06);
-  color: #fff;
+  background: var(--color-nav-active-bg);
+  color: var(--color-text);
+}
+.signOut:focus-visible {
+  outline: 2px solid var(--color-focus);
+  outline-offset: 2px;
+}
+.signOut:disabled {
+  cursor: wait;
+  opacity: 0.6;
 }
 
 .mobileBar {
@@ -189,7 +200,8 @@
   justify-content: space-between;
   padding: var(--space-2) var(--page-gutter);
   background: var(--color-nav-bg);
-  color: #fff;
+  border-bottom: 1px solid var(--color-nav-border);
+  color: var(--color-text);
 }
 
 .menuButton {
@@ -200,7 +212,7 @@
   border: 1px solid var(--color-nav-border);
   border-radius: var(--radius-md);
   background: transparent;
-  color: #fff;
+  color: var(--color-text);
   cursor: pointer;
 }
 
@@ -230,7 +242,7 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
-  color: #fff;
+  color: var(--color-text);
 }
 
 .banner {
@@ -295,8 +307,7 @@
   top: 0;
   z-index: 40;
   border-bottom: 1px solid var(--color-border);
-  background: rgba(255, 255, 255, 0.92);
-  backdrop-filter: blur(8px);
+  background: var(--color-surface);
 }
 
 .publicHeaderInner {
@@ -383,7 +394,7 @@
 
 .footerColumn h2 {
   margin-bottom: var(--space-3);
-  color: #fff;
+  color: var(--color-text);
   font-size: var(--text-sm);
   letter-spacing: 0.04em;
   text-transform: uppercase;
@@ -405,13 +416,13 @@
 }
 
 .footerColumn a:hover {
-  color: #fff;
+  color: var(--color-text);
   text-decoration: underline;
 }
 
 .footerColumn a:focus-visible,
 .footer a:focus-visible {
-  box-shadow: 0 0 0 2px var(--color-nav-bg), 0 0 0 4px #93c5fd;
+  box-shadow: var(--focus-ring);
 }
 
 .footerNote {
@@ -445,6 +456,7 @@
   .shell {
     display: grid;
     grid-template-columns: var(--sidebar-width) minmax(0, 1fr);
+    column-gap: clamp(1rem, 1.5vw, 1.75rem);
   }
 
   .sidebar {
@@ -456,6 +468,7 @@
     height: 100vh;
     padding: var(--space-6) var(--space-4);
     background: var(--color-nav-bg);
+    border-right: 1px solid var(--color-nav-border);
     overflow-y: auto;
   }
 
@@ -464,6 +477,163 @@
   }
 
   .mainRegion {
-    padding-block: var(--space-6) var(--space-8);
+    padding-block: var(--space-8) var(--space-10);
+  }
+}
+
+.appearance {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-2);
+  padding-bottom: var(--space-4);
+  border-bottom: 1px solid var(--color-border);
+}
+
+@media (max-width: 639px) {
+  .publicHeader .brandName {
+    display: none;
+  }
+  .publicHeaderInner {
+    gap: var(--space-2);
+  }
+  .publicActions {
+    gap: var(--space-2);
+  }
+}
+/* Reference workspace: quiet blue surfaces and a persistent navy rail. */
+.shell {
+  background: var(--color-bg);
+}
+.brand.brandOnDark,
+.sidebar .userName {
+  color: var(--color-text);
+}
+.brand svg {
+  color: #4b91ff;
+}
+.sidebar .avatar {
+  background: var(--color-nav-active-bg);
+  color: var(--color-nav-text-active);
+}
+.sidebar .appearance {
+  border-color: var(--color-nav-border);
+}
+.sidebar .signOut:hover {
+  color: var(--color-nav-text-active);
+}
+.pageTitle {
+  font-size: 1.85rem;
+  letter-spacing: -0.035em;
+}
+.pageSubtitle {
+  font-size: 0.9rem;
+  color: var(--color-text-muted);
+}
+.pageHeader {
+  margin-bottom: 1.8rem;
+}
+.sidebarFooter {
+  gap: 1rem;
+}
+@media (min-width: 960px) {
+  .sidebar {
+    background: var(--color-nav-bg);
+    padding: 2rem 1rem;
+    gap: 3rem;
+  }
+  .mainRegion {
+    padding-block: 2.6rem;
+  }
+  .navLink {
+    min-height: 2.8rem;
+    padding-inline: 0.9rem;
+  }
+}
+:root[data-theme='dark'] .pageSubtitle {
+  color: var(--color-text-muted);
+}
+@media (max-width: 639px) {
+  .container {
+    padding-inline: 1rem;
+  }
+  .pageTitle {
+    font-size: 1.6rem;
+  }
+}
+.mobileBar,
+.mobileBar .brand,
+.mobileBar .menuButton,
+.drawerHeader,
+.drawer .userName {
+  color: var(--color-nav-text);
+}
+.drawer .avatar {
+  background: var(--color-nav-active-bg);
+  color: var(--color-nav-text-active);
+}
+.drawer .appearance {
+  border-color: var(--color-nav-border);
+}
+.footerColumn h2 {
+  color: var(--color-text);
+}
+
+.compactFooter {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 0.75rem 2rem;
+  padding: 1rem max(var(--page-gutter), calc((100% - 1216px) / 2));
+  border-top: 1px solid var(--color-border);
+  color: var(--color-text-muted);
+  font-size: 0.7rem;
+}
+.compactFooter p {
+  margin: 0;
+}
+.compactFooter nav {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1.25rem;
+}
+.compactFooter a {
+  color: inherit;
+}
+.compactFooter a:hover {
+  color: var(--color-text);
+}
+@media (max-width: 550px) {
+  .compactFooter {
+    justify-content: center;
+    text-align: center;
+  }
+}
+
+/* Compact workspace proportions for laptop displays, including scaled desktops. */
+@media (min-width: 960px) and (max-height: 900px) {
+  .shell {
+    --sidebar-width: 13.5rem;
+    --page-gutter: 1.25rem;
+  }
+  .sidebar {
+    padding: 1.25rem 0.8rem;
+    gap: 2rem;
+  }
+  .brandOnDark .brandName {
+    font-size: 0.75rem;
+  }
+  .mainRegion {
+    padding-block: 1.25rem;
+  }
+  .pageHeader {
+    margin-bottom: 1rem;
+  }
+  .pageTitle {
+    font-size: 1.55rem;
+  }
+  .pageSubtitle {
+    font-size: 0.8rem;
   }
 }

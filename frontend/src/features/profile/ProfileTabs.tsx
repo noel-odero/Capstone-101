@@ -15,15 +15,15 @@ export function ProfileTabs() {
       </NavLink>
       {recommendations ? (
         <NavLink to={recommendations} className={styles['tab']}>
-          Treatment recommendations
+          Policy-selected sequence
         </NavLink>
       ) : (
         <span className={cx(styles['tab'], styles['tabOff'])} aria-disabled="true">
-          Treatment recommendations
+          Policy-selected sequence
         </span>
       )}
       <NavLink to="/app/history" className={styles['tab']}>
-        Treatment history
+        Experiment History
       </NavLink>
     </nav>
   )

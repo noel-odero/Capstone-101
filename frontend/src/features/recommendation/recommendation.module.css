@@ -11,8 +11,8 @@
 }
 
 .recommended {
-  border: 2px solid var(--color-primary);
-  box-shadow: var(--shadow-md);
+  border: 1px solid var(--color-border-strong);
+  box-shadow: none;
 }
 
 .badge {
@@ -22,7 +22,7 @@
   padding: 0.15rem 0.6rem;
   border-radius: var(--radius-pill);
   background: var(--color-primary);
-  color: #fff;
+  color: var(--color-text-inverse);
   font-size: var(--text-xs);
   font-weight: 700;
 }
@@ -93,8 +93,8 @@
   width: 1.3rem;
   height: 1.3rem;
   border-radius: 50%;
-  background: #9aa6c0;
-  color: #fff;
+  background: var(--color-text-muted);
+  color: var(--color-text-inverse);
   font-size: 0.68rem;
   font-variant-numeric: tabular-nums;
 }
@@ -145,4 +145,166 @@
   border: 1px solid var(--color-border);
   border-radius: var(--radius-md);
   background: var(--color-surface);
+}
+.sequenceListCard {
+  padding: 0;
+  overflow: hidden;
+}
+.sequenceListCard > header {
+  padding: 1rem 1.2rem;
+  margin: 0;
+  border-bottom: 1px solid var(--color-border);
+  background: var(--color-surface-subtle);
+}
+.sequenceListCard h2 {
+  font-size: 0.9rem;
+}
+.sequenceList {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+.sequenceList li + li {
+  border-top: 1px solid var(--color-border);
+}
+.sequenceList button {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  width: 100%;
+  padding: 1.2rem;
+  border: 0;
+  text-align: left;
+  background: transparent;
+  cursor: pointer;
+  color: var(--color-text);
+}
+.sequenceList button:hover,
+.sequenceList button[aria-pressed='true'] {
+  background: var(--color-surface-subtle);
+}
+.sequenceNumber {
+  display: grid;
+  place-items: center;
+  flex-shrink: 0;
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background: #a7b8d0;
+  color: white;
+  font-size: 0.9rem;
+}
+.sequenceList li:first-child .sequenceNumber {
+  background: #2555bc;
+  box-shadow: 0 0 0 5px #edf3ff;
+}
+.sequenceList strong {
+  font-size: 0.87rem;
+  font-weight: 500;
+}
+.sequenceList small {
+  display: block;
+  margin-top: 0.5rem;
+  font-size: 0.73rem;
+  color: var(--color-text-muted);
+}
+.sequenceList small span {
+  padding: 0 0.4rem;
+}
+.sequenceList em {
+  display: inline-block;
+  margin-left: 1rem;
+  padding: 0.2rem 0.6rem;
+  border-radius: 2rem;
+  background: #dcfbee;
+  color: #00986c;
+  font-style: normal;
+  font-size: 0.7rem;
+}
+.explanation {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+.explanation h2 {
+  font-size: 0.9rem;
+}
+.reasons {
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  font-size: 0.85rem;
+}
+.reasons li {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.75rem;
+}
+.reasons svg {
+  flex-shrink: 0;
+  color: #00b780;
+  margin-top: 3px;
+}
+.explanationNote {
+  display: flex;
+  align-items: flex-start;
+  gap: 1rem;
+  padding: 1.2rem;
+  background: #edf6ff;
+  border-radius: 0.6rem;
+  color: #2458b6;
+  font-size: 0.8rem;
+  line-height: 1.7;
+}
+.explanationNote svg {
+  flex-shrink: 0;
+}
+.newRun {
+  display: flex;
+  margin-top: 1.25rem;
+}
+.newRun > a {
+  width: 100%;
+}
+.noSequence {
+  padding: 1.2rem;
+}
+@media (min-width: 1000px) {
+  .grid {
+    grid-template-columns: 1.3fr 1fr;
+  }
+}
+.sequenceListCard > div:first-child {
+  padding: 1rem 1.2rem;
+  margin: 0;
+  border-bottom: 1px solid var(--color-border);
+  background: var(--color-surface-subtle);
+}
+.sequenceList {
+  max-height: 390px;
+  overflow-y: auto;
+  scrollbar-width: thin;
+  scrollbar-color: #bdcde3 transparent;
+}
+.sequenceList button {
+  padding: 1rem 1.2rem;
+}
+.sequenceListCard {
+  align-self: start;
+}
+.profileBadge {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.55rem 0.85rem;
+  border: 1px solid var(--color-border);
+  border-radius: 0.5rem;
+  background: var(--color-surface);
+  font-size: 0.75rem;
+  white-space: nowrap;
+}
+.sequenceList {
+  max-height: 336px;
 }

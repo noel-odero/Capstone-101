@@ -109,8 +109,8 @@
   gap: var(--space-3);
   padding: var(--space-4);
   border-radius: var(--radius-lg);
-  background: var(--color-panel, #0b1326);
-  color: #e6ecff;
+  background: #0a0a0a;
+  color: #ededed;
 }
 
 .panelHead {
@@ -129,7 +129,7 @@
 .toggle {
   display: inline-flex;
   padding: 0.15rem;
-  border: 1px solid #2a3a63;
+  border: 1px solid #333333;
   border-radius: var(--radius-pill);
 }
 
@@ -139,19 +139,21 @@
   border: 0;
   border-radius: var(--radius-pill);
   background: transparent;
-  color: #c8d3ea;
+  color: #a1a1a1;
   font-size: var(--text-xs);
   font-weight: 650;
   cursor: pointer;
 }
 
 .toggle button[aria-pressed='true'] {
-  background: #fff;
-  color: var(--color-ink);
+  background: #ededed;
+  color: #171717;
 }
 
 .toggle button:focus-visible {
-  box-shadow: 0 0 0 2px #0b1326, 0 0 0 4px #93c5fd;
+  box-shadow:
+    0 0 0 2px #0a0a0a,
+    0 0 0 4px #a1a1a1;
 }
 
 .scene {
@@ -167,7 +169,7 @@
   padding: 0;
   list-style: none;
   font-size: var(--text-xs);
-  color: #c8d3ea;
+  color: #a1a1a1;
 }
 
 .legendMark {
@@ -205,16 +207,18 @@
   flex: none;
   width: 2.5rem;
   height: 2.5rem;
-  border: 1px solid #2a3a63;
+  border: 1px solid #333333;
   border-radius: var(--radius-md);
-  background: #141f3a;
+  background: #171717;
   color: #fff;
   cursor: pointer;
 }
 
 .play:focus-visible,
 .stepDot:focus-visible {
-  box-shadow: 0 0 0 2px #0b1326, 0 0 0 4px #93c5fd;
+  box-shadow:
+    0 0 0 2px #0a0a0a,
+    0 0 0 4px #a1a1a1;
 }
 
 .steps {
@@ -234,7 +238,7 @@
   padding: 0;
   border: 0;
   background: transparent;
-  color: #9fb0d6;
+  color: #a1a1a1;
   font-size: var(--text-xs);
   font-variant-numeric: tabular-nums;
   cursor: pointer;
@@ -245,7 +249,7 @@
   width: 0.7rem;
   height: 0.7rem;
   border-radius: 50%;
-  background: #3a4a78;
+  background: #444444;
 }
 
 .stepDot[aria-pressed='true'] {
@@ -254,8 +258,8 @@
 }
 
 .stepDot[aria-pressed='true']::before {
-  background: #6d7cff;
-  box-shadow: 0 0 0 3px rgba(109, 124, 255, 0.35);
+  background: #ededed;
+  box-shadow: 0 0 0 3px rgb(255 255 255 / 0.15);
 }
 
 .stepDot:disabled {
@@ -279,7 +283,7 @@
 
 .chartBox {
   width: 100%;
-  height: 16rem;
+  height: 13rem;
 }
 
 .stepChip {
@@ -295,5 +299,380 @@
 .stepChip[aria-pressed='true'] {
   background: var(--color-primary);
   border-color: var(--color-primary);
-  color: #fff;
+  color: var(--color-text-inverse);
+}
+
+.timeline {
+  overflow-x: auto;
+  padding-bottom: var(--space-2);
+}
+.panel {
+  border: 1px solid #262626;
+}
+
+.inspectors {
+  display: grid;
+  gap: var(--space-6);
+  margin-bottom: var(--space-5);
+}
+@media (min-width: 1100px) {
+  .inspectors {
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  }
+}
+.panel {
+  position: relative;
+  overflow: hidden;
+  min-height: 490px;
+  background: radial-gradient(ellipse at 65% 40%, #123344, #091725 75%);
+  padding: 1.25rem;
+  gap: 1rem;
+  box-shadow: 0 5px 15px #11243c15;
+}
+.panelHead h2 {
+  font-size: 0.95rem;
+  font-weight: 500;
+}
+.illustrationLabel {
+  font-size: 0.6rem;
+  color: #91adc7;
+}
+.organScene {
+  height: 335px;
+  display: flex;
+  justify-content: center;
+  margin-top: -15px;
+}
+.organScene svg {
+  height: 100%;
+  width: 100%;
+  max-width: 340px;
+  filter: saturate(0.85) drop-shadow(0 0 14px #69daba30);
+}
+.organLegend {
+  position: absolute;
+  left: 1.25rem;
+  top: 3.7rem;
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.55rem;
+  font-size: 0.7rem;
+  color: #e2eaf5;
+  z-index: 1;
+}
+.organLegend li {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+.organLegend i {
+  display: block;
+  width: 0.65rem;
+  height: 0.65rem;
+  border-radius: 50%;
+}
+.organCaption {
+  font-size: 0.7rem;
+  color: #a6bdd4;
+  text-align: center;
+  margin-top: auto;
+}
+.play {
+  background: #20364f;
+  border: 0;
+}
+.stepDot {
+  min-width: 1.3rem;
+  color: #c1d3e7;
+}
+.stepDot::before {
+  width: 0.5rem;
+  height: 0.5rem;
+  background: #506b8b;
+}
+.stepDot[aria-pressed='true']::before {
+  background: #4b8fff;
+}
+.steps {
+  position: relative;
+}
+.steps::before {
+  content: '';
+  position: absolute;
+  left: 10px;
+  right: 10px;
+  top: 4px;
+  border-top: 1px solid #405b77;
+}
+.stepDot {
+  position: relative;
+}
+.controls {
+  padding: 1rem;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  background: var(--color-surface);
+  gap: 1.2rem;
+}
+.chip {
+  flex: 1;
+  background: transparent;
+  border-color: var(--color-border);
+  min-width: 140px;
+}
+.chip strong {
+  font-size: 0.85rem;
+  font-weight: 400;
+}
+.controls > a {
+  font-size: 0.75rem;
+}
+.side {
+  gap: 0;
+}
+.side > section + section {
+  border-top: 0;
+  border-radius: 0 0 var(--radius-lg) var(--radius-lg);
+}
+.side > section:first-child {
+  border-radius: var(--radius-lg) var(--radius-lg) 0 0;
+}
+.chartBox {
+  height: 230px;
+}
+@media (min-width: 1100px) {
+  .grid {
+    grid-template-columns: 1.1fr 1fr;
+    gap: 1.25rem;
+  }
+}
+@media (max-width: 700px) {
+  .panel {
+    min-height: 460px;
+  }
+  .controls {
+    align-items: stretch;
+  }
+}
+.side h2 {
+  font-size: 0.9rem;
+  font-weight: 500;
+}
+.side > section {
+  padding: 1rem;
+}
+.side figure > figcaption {
+  font-size: 0.72rem;
+}
+.side figure > figcaption strong {
+  font-weight: 400;
+}
+.side figure > figcaption button {
+  min-height: 1.6rem;
+}
+.side table {
+  min-width: 0;
+  font-size: 0.72rem;
+}
+.side table th,
+.side table td {
+  padding: 0.55rem 0.3rem;
+}
+.side table td {
+  font-size: 0.7rem;
+}
+.side table th {
+  font-weight: 400;
+}
+.side table th:first-child {
+  width: 62%;
+}
+.chartBox {
+  height: 220px;
+}
+.panel {
+  min-height: 500px;
+}
+.organScene img {
+  height: 100%;
+  width: auto;
+  max-width: 100%;
+  object-fit: contain;
+  filter: saturate(0.65) drop-shadow(0 0 14px #69daba20);
+}
+.initialConditions {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 1.25rem;
+  padding: 1rem 1.25rem;
+  margin-bottom: 1.25rem;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  background: var(--color-surface);
+}
+.initialSummary {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1rem 3rem;
+  margin: 0;
+}
+.initialSummary dt {
+  color: var(--color-text-muted);
+  font-size: 0.7rem;
+  margin-bottom: 0.4rem;
+}
+.initialSummary dd {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.75rem;
+  margin: 0;
+  color: var(--color-text);
+  font-size: 0.85rem;
+}
+.initialSummary code {
+  font-family: var(--font-mono);
+  letter-spacing: 0.1em;
+}
+.initialSummary dd span {
+  color: var(--color-text-muted);
+  font-size: 0.75rem;
+}
+.controlField {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  gap: 0.45rem;
+  font-size: 0.75rem;
+  font-weight: 500;
+}
+.controlField:first-child {
+  flex: 1.4;
+}
+.controlField select {
+  width: 100%;
+  padding: 0.55rem 0.7rem;
+  border: 1px solid var(--color-border);
+  background: var(--color-surface);
+  border-radius: 0.4rem;
+  color: var(--color-text);
+  font-size: 0.8rem;
+  font-weight: 400;
+}
+.controlField select:focus-visible {
+  outline: 2px solid var(--color-focus);
+  outline-offset: 2px;
+}
+.controls > button {
+  align-self: flex-end;
+  margin-bottom: 1px;
+  min-height: 2.65rem;
+}
+@media (max-width: 600px) {
+  .controlField,
+  .controlField:first-child {
+    flex-basis: 100%;
+  }
+  .controls > button {
+    width: 100%;
+  }
+}
+.grid,
+.side,
+.grid > * {
+  min-width: 0;
+}
+.grid {
+  grid-template-columns: minmax(0, 1fr);
+}
+@media (min-width: 1100px) {
+  .grid {
+    grid-template-columns: minmax(0, 1.1fr) minmax(0, 1fr);
+  }
+}
+@media (max-width: 600px) {
+  .panel {
+    padding: 1rem;
+  }
+  .timeline {
+    gap: 0.5rem;
+  }
+  .stepDot {
+    min-width: 1.15rem;
+  }
+  .play {
+    width: 2rem;
+    height: 2rem;
+  }
+  .steps {
+    min-width: 0;
+  }
+  .side figure > figcaption {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+}
+@media (max-width: 600px) {
+  .organLegend {
+    position: static;
+    flex-direction: row;
+    flex-wrap: wrap;
+    gap: 0.8rem;
+    font-size: 0.65rem;
+  }
+  .organScene {
+    margin-top: 0;
+  }
+}
+.clearanceScene {
+  height: 390px;
+  width: 100%;
+  min-width: 0;
+}
+.clearanceNote {
+  color: #91acc1;
+  font-size: 0.65rem;
+  text-align: center;
+  line-height: 1.5;
+}
+.panel:has(.clearanceScene) .organLegend {
+  position: static;
+  flex-direction: row;
+  flex-wrap: wrap;
+  gap: 1rem;
+  font-size: 0.65rem;
+}
+.panel:has(.clearanceScene) .organCaption strong {
+  font-size: 0.8rem;
+  font-weight: 500;
+  color: #dfedfa;
+}
+
+@media (min-width: 960px) and (max-height: 900px) {
+  .panel {
+    min-height: 0;
+    padding: 1rem;
+  }
+  .clearanceScene {
+    height: clamp(250px, 39dvh, 330px);
+  }
+  .chartBox {
+    height: clamp(155px, 24dvh, 200px);
+  }
+  .side > section {
+    padding: 0.75rem;
+  }
+  .side table th,
+  .side table td {
+    padding-block: 0.4rem;
+  }
+  .initialConditions {
+    padding: 0.75rem 1rem;
+    margin-bottom: 1rem;
+  }
 }

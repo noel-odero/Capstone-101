@@ -1,4 +1,4 @@
-import { Eye, EyeOff, TriangleAlert } from 'lucide-react'
+import { FiEye as Eye, FiEyeOff as EyeOff, FiAlertTriangle as TriangleAlert } from 'react-icons/fi'
 import { useId, useRef, useState, type FormEvent, type ReactNode } from 'react'
 import { Link } from 'react-router'
 import { normalizeError } from '@/api/api-errors'
@@ -27,7 +27,9 @@ interface FieldProps {
 }
 
 function Field({ id, label, error, hint, optional = false, children }: FieldProps) {
-  const describedBy = [error ? `${id}-error` : null, hint ? `${id}-hint` : null].filter(Boolean).join(' ') || undefined
+  const describedBy =
+    [error ? `${id}-error` : null, hint ? `${id}-hint` : null].filter(Boolean).join(' ') ||
+    undefined
   return (
     <div className={styles['field']}>
       <label htmlFor={id}>
@@ -168,7 +170,12 @@ export function AccountForm({ mode, switchTo }: { mode: AccountMode; switchTo: s
         )}
       </Field>
 
-      <Field id={passwordId} label="Password" error={errors.password} {...(registering ? { hint: `At least ${MIN_PASSWORD_LENGTH} characters.` } : {})}>
+      <Field
+        id={passwordId}
+        label="Password"
+        error={errors.password}
+        {...(registering ? { hint: `At least ${MIN_PASSWORD_LENGTH} characters.` } : {})}
+      >
         {(describedBy) => (
           <div className={styles['passwordRow']}>
             <input
@@ -192,7 +199,11 @@ export function AccountForm({ mode, switchTo }: { mode: AccountMode; switchTo: s
               aria-label={showPassword ? 'Hide password' : 'Show password'}
               aria-pressed={showPassword}
             >
-              {showPassword ? <EyeOff size={18} aria-hidden="true" /> : <Eye size={18} aria-hidden="true" />}
+              {showPassword ? (
+                <EyeOff size={18} aria-hidden="true" />
+              ) : (
+                <Eye size={18} aria-hidden="true" />
+              )}
             </button>
           </div>
         )}

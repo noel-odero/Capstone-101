@@ -1,0 +1,102 @@
+[
+  {
+    "from": 0,
+    "to": 1,
+    "sourceIds": ["POD2018"]
+  },
+  {
+    "from": 0,
+    "to": 2,
+    "sourceIds": ["POD2018"]
+  },
+  {
+    "from": 0,
+    "to": 3,
+    "sourceIds": ["POD2018"]
+  },
+  {
+    "from": 0,
+    "to": 4,
+    "sourceIds": ["POD2018"]
+  },
+  {
+    "from": 0,
+    "to": 5,
+    "sourceIds": ["POD2018", "SAK2025"]
+  },
+  {
+    "from": 0,
+    "to": 6,
+    "sourceIds": ["POD2018", "SAK2025"]
+  },
+  {
+    "from": 1,
+    "to": 2,
+    "sourceIds": ["SAK2025"]
+  },
+  {
+    "from": 1,
+    "to": 3,
+    "sourceIds": ["JAMES2024"]
+  },
+  {
+    "from": 1,
+    "to": 4,
+    "sourceIds": ["SAK2025"]
+  },
+  {
+    "from": 1,
+    "to": 5,
+    "sourceIds": ["SAK2025"]
+  },
+  {
+    "from": 1,
+    "to": 6,
+    "sourceIds": ["SAK2025"]
+  },
+  {
+    "from": 2,
+    "to": 3,
+    "sourceIds": ["JAMES2024", "SAK2025"]
+  },
+  {
+    "from": 2,
+    "to": 4,
+    "sourceIds": ["SAK2025"]
+  },
+  {
+    "from": 2,
+    "to": 5,
+    "sourceIds": ["SAK2025"]
+  },
+  {
+    "from": 2,
+    "to": 6,
+    "sourceIds": ["SAK2025"]
+  },
+  {
+    "from": 3,
+    "to": 5,
+    "sourceIds": ["POD2018", "SAK2025"]
+  },
+  {
+    "from": 3,
+    "to": 6,
+    "sourceIds": ["SAK2025"]
+  },
+  {
+    "from": 4,
+    "to": 5,
+    "sourceIds": ["POD2018", "SAK2025"]
+  },
+  {
+    "from": 4,
+    "to": 6,
+    "sourceIds": ["SAK2025"]
+  },
+  {
+    "from": 5,
+    "to": 6,
+    "sourceIds": ["SAK2025"]
+  }
+]

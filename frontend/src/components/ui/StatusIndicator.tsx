@@ -1,8 +1,16 @@
-import { CircleCheck, CircleDashed, CircleX, Database, Info, TriangleAlert } from 'lucide-react'
+import {
+  FiCheckCircle as CircleCheck,
+  FiMinusCircle as CircleDashed,
+  FiXCircle as CircleX,
+  FiDatabase as Database,
+  FiInfo as Info,
+  FiAlertTriangle as TriangleAlert,
+} from 'react-icons/fi'
 import type { ReactNode } from 'react'
 import { Badge, type BadgeVariant } from './Badge'
 
-export type StatusKind = 'susceptible' | 'resistant' | 'unsupported' | 'supported' | 'warning' | 'info'
+export type StatusKind =
+  'susceptible' | 'resistant' | 'unsupported' | 'supported' | 'warning' | 'info'
 
 const KIND_STYLE: Record<StatusKind, { variant: BadgeVariant; icon: ReactNode }> = {
   susceptible: { variant: 'susceptible', icon: <CircleCheck size={14} aria-hidden="true" /> },

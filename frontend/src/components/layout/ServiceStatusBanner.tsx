@@ -1,4 +1,4 @@
-import { TriangleAlert } from 'lucide-react'
+import { FiAlertTriangle as TriangleAlert } from 'react-icons/fi'
 import { isApiError } from '@/api/api-errors'
 import { useHealth } from '@/hooks/useHealth'
 import styles from './layout.module.css'
@@ -11,10 +11,14 @@ export function ServiceStatusBanner() {
     return null
   }
 
-  const unhealthy = health.data?.components.filter((component) => component.status !== 'healthy') ?? []
+  const unhealthy =
+    health.data?.components.filter((component) => component.status !== 'healthy') ?? []
   const message = health.data
     ? `The API reports it is not ready. ${unhealthy
-        .map((component) => `${component.name}: ${component.status}${component.detail ? ` (${component.detail})` : ''}`)
+        .map(
+          (component) =>
+            `${component.name}: ${component.status}${component.detail ? ` (${component.detail})` : ''}`,
+        )
         .join('; ')}.`
     : isApiError(health.error)
       ? health.error.message

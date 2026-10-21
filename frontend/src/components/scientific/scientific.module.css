@@ -277,3 +277,41 @@ button.tile:hover {
 .definitionText {
   color: var(--color-text-muted);
 }
+
+.comparisonMetrics {
+  width: 100%;
+  min-width: 20rem;
+  font-size: var(--text-sm);
+}
+.comparisonMetrics th,
+.comparisonMetrics td {
+  padding: var(--space-2) var(--space-3);
+  border-bottom: 1px solid var(--color-border);
+  text-align: left;
+  font-weight: 500;
+}
+.comparisonMetrics thead th {
+  color: var(--color-text-muted);
+  font-size: var(--text-xs);
+}
+.comparisonMetrics td {
+  font-family: var(--font-mono);
+  font-size: var(--text-xs);
+}
+.comparisonMetrics tbody tr:last-child th,
+.comparisonMetrics tbody tr:last-child td {
+  border-bottom: 0;
+}
+
+.tileGridCompact .tileName {
+  font-size: var(--text-xs);
+}
+
+.coverageSummary {
+  padding: var(--space-3);
+  border: 1px dashed var(--color-unsupported-border);
+  border-radius: var(--radius-md);
+  color: var(--color-unsupported-fg);
+  background: var(--color-unsupported-bg);
+  font-size: var(--text-xs);
+}
