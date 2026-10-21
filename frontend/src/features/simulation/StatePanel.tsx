@@ -1,10 +1,8 @@
 ﻿import { useState, useEffect } from 'react'
 import { FiPause, FiPlay } from 'react-icons/fi'
 import { lazy, Suspense } from 'react'
-import type { AntibioticEntry } from '@/domain/antibiotics'
-import { drugLabel } from '@/domain/antibiotics'
 import type { StrategyResult } from '@/domain/types'
-import { profilesOf, lastStepOf, stepAt } from '@/domain/trajectory'
+import { lastStepOf } from '@/domain/trajectory'
 import styles from './simulation.module.css'
 const BacteriaClearanceScene = lazy(() =>
   import('@/features/scene/BacteriaClearanceScene').then((module) => ({
@@ -14,23 +12,19 @@ const BacteriaClearanceScene = lazy(() =>
 export interface StatePanelProps {
   ppo: StrategyResult
   baseline: StrategyResult
-  antibiotics: readonly AntibioticEntry[]
   selectedStep: number
   onSelectStep: (step: number) => void
 }
 export function StatePanel({
   ppo,
   baseline,
-  antibiotics,
   selectedStep,
   onSelectStep,
 }: StatePanelProps) {
   const [playing, setPlaying] = useState(false)
   const last = lastStepOf(ppo.steps, baseline.steps)
   const active = playing && selectedStep < last
-  const profile = profilesOf(ppo)[Math.min(selectedStep, ppo.steps.length)] ?? ppo.initialProfile
   const shownStep = Math.min(selectedStep, ppo.steps.length)
-  const trace = stepAt(ppo.steps, shownStep)
   useEffect(() => {
     if (!active) return
     const timer = setTimeout(() => onSelectStep(selectedStep + 1), 1400)
@@ -61,15 +55,6 @@ export function StatePanel({
           <BacteriaClearanceScene step={shownStep} horizon={last} />
         </Suspense>
       </div>
-      <p className={styles['organCaption']} aria-live="polite">
-        <strong>
-          {shownStep === 0
-            ? 'Before treatment'
-            : `Step ${shownStep} · ${trace ? drugLabel(antibiotics, trace.antibiotic) : 'PPO'}`}
-        </strong>
-        <br />
-        {profile.filter(Boolean).length} of 7 antibiotics resistant in the model
-      </p>
       <p className={styles['clearanceNote']}>
         Illustrative clearance only. The model tracks resistance, not bacterial load.
       </p>

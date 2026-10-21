@@ -123,7 +123,6 @@ export function BacteriaClearanceScene({ step, horizon }: { step: number; horizo
           </>
         )}
       </SceneFrame>
-      <span className={styles['hint']}>Drag to rotate · Scroll to zoom</span>
     </div>
   )
 }

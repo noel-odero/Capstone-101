@@ -21,7 +21,7 @@
   color: var(--color-text);
 }
 .welcome h1 span {
-  color: var(--color-primary);
+  color: #4b91ff;
 }
 .intro {
   max-width: 36rem;

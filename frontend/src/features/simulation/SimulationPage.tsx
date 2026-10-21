@@ -96,7 +96,6 @@ export function SimulationPage() {
           <StatePanel
             ppo={ppo}
             baseline={baseline}
-            antibiotics={antibiotics.data}
             selectedStep={selectedStep}
             onSelectStep={setSelectedStep}
           />
