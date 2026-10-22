@@ -117,9 +117,8 @@ test('simulation configuration toggles, reviews and submits the selected profile
   )
   await page.getByRole('button', { name: 'Run Simulation', exact: true }).click()
   expect((await request).postDataJSON()).toEqual({ resistanceProfile: [0, 1, 0, 0, 0, 0, 0] })
-  await expect(
-    page.getByRole('heading', { name: 'Results and Recommendations', exact: true }),
-  ).toBeVisible()
+  await expect(page).toHaveURL(/\/app\/simulation\/[0-9a-f-]{36}$/)
+  await expect(page.getByRole('heading', { name: 'Simulation', exact: true })).toBeVisible()
 })
 
 test('home introduces the workbench journey before the sequence panel', async ({
