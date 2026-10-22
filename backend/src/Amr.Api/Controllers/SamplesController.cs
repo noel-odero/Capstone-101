@@ -1,12 +1,12 @@
 using Amr.Api.Routing;
 using Amr.Application.DTOs.Samples;
-using Amr.Application.Interfaces.Persistence;
+using Amr.Application.Interfaces.Services;
 using Microsoft.AspNetCore.Mvc;
 
 namespace Amr.Api.Controllers;
 
 [Route(ApiRoutes.Base + "/samples")]
-public sealed class SamplesController(ISampleRepository samples) : ApiControllerBase
+public sealed class SamplesController(ISampleService samples) : ApiControllerBase
 {
     [HttpGet]
     public async Task<ActionResult<IReadOnlyList<SampleDto>>> List(CancellationToken cancellationToken) =>

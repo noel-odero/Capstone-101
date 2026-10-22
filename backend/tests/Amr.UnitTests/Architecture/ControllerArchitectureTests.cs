@@ -35,7 +35,7 @@ public class ControllerArchitectureTests
     public void The_expected_controllers_exist()
     {
         Assert.Equal(
-            ["AntibioticsController", "AuthController", "ComparisonsController", "HealthController", "ModelController", "ProfilesController", "RecommendationsController", "SimulationsController"],
+            ["AntibioticsController", "AuthController", "ComparisonsController", "HealthController", "ModelController", "ProfilesController", "RecommendationsController", "SamplesController", "SimulationsController"],
             Controllers.Select(type => type.Name));
     }
 
@@ -104,6 +104,8 @@ public class ControllerArchitectureTests
             "GET api/v{version:apiVersion}/health/live",
             "GET api/v{version:apiVersion}/model",
             "GET api/v{version:apiVersion}/recommendations/{simulationId:guid}",
+            "GET api/v{version:apiVersion}/samples",
+            "GET api/v{version:apiVersion}/samples/{id:guid}",
             "GET api/v{version:apiVersion}/simulations/recent",
             "GET api/v{version:apiVersion}/simulations/{id:guid}",
             "POST api/v{version:apiVersion}/auth/register",
@@ -111,6 +113,7 @@ public class ControllerArchitectureTests
             "POST api/v{version:apiVersion}/auth/sign-out",
             "POST api/v{version:apiVersion}/comparisons",
             "POST api/v{version:apiVersion}/profiles/validate",
+            "POST api/v{version:apiVersion}/samples",
             "POST api/v{version:apiVersion}/simulations",
         };
         Assert.Equal(expected.Order(StringComparer.Ordinal), routes);

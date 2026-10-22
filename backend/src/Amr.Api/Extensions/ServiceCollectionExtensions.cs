@@ -19,6 +19,7 @@ public static class ServiceCollectionExtensions
         services.AddScoped<IComparisonService, ComparisonService>();
         services.AddScoped<IRecommendationService, RecommendationService>();
         services.AddScoped<IRunHistoryService, RunHistoryService>();
+        services.AddScoped<ISampleService, SampleService>();
         return services;
     }
 
