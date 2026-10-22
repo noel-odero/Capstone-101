@@ -8,7 +8,6 @@
   gap: 1rem;
   color: var(--color-text-muted);
   font-size: 0.75rem;
-  margin-bottom: 1.75rem;
 }
 .completed {
   display: inline-flex;
@@ -25,7 +24,6 @@
   gap: 0.75rem 1.5rem;
   font-size: 0.75rem;
   color: var(--color-text-muted);
-  margin-bottom: 1.75rem;
 }
 .context code {
   color: var(--color-text);
@@ -42,53 +40,14 @@
   font-family: var(--font-mono);
   overflow-wrap: anywhere;
 }
-.workflow {
-  display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  list-style: none;
-  padding: 0 0 1.5rem;
-  margin: 0;
-  gap: 1.5rem;
-}
-.workflow li {
-  display: flex;
-  align-items: center;
-  gap: 0.75rem;
-  font-size: 0.75rem;
-}
-.workflow li > span {
-  font-family: var(--font-mono);
-  color: var(--color-text-muted);
-}
-.workflow li > svg {
-  width: 13px;
-  color: var(--color-text-muted);
-}
-.workflow strong,
-.workflow small {
-  display: block;
-}
-.workflow strong {
-  font-weight: 500;
-}
-.workflow small {
-  font-size: 0.7rem;
-  margin-top: 0.2rem;
-  color: var(--color-text-muted);
-}
 .tabs {
   display: flex;
-  gap: 1.75rem;
-  border-bottom: 1px solid var(--color-border);
 }
 .tabs button {
-  border: 0;
   border-bottom: 2px solid transparent;
-  padding: 0.85rem 0;
   color: var(--color-text-muted);
   background: transparent;
   font: inherit;
-  font-size: 0.85rem;
   cursor: pointer;
 }
 .tabs button[aria-selected='true'] {
@@ -114,12 +73,6 @@
   font-size: 0.85rem;
   font-weight: 500;
 }
-.summary {
-  padding: 1.5rem;
-  border: 1px solid var(--color-border);
-  border-radius: 0.75rem;
-  background: var(--color-surface);
-}
 .sectionHeading {
   display: flex;
   justify-content: space-between;
@@ -131,13 +84,6 @@
 .sectionHeading > span {
   color: var(--color-text-muted);
   font-size: 0.75rem;
-}
-.eyebrow {
-  margin: 0;
-  color: var(--color-text-muted);
-  font-size: 0.65rem;
-  text-transform: uppercase;
-  letter-spacing: 0.12em;
 }
 .switcher {
   display: flex;
@@ -159,45 +105,10 @@
   border-color: var(--color-border);
   color: var(--color-text);
 }
-.summary > h2 {
-  font-size: clamp(1.2rem, 2vw, 1.65rem);
-  line-height: 1.7;
-  text-wrap: pretty;
-  margin-bottom: 0.6rem;
-}
 .muted {
   color: var(--color-text-muted);
   font-size: 0.8rem;
   line-height: 1.75;
-}
-.metrics {
-  display: grid;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
-  gap: 1.25rem;
-  padding-top: 1.5rem;
-  margin-top: 1.5rem;
-  border-top: 1px solid var(--color-border);
-}
-.metrics > div {
-  min-width: 0;
-  display: flex;
-  flex-direction: column;
-  gap: 0.55rem;
-}
-.metrics span {
-  color: var(--color-text-muted);
-  font-size: 0.72rem;
-}
-.metrics strong {
-  font-size: clamp(1.6rem, 2.6vw, 2.1rem);
-  font-weight: 500;
-  letter-spacing: -0.05em;
-  font-variant-numeric: tabular-nums;
-}
-.metrics small {
-  color: var(--color-text-muted);
-  font-size: 0.65rem;
-  line-height: 1.6;
 }
 .note {
   color: var(--color-text-muted);
@@ -208,34 +119,24 @@
 .section {
   margin-bottom: 1.75rem;
 }
-.summary + .section {
-  margin-top: 1.75rem;
-}
 .section > .muted {
   margin-top: 0.6rem;
 }
 .sequences {
   display: grid;
-  gap: 1.25rem;
-  margin-top: 1.25rem;
 }
 .sequences section {
   min-width: 0;
 }
 .sequence {
-  display: flex;
   flex-wrap: wrap;
-  gap: 0.5rem;
   list-style: none;
   padding: 0;
   margin: 0.75rem 0 0;
 }
 .sequence button {
-  display: inline-flex;
   align-items: center;
   gap: 0.5rem;
-  padding: 0.55rem 0.7rem;
-  background: var(--color-surface);
   color: var(--color-text);
   border: 1px solid var(--color-border);
   border-radius: 0.4rem;
@@ -253,32 +154,6 @@
 .sequence button > span {
   color: var(--color-text-muted);
   font: 0.65rem var(--font-mono);
-}
-.comparisonIntro {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  flex-wrap: wrap;
-  gap: 1rem;
-  padding-block: 1.25rem;
-  border-top: 1px solid var(--color-border);
-}
-.comparisonIntro p {
-  color: var(--color-text-muted);
-  font-size: 0.8rem;
-  margin-top: 0.5rem;
-}
-.comparisonIntro button {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.75rem;
-  padding: 0.6rem 0;
-  background: transparent;
-  border: 0;
-  color: var(--color-text);
-  font: inherit;
-  font-size: 0.8rem;
-  cursor: pointer;
 }
 .chart {
   width: 100%;
@@ -334,7 +209,6 @@
   background: var(--color-surface);
   border-radius: 0.75rem;
   padding: 1.25rem;
-  margin-top: 1.5rem;
 }
 .traceGrid {
   display: grid;
@@ -344,14 +218,10 @@
 }
 .sequence button > .effectTag {
   font: inherit;
-  font-size: 0.65rem;
-  color: var(--color-text);
   padding-left: 0.5rem;
   border-left: 1px solid var(--color-border-strong);
 }
 .effectSummary {
-  padding: 1rem;
-  border: 1px solid var(--color-border);
   border-radius: 0.5rem;
   background: var(--color-surface-subtle);
 }
@@ -400,27 +270,11 @@
   color: inherit;
 }
 @media (max-width: 700px) {
-  .metrics {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-  }
-  .workflow {
-    gap: 0.75rem;
-  }
-  .workflow li {
-    gap: 0.4rem;
-  }
-  .workflow small,
-  .workflow svg {
-    display: none;
-  }
   .context a {
     margin-left: 0;
   }
   .traceGrid {
     grid-template-columns: minmax(0, 1fr);
-  }
-  .summary {
-    padding: 1rem;
   }
   .tableWrap th,
   .tableWrap td {
@@ -438,8 +292,6 @@
     padding-top: 1.25rem;
   }
 }
-
-/* Quiet editorial hierarchy; sequences are ordered panels rather than text chains. */
 .topline {
   margin-bottom: 1rem;
 }
@@ -470,41 +322,6 @@
 .tabs button[aria-selected='true'] {
   background: var(--color-surface);
   box-shadow: 0 1px 4px #0000000a;
-}
-.summary {
-  padding: 1.25rem 1.5rem;
-}
-.summary .sectionHeading {
-  margin-bottom: 1.25rem;
-}
-.metrics {
-  padding-top: 0;
-  margin-top: 0;
-  border-top: 0;
-  gap: 0;
-}
-.metrics > div {
-  padding-inline: 1.25rem;
-  border-left: 1px solid var(--color-border);
-  gap: 0.6rem;
-}
-.metrics > div:first-child {
-  padding-left: 0;
-  border-left: 0;
-}
-.metrics strong {
-  font-size: clamp(1.7rem, 2.8vw, 2.4rem);
-}
-.summaryFoot {
-  display: flex;
-  flex-wrap: wrap;
-  justify-content: space-between;
-  gap: 0.5rem;
-  margin-top: 1.25rem;
-  padding-top: 0.85rem;
-  border-top: 1px solid var(--color-border);
-  color: var(--color-text-muted);
-  font-size: 0.67rem;
 }
 .textButton {
   display: inline-flex;
@@ -680,19 +497,6 @@
 @media (max-width: 700px) {
   .sequences {
     grid-template-columns: minmax(0, 1fr);
-  }
-  .metrics {
-    gap: 1.25rem 0;
-  }
-  .metrics > div:nth-child(3) {
-    border-left: 0;
-    padding-left: 0;
-  }
-  .summary {
-    padding: 1rem;
-  }
-  .metrics > div {
-    padding-inline: 0.75rem;
   }
   .sequenceHint span {
     display: block;

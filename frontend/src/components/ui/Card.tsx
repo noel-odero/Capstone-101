@@ -8,7 +8,13 @@ export interface CardProps extends HTMLAttributes<HTMLElement> {
   flush?: boolean
 }
 
-export function Card({ as: Tag = 'section', tone = 'default', flush = false, className, ...rest }: CardProps) {
+export function Card({
+  as: Tag = 'section',
+  tone = 'default',
+  flush = false,
+  className,
+  ...rest
+}: CardProps) {
   return (
     <Tag
       {...rest}
@@ -32,7 +38,13 @@ export interface CardHeaderProps {
   actions?: ReactNode
 }
 
-export function CardHeader({ title, description, titleId, headingLevel: Heading = 'h2', actions }: CardHeaderProps) {
+export function CardHeader({
+  title,
+  description,
+  titleId,
+  headingLevel: Heading = 'h2',
+  actions,
+}: CardHeaderProps) {
   return (
     <div className={styles['cardHeader']}>
       <div className={styles['cardHeading']}>

@@ -1,4 +1,4 @@
-import type { MetricDefinitions, StateSnapshot, StrategyMetrics, StrategyResult } from './types'
+import type { StateSnapshot, StrategyMetrics, StrategyResult } from './types'
 
 export type MetricKey = keyof StrategyMetrics
 
@@ -50,14 +50,6 @@ export function formatMetricValue(key: MetricKey, value: number | null | undefin
   return value < 0 ? `\u2212${Math.abs(value)}` : String(value)
 }
 
-export function metricLabel(key: MetricKey): string {
-  return METRIC_LABELS[key]
-}
-
-export function metricDefinitionFor(definitions: MetricDefinitions | undefined, key: MetricKey) {
-  return definitions?.[key]
-}
-
 export interface MetricRow {
   key: MetricKey
   label: string
@@ -83,7 +75,9 @@ export interface TrajectoryPoint {
 }
 
 function valueAt(result: StrategyResult, step: number, field: TrajectoryField): number | null {
-  const state: StateSnapshot | undefined = result.states.find((candidate) => candidate.stateIndex === step)
+  const state: StateSnapshot | undefined = result.states.find(
+    (candidate) => candidate.stateIndex === step,
+  )
   return state ? state[field] : null
 }
 
@@ -106,9 +100,4 @@ export function buildTrajectorySeries(
     ppo: valueAt(ppo, step, field),
     baseline: valueAt(baseline, step, field),
   }))
-}
-
-/** Highest state index present in either result (the longest episode). */
-export function lastStateIndex(...results: readonly StrategyResult[]): number {
-  return Math.max(0, ...results.flatMap((result) => result.states.map((state) => state.stateIndex)))
 }

@@ -20,7 +20,6 @@ from ml.src.ppo_evaluation import canonical_initial_profiles
 from ml.src.ppo_training import PPOConfig, load_ppo_model, make_training_environment
 from ml.src.ppo_visualizations import generate_matched_comparison_plots
 from ml.src.statistical_comparison import match_run_pairs, paired_bootstrap_interval
-from simulation.environment import AntibioticEnvironment
 from simulation.resistance_state import ANTIBIOTICS, ResistanceState
 from ml.src.greedy_policy import GreedyPolicy
 

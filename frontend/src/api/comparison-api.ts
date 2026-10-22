@@ -2,7 +2,10 @@ import { comparisonSchema, type Comparison, type CreateComparisonRequest } from 
 import { requestJson } from './http-client'
 
 /** Stores a new run on every call; callers must not retry it automatically. */
-export function createComparison(request: CreateComparisonRequest, signal?: AbortSignal): Promise<Comparison> {
+export function createComparison(
+  request: CreateComparisonRequest,
+  signal?: AbortSignal,
+): Promise<Comparison> {
   return requestJson('/comparisons', comparisonSchema, { method: 'POST', body: request, signal })
 }
 

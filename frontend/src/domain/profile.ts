@@ -6,20 +6,8 @@ export const RESISTANT: ResistanceState = 1
 
 const PROFILE_CODE_PATTERN = /^[01]{7}$/
 
-export function isResistanceProfile(value: unknown): value is ResistanceProfile {
-  return (
-    Array.isArray(value) &&
-    value.length === ANTIBIOTIC_COUNT &&
-    value.every((entry) => entry === SUSCEPTIBLE || entry === RESISTANT)
-  )
-}
-
 export function allSusceptibleProfile(): ResistanceProfile {
   return Array.from({ length: ANTIBIOTIC_COUNT }, () => SUSCEPTIBLE)
-}
-
-export function allResistantProfile(): ResistanceProfile {
-  return Array.from({ length: ANTIBIOTIC_COUNT }, () => RESISTANT)
 }
 
 export function countResistant(profile: ResistanceProfile): number {
@@ -37,7 +25,9 @@ export function isAllResistant(profile: ResistanceProfile): boolean {
 
 export function toggleAntibiotic(profile: ResistanceProfile, index: number): ResistanceProfile {
   if (index < 0 || index >= profile.length) {
-    throw new RangeError(`Antibiotic index ${index} is outside the ${profile.length}-element profile.`)
+    throw new RangeError(
+      `Antibiotic index ${index} is outside the ${profile.length}-element profile.`,
+    )
   }
   return profile.map((state, position) =>
     position === index ? (state === RESISTANT ? SUSCEPTIBLE : RESISTANT) : state,
@@ -58,8 +48,4 @@ export function parseProfileCode(code: string | null | undefined): ResistancePro
     return null
   }
   return Array.from(code, (character) => (character === '1' ? RESISTANT : SUSCEPTIBLE))
-}
-
-export function profilesEqual(left: ResistanceProfile, right: ResistanceProfile): boolean {
-  return left.length === right.length && left.every((state, index) => state === right[index])
 }

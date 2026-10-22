@@ -1,5 +1,5 @@
-import { describe, expect, it } from 'vitest'
 import { rawFixtures } from '@/test/fixtures/api-fixtures'
+import { describe, expect, it } from 'vitest'
 import {
   ApiError,
   abortedError,
@@ -32,7 +32,9 @@ describe('error normalisation', () => {
     expect(error.kind).toBe('validation')
     expect(error.code).toBe('validation_failed')
     expect(error.correlationId).toBeTruthy()
-    expect(error.fieldErrors['resistanceProfile']).toEqual(['A resistance profile must have exactly 7 values.'])
+    expect(error.fieldErrors['resistanceProfile']).toEqual([
+      'A resistance profile must have exactly 7 values.',
+    ])
   })
 
   it('shows the backend detail for a not-found problem but never a raw body', () => {
@@ -42,7 +44,9 @@ describe('error normalisation', () => {
   })
 
   it('falls back to generic text for an unreadable body or an oversized detail', () => {
-    expect(errorFromResponse(500, '<html>stack trace</html>').message).toMatch(/unexpected problem/i)
+    expect(errorFromResponse(500, '<html>stack trace</html>').message).toMatch(
+      /unexpected problem/i,
+    )
     expect(errorFromResponse(503, { detail: 'x'.repeat(2000) }).message).toMatch(/unavailable/i)
     expect(parseProblemDetails('nonsense')).toBeUndefined()
   })
@@ -58,7 +62,9 @@ describe('error normalisation', () => {
   })
 
   it('has distinct user-safe messages for network, timeout and malformed responses', () => {
-    const messages = [networkError(null), timeoutError(), malformedResponseError(null)].map((error) => error.message)
+    const messages = [networkError(null), timeoutError(), malformedResponseError(null)].map(
+      (error) => error.message,
+    )
     expect(new Set(messages).size).toBe(3)
     for (const message of messages) {
       expect(message).not.toMatch(/at \w+\.|Error:|stack/i)
@@ -76,6 +82,8 @@ describe('error normalisation', () => {
   it('gives each kind a readable title', () => {
     expect(errorTitle(networkError(null))).toBe('Cannot reach the API')
     expect(errorTitle(errorFromResponse(503, undefined))).toBe('A backend service is unavailable')
-    expect(errorTitle(errorFromResponse(500, { code: 'persistence_failed' }))).toBe('Persistence failed')
+    expect(errorTitle(errorFromResponse(500, { code: 'persistence_failed' }))).toBe(
+      'Persistence failed',
+    )
   })
 })

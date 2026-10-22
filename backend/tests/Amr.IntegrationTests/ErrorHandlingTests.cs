@@ -25,7 +25,7 @@ public class ErrorHandlingTests(AmrApiFactory factory) : IClassFixture<AmrApiFac
         var response = await _client.GetAsync(HttpTestExtensions.Probe($"fail/{category}"));
 
         var problem = await response.ReadProblemAsync(status, "probe_failure");
-        Assert.Equal(StageAProbeController.SafeMessage, problem.GetProperty("detail").GetString());
+        Assert.Equal(PipelineProbeController.SafeMessage, problem.GetProperty("detail").GetString());
         Assert.False(problem.TryGetProperty("exception", out _));
         Assert.False(problem.TryGetProperty("stackTrace", out _));
     }
@@ -44,7 +44,7 @@ public class ErrorHandlingTests(AmrApiFactory factory) : IClassFixture<AmrApiFac
 
         var correlationId = problem.GetProperty("correlationId").GetString();
         var logged = factory.Logs.Entries.Single(entry =>
-            entry.Level == LogLevel.Error && entry.Exception?.Message == StageAProbeController.SecretMessage);
+            entry.Level == LogLevel.Error && entry.Exception?.Message == PipelineProbeController.SecretMessage);
         Assert.Equal(correlationId, logged.CorrelationId);
     }
 

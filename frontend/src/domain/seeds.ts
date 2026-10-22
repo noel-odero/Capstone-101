@@ -3,8 +3,7 @@ export const SEED_MIN = 0
 export const SEED_MAX = 4_294_967_295
 
 export type SeedParseResult =
-  | { ok: true; value: number | undefined }
-  | { ok: false; message: string }
+  { ok: true; value: number | undefined } | { ok: false; message: string }
 
 /**
  * Parses an optional seed field. Empty input is valid and means "let the service generate one"; anything else must be
@@ -20,7 +19,10 @@ export function parseSeedInput(text: string): SeedParseResult {
   }
   const value = Number(trimmed)
   if (!Number.isSafeInteger(value) || value < SEED_MIN || value > SEED_MAX) {
-    return { ok: false, message: `The seed must be between ${SEED_MIN} and ${SEED_MAX.toLocaleString('en-US')}.` }
+    return {
+      ok: false,
+      message: `The seed must be between ${SEED_MIN} and ${SEED_MAX.toLocaleString('en-US')}.`,
+    }
   }
   return { ok: true, value }
 }

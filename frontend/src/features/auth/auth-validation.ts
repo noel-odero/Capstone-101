@@ -8,7 +8,8 @@ export const MAX_PASSWORD_LENGTH = 128
 export const MAX_NAME_LENGTH = 80
 
 /** The same shape the server accepts, so most mistakes are caught before a request is sent. */
-const EMAIL_PATTERN = /^(?!\.)(?!.*\.\.)[A-Za-z0-9.!#$%&'*+/=?^_`{|}~-]{1,64}(?<!\.)@(?:[A-Za-z0-9](?:[A-Za-z0-9-]{0,61}[A-Za-z0-9])?\.)+[A-Za-z0-9-]{2,63}$/
+const EMAIL_PATTERN =
+  /^(?!\.)(?!.*\.\.)[A-Za-z0-9.!#$%&'*+/=?^_`{|}~-]{1,64}(?<!\.)@(?:[A-Za-z0-9](?:[A-Za-z0-9-]{0,61}[A-Za-z0-9])?\.)+[A-Za-z0-9-]{2,63}$/
 
 export interface AccountValues {
   email: string
@@ -42,11 +43,15 @@ export function validateAccount(mode: AccountMode, values: AccountValues): Accou
 }
 
 export function firstInvalidField(errors: AccountErrors): AccountField | undefined {
-  return (['email', 'password', 'displayName'] as const).find((field) => errors[field] !== undefined)
+  return (['email', 'password', 'displayName'] as const).find(
+    (field) => errors[field] !== undefined,
+  )
 }
 
 /** Keeps only the fields the form has, from the server's `{ field: [messages] }` map. */
-export function fromServerFieldErrors(fieldErrors: Readonly<Record<string, readonly string[]>>): AccountErrors {
+export function fromServerFieldErrors(
+  fieldErrors: Readonly<Record<string, readonly string[]>>,
+): AccountErrors {
   const errors: AccountErrors = {}
   for (const field of ['email', 'password', 'displayName'] as const) {
     const message = fieldErrors[field]?.[0]

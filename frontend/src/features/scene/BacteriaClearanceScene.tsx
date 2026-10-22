@@ -1,10 +1,10 @@
-import { useEffect, useMemo, useRef } from 'react'
 import { useFrame, useThree } from '@react-three/fiber'
+import { useEffect, useMemo, useRef } from 'react'
 import { Color, Object3D, type InstancedMesh } from 'three'
+import styles from './clearance.module.css'
 import { seededRandom } from './geometry'
 import { SceneFrame } from './SceneFrame'
 import { prefersReducedMotion } from './sceneSupport'
-import styles from './clearance.module.css'
 import { UrinaryTractModel } from './UrinaryTractModel'
 
 const PARTICLES = 48
@@ -39,7 +39,9 @@ function Bacteria({ progress }: { progress: number }) {
     invalidate()
   }, [progress, invalidate])
   useFrame((state, delta) => {
-    if (!mesh.current || !debris.current) return
+    const bacteriaMesh = mesh.current
+    const debrisMesh = debris.current
+    if (!bacteriaMesh || !debrisMesh) return
     animatedProgress.current = reduced
       ? progress
       : animatedProgress.current +
@@ -62,19 +64,19 @@ function Bacteria({ progress }: { progress: number }) {
       )
       helper.scale.setScalar(size)
       helper.updateMatrix()
-      mesh.current!.setMatrixAt(index, helper.matrix)
+      bacteriaMesh.setMatrixAt(index, helper.matrix)
       color.set(dissolve > 0 ? '#79e8d2' : '#ffad72')
-      mesh.current!.setColorAt(index, color)
+      bacteriaMesh.setColorAt(index, color)
       // A small outward sparkle accompanies each bacterium dissolving.
       helper.position.x += Math.cos(particle.phase) * dissolve * 0.35
       helper.position.y += Math.sin(particle.phase) * dissolve * 0.35
       helper.scale.setScalar(Math.sin(dissolve * Math.PI) * 0.065)
       helper.updateMatrix()
-      debris.current!.setMatrixAt(index, helper.matrix)
+      debrisMesh.setMatrixAt(index, helper.matrix)
     })
-    mesh.current.instanceMatrix.needsUpdate = true
-    if (mesh.current.instanceColor) mesh.current.instanceColor.needsUpdate = true
-    debris.current.instanceMatrix.needsUpdate = true
+    bacteriaMesh.instanceMatrix.needsUpdate = true
+    if (bacteriaMesh.instanceColor) bacteriaMesh.instanceColor.needsUpdate = true
+    debrisMesh.instanceMatrix.needsUpdate = true
   })
   return (
     <>

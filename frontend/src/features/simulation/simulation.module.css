@@ -16,12 +16,6 @@
   font-weight: 650;
 }
 
-.readonly {
-  display: flex;
-  flex-wrap: wrap;
-  gap: var(--space-4);
-}
-
 .chip {
   display: inline-flex;
   flex-direction: column;
@@ -29,21 +23,11 @@
   padding: var(--space-2) var(--space-4);
   border: 1px solid var(--color-border);
   border-radius: var(--radius-md);
-  background: var(--color-surface-subtle);
 }
 
 .chip small {
   color: var(--color-text-muted);
   font-size: var(--text-xs);
-}
-
-.chip strong {
-  font-size: var(--text-base);
-}
-
-.mono {
-  font-family: var(--font-mono);
-  letter-spacing: 0.14em;
 }
 
 .seeds {
@@ -82,15 +66,6 @@
   }
 }
 
-/* Results */
-.controls {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: var(--space-3);
-  margin-bottom: var(--space-5);
-}
-
 .grid {
   display: grid;
   gap: var(--space-5);
@@ -106,10 +81,7 @@
 .panel {
   display: flex;
   flex-direction: column;
-  gap: var(--space-3);
-  padding: var(--space-4);
   border-radius: var(--radius-lg);
-  background: #0a0a0a;
   color: #ededed;
 }
 
@@ -123,76 +95,6 @@
 
 .panelHead h2 {
   color: #fff;
-  font-size: var(--text-lg);
-}
-
-.toggle {
-  display: inline-flex;
-  padding: 0.15rem;
-  border: 1px solid #333333;
-  border-radius: var(--radius-pill);
-}
-
-.toggle button {
-  min-height: 2rem;
-  padding: 0 var(--space-3);
-  border: 0;
-  border-radius: var(--radius-pill);
-  background: transparent;
-  color: #a1a1a1;
-  font-size: var(--text-xs);
-  font-weight: 650;
-  cursor: pointer;
-}
-
-.toggle button[aria-pressed='true'] {
-  background: #ededed;
-  color: #171717;
-}
-
-.toggle button:focus-visible {
-  box-shadow:
-    0 0 0 2px #0a0a0a,
-    0 0 0 4px #a1a1a1;
-}
-
-.scene {
-  flex: none;
-  height: 17rem;
-}
-
-.sceneLegend {
-  display: flex;
-  flex-wrap: wrap;
-  gap: var(--space-2) var(--space-4);
-  margin: 0;
-  padding: 0;
-  list-style: none;
-  font-size: var(--text-xs);
-  color: #a1a1a1;
-}
-
-.legendMark {
-  display: inline-block;
-  width: 0.75rem;
-  height: 0.75rem;
-  margin-right: var(--space-1);
-  vertical-align: -0.1rem;
-}
-
-.markSusceptible {
-  border-radius: 50%;
-  background: #4ade80;
-}
-
-.markResistant {
-  background: #f87171;
-  transform: rotate(45deg) scale(0.85);
-}
-
-.markChanged {
-  border-radius: 50%;
-  border: 2px solid #fbbf24;
 }
 
 .timeline {
@@ -207,9 +109,7 @@
   flex: none;
   width: 2.5rem;
   height: 2.5rem;
-  border: 1px solid #333333;
   border-radius: var(--radius-md);
-  background: #171717;
   color: #fff;
   cursor: pointer;
 }
@@ -234,11 +134,9 @@
   display: grid;
   gap: 0.25rem;
   justify-items: center;
-  min-width: 1.75rem;
   padding: 0;
   border: 0;
   background: transparent;
-  color: #a1a1a1;
   font-size: var(--text-xs);
   font-variant-numeric: tabular-nums;
   cursor: pointer;
@@ -246,10 +144,7 @@
 
 .stepDot::before {
   content: '';
-  width: 0.7rem;
-  height: 0.7rem;
   border-radius: 50%;
-  background: #444444;
 }
 
 .stepDot[aria-pressed='true'] {
@@ -258,7 +153,6 @@
 }
 
 .stepDot[aria-pressed='true']::before {
-  background: #ededed;
   box-shadow: 0 0 0 3px rgb(255 255 255 / 0.15);
 }
 
@@ -267,23 +161,13 @@
   cursor: not-allowed;
 }
 
-.caption {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: var(--space-2);
-  font-size: var(--text-sm);
-}
-
 .side {
   display: flex;
   flex-direction: column;
-  gap: var(--space-5);
 }
 
 .chartBox {
   width: 100%;
-  height: 13rem;
 }
 
 .stepChip {
@@ -309,21 +193,9 @@
 .panel {
   border: 1px solid #262626;
 }
-
-.inspectors {
-  display: grid;
-  gap: var(--space-6);
-  margin-bottom: var(--space-5);
-}
-@media (min-width: 1100px) {
-  .inspectors {
-    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
-  }
-}
 .panel {
   position: relative;
   overflow: hidden;
-  min-height: 490px;
   background: radial-gradient(ellipse at 65% 40%, #123344, #091725 75%);
   padding: 1.25rem;
   gap: 1rem;
@@ -336,18 +208,6 @@
 .illustrationLabel {
   font-size: 0.6rem;
   color: #91adc7;
-}
-.organScene {
-  height: 335px;
-  display: flex;
-  justify-content: center;
-  margin-top: -15px;
-}
-.organScene svg {
-  height: 100%;
-  width: 100%;
-  max-width: 340px;
-  filter: saturate(0.85) drop-shadow(0 0 14px #69daba30);
 }
 .organLegend {
   position: absolute;
@@ -410,13 +270,6 @@
 .stepDot {
   position: relative;
 }
-.controls {
-  padding: 1rem;
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius-lg);
-  background: var(--color-surface);
-  gap: 1.2rem;
-}
 .chip {
   flex: 1;
   background: transparent;
@@ -426,9 +279,6 @@
 .chip strong {
   font-size: 0.85rem;
   font-weight: 400;
-}
-.controls > a {
-  font-size: 0.75rem;
 }
 .side {
   gap: 0;
@@ -440,9 +290,6 @@
 .side > section:first-child {
   border-radius: var(--radius-lg) var(--radius-lg) 0 0;
 }
-.chartBox {
-  height: 230px;
-}
 @media (min-width: 1100px) {
   .grid {
     grid-template-columns: 1.1fr 1fr;
@@ -452,9 +299,6 @@
 @media (max-width: 700px) {
   .panel {
     min-height: 460px;
-  }
-  .controls {
-    align-items: stretch;
   }
 }
 .side h2 {
@@ -496,13 +340,6 @@
 .panel {
   min-height: 500px;
 }
-.organScene img {
-  height: 100%;
-  width: auto;
-  max-width: 100%;
-  object-fit: contain;
-  filter: saturate(0.65) drop-shadow(0 0 14px #69daba20);
-}
 .initialConditions {
   display: flex;
   align-items: center;
@@ -542,45 +379,6 @@
 .initialSummary dd span {
   color: var(--color-text-muted);
   font-size: 0.75rem;
-}
-.controlField {
-  display: flex;
-  flex: 1;
-  flex-direction: column;
-  gap: 0.45rem;
-  font-size: 0.75rem;
-  font-weight: 500;
-}
-.controlField:first-child {
-  flex: 1.4;
-}
-.controlField select {
-  width: 100%;
-  padding: 0.55rem 0.7rem;
-  border: 1px solid var(--color-border);
-  background: var(--color-surface);
-  border-radius: 0.4rem;
-  color: var(--color-text);
-  font-size: 0.8rem;
-  font-weight: 400;
-}
-.controlField select:focus-visible {
-  outline: 2px solid var(--color-focus);
-  outline-offset: 2px;
-}
-.controls > button {
-  align-self: flex-end;
-  margin-bottom: 1px;
-  min-height: 2.65rem;
-}
-@media (max-width: 600px) {
-  .controlField,
-  .controlField:first-child {
-    flex-basis: 100%;
-  }
-  .controls > button {
-    width: 100%;
-  }
 }
 .grid,
 .side,
@@ -624,9 +422,6 @@
     flex-wrap: wrap;
     gap: 0.8rem;
     font-size: 0.65rem;
-  }
-  .organScene {
-    margin-top: 0;
   }
 }
 .clearanceScene {

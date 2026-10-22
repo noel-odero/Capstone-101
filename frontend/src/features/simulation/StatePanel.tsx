@@ -1,8 +1,7 @@
-﻿import { useState, useEffect } from 'react'
-import { FiPause, FiPlay } from 'react-icons/fi'
-import { lazy, Suspense } from 'react'
+﻿import { lastStepOf } from '@/domain/trajectory'
 import type { StrategyResult } from '@/domain/types'
-import { lastStepOf } from '@/domain/trajectory'
+import { lazy, Suspense, useEffect, useState } from 'react'
+import { FiPause, FiPlay } from 'react-icons/fi'
 import styles from './simulation.module.css'
 const BacteriaClearanceScene = lazy(() =>
   import('@/features/scene/BacteriaClearanceScene').then((module) => ({
@@ -15,12 +14,7 @@ export interface StatePanelProps {
   selectedStep: number
   onSelectStep: (step: number) => void
 }
-export function StatePanel({
-  ppo,
-  baseline,
-  selectedStep,
-  onSelectStep,
-}: StatePanelProps) {
+export function StatePanel({ ppo, baseline, selectedStep, onSelectStep }: StatePanelProps) {
   const [playing, setPlaying] = useState(false)
   const last = lastStepOf(ppo.steps, baseline.steps)
   const active = playing && selectedStep < last

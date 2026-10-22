@@ -5,7 +5,3 @@ import { requestJson } from './http-client'
 export function getHealth(signal?: AbortSignal): Promise<Health> {
   return requestJson('/health', healthSchema, { signal, alsoAccept: [503] })
 }
-
-export function getLiveness(signal?: AbortSignal): Promise<Health> {
-  return requestJson('/health/live', healthSchema, { signal })
-}

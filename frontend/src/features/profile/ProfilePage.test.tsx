@@ -1,9 +1,9 @@
-﻿import { screen, within } from '@testing-library/react'
-import { describe, expect, it } from 'vitest'
-import { profileToCode } from '@/domain/profile'
-import { baseRoutes, mockFetch } from '@/test/mock-api'
+﻿import { profileToCode } from '@/domain/profile'
 import { fixtures, rawFixtures } from '@/test/fixtures/api-fixtures'
+import { baseRoutes, mockFetch } from '@/test/mock-api'
 import { renderApp } from '@/test/test-utils'
+import { screen, within } from '@testing-library/react'
+import { describe, expect, it } from 'vitest'
 
 const session = {
   isAuthenticated: true,
@@ -77,7 +77,9 @@ describe('E. coli Profile page', () => {
     renderApp('/app/profile')
 
     await screen.findByRole('heading', { name: 'Current Resistance Profile' })
-    expect(screen.queryByText('Explore resistance evolution and model details')).not.toBeInTheDocument()
+    expect(
+      screen.queryByText('Explore resistance evolution and model details'),
+    ).not.toBeInTheDocument()
     expect(screen.queryByRole('region', { name: 'Key insights' })).not.toBeInTheDocument()
     expect(screen.queryByRole('region', { name: 'Model parameters' })).not.toBeInTheDocument()
   })

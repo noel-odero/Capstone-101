@@ -1,12 +1,11 @@
+import { ApiError } from '@/api/api-errors'
 import { render, screen, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { describe, expect, it, vi } from 'vitest'
-import { ApiError } from '@/api/api-errors'
 import { Button } from './Button'
 import { EmptyState } from './EmptyState'
 import { ErrorState } from './ErrorState'
 import { LoadingState } from './LoadingState'
-import { MetricCard } from './MetricCard'
 import { StatusIndicator } from './StatusIndicator'
 import { Tooltip } from './Tooltip'
 
@@ -22,7 +21,13 @@ describe('LoadingState', () => {
 
 describe('EmptyState', () => {
   it('explains the absence and offers the next action', () => {
-    render(<EmptyState title="No runs yet" description="Run a comparison first." action={<button type="button">Start</button>} />)
+    render(
+      <EmptyState
+        title="No runs yet"
+        description="Run a comparison first."
+        action={<button type="button">Start</button>}
+      />,
+    )
     expect(screen.getByRole('heading', { name: 'No runs yet' })).toBeInTheDocument()
     expect(screen.getByText('Run a comparison first.')).toBeInTheDocument()
     expect(screen.getByRole('button', { name: 'Start' })).toBeInTheDocument()
@@ -31,7 +36,12 @@ describe('EmptyState', () => {
 
 describe('ErrorState', () => {
   it('shows the message, code and correlation id as an alert, without a stack trace', () => {
-    const error = new ApiError({ kind: 'dependency_unavailable', message: 'The database is unavailable.', code: 'database_unavailable', correlationId: 'abc123' })
+    const error = new ApiError({
+      kind: 'dependency_unavailable',
+      message: 'The database is unavailable.',
+      code: 'database_unavailable',
+      correlationId: 'abc123',
+    })
     render(<ErrorState error={error} />)
     const alert = screen.getByRole('alert')
     expect(within(alert).getByText('The database is unavailable.')).toBeInTheDocument()
@@ -41,43 +51,27 @@ describe('ErrorState', () => {
   })
 
   it('lists field errors for a validation failure', () => {
-    const error = new ApiError({ kind: 'validation', message: 'Not valid.', fieldErrors: { resistanceProfile: ['Must have 7 values.'] } })
+    const error = new ApiError({
+      kind: 'validation',
+      message: 'Not valid.',
+      fieldErrors: { resistanceProfile: ['Must have 7 values.'] },
+    })
     render(<ErrorState error={error} />)
     expect(screen.getByText(/Must have 7 values\./)).toBeInTheDocument()
   })
 
   it('offers retry only when the caller says retrying is safe', async () => {
     const onRetry = vi.fn()
-    const { rerender } = render(<ErrorState error={new ApiError({ kind: 'network', message: 'x' })} />)
+    const { rerender } = render(
+      <ErrorState error={new ApiError({ kind: 'network', message: 'x' })} />,
+    )
     expect(screen.queryByRole('button', { name: 'Try again' })).not.toBeInTheDocument()
 
-    rerender(<ErrorState error={new ApiError({ kind: 'network', message: 'x' })} onRetry={onRetry} />)
+    rerender(
+      <ErrorState error={new ApiError({ kind: 'network', message: 'x' })} onRetry={onRetry} />,
+    )
     await userEvent.setup().click(screen.getByRole('button', { name: 'Try again' }))
     expect(onRetry).toHaveBeenCalledTimes(1)
-  })
-})
-
-describe('MetricCard', () => {
-  it('shows a value with its caption', () => {
-    render(<MetricCard label="Final resistant antibiotics" value="4" caption="antibiotics, from 0 to 7" />)
-    expect(screen.getByText('Final resistant antibiotics')).toBeInTheDocument()
-    expect(screen.getByText('4')).toBeInTheDocument()
-    expect(screen.getByText('antibiotics, from 0 to 7')).toBeInTheDocument()
-  })
-
-  it('says "Not available" for a missing value and never renders it as zero', () => {
-    render(<MetricCard label="Susceptible-action rate" value={null} />)
-    expect(screen.getByText('Not available')).toBeInTheDocument()
-    expect(screen.queryByText('0')).not.toBeInTheDocument()
-    expect(screen.queryByText('0.00')).not.toBeInTheDocument()
-  })
-
-  it('exposes the definition from a keyboard-reachable info button', async () => {
-    const user = userEvent.setup()
-    render(<MetricCard label="Cumulative resistance burden" value="1.14" definition="Negative of the simulator's cumulative reward." />)
-    await user.tab()
-    expect(screen.getByRole('button', { name: 'Definition of Cumulative resistance burden' })).toHaveFocus()
-    expect(screen.getByRole('tooltip')).toHaveTextContent("Negative of the simulator's cumulative reward.")
   })
 })
 

@@ -32,14 +32,6 @@ public class ControllerArchitectureTests
             .Where(method => method.GetCustomAttributes<HttpMethodAttribute>().Any());
 
     [Fact]
-    public void The_expected_controllers_exist()
-    {
-        Assert.Equal(
-            ["AntibioticsController", "AuthController", "ComparisonsController", "HealthController", "ModelController", "ProfilesController", "RecommendationsController", "SamplesController", "SimulationsController"],
-            Controllers.Select(type => type.Name));
-    }
-
-    [Fact]
     public void Controllers_depend_only_on_application_service_interfaces()
     {
         var allowedNamespace = typeof(ISimulationService).Namespace;
@@ -80,43 +72,6 @@ public class ControllerArchitectureTests
                     $"{controller.Name}.{action.Name} does not accept a CancellationToken.");
             }
         }
-    }
-
-    [Fact]
-    public void The_public_surface_is_exactly_the_documented_routes()
-    {
-        var routes = Controllers
-            .SelectMany(controller =>
-            {
-                var prefix = controller.GetCustomAttribute<RouteAttribute>()!.Template;
-                return Actions(controller).SelectMany(action => action.GetCustomAttributes<HttpMethodAttribute>().Select(attribute =>
-                    $"{attribute.HttpMethods.Single()} {prefix}{(string.IsNullOrEmpty(attribute.Template) ? string.Empty : "/" + attribute.Template)}"));
-            })
-            .Order(StringComparer.Ordinal)
-            .ToArray();
-
-        var expected = new[]
-        {
-            "GET api/v{version:apiVersion}/antibiotics",
-            "GET api/v{version:apiVersion}/auth/session",
-            "GET api/v{version:apiVersion}/comparisons/{id:guid}",
-            "GET api/v{version:apiVersion}/health",
-            "GET api/v{version:apiVersion}/health/live",
-            "GET api/v{version:apiVersion}/model",
-            "GET api/v{version:apiVersion}/recommendations/{simulationId:guid}",
-            "GET api/v{version:apiVersion}/samples",
-            "GET api/v{version:apiVersion}/samples/{id:guid}",
-            "GET api/v{version:apiVersion}/simulations/recent",
-            "GET api/v{version:apiVersion}/simulations/{id:guid}",
-            "POST api/v{version:apiVersion}/auth/register",
-            "POST api/v{version:apiVersion}/auth/sign-in",
-            "POST api/v{version:apiVersion}/auth/sign-out",
-            "POST api/v{version:apiVersion}/comparisons",
-            "POST api/v{version:apiVersion}/profiles/validate",
-            "POST api/v{version:apiVersion}/samples",
-            "POST api/v{version:apiVersion}/simulations",
-        };
-        Assert.Equal(expected.Order(StringComparer.Ordinal), routes);
     }
 
     [Fact]

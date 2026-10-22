@@ -15,9 +15,16 @@ export function LoadingState({ label = 'Loading', lines = 3, block = false }: Lo
         <span className={styles['spinner']} aria-hidden="true" />
         {label}
       </span>
-      {block ? <div className={`${styles['skeleton']} ${styles['skeletonBlock']}`} aria-hidden="true" /> : null}
+      {block ? (
+        <div className={`${styles['skeleton']} ${styles['skeletonBlock']}`} aria-hidden="true" />
+      ) : null}
       {Array.from({ length: lines }, (_, index) => (
-        <div key={index} className={styles['skeleton']} style={{ width: `${100 - index * 12}%` }} aria-hidden="true" />
+        <div
+          key={index}
+          className={styles['skeleton']}
+          style={{ width: `${100 - index * 12}%` }}
+          aria-hidden="true"
+        />
       ))}
     </div>
   )

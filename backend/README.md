@@ -5,7 +5,7 @@ comparison, model lookup and profile check, stores completed runs in PostgreSQL,
 scientific logic.
 
 Contract decisions (ids, `201 Created`, `isPersisted`, metric definitions, unsupported transitions, migrations, health,
-live tests): [docs/api-contract.md](docs/api-contract.md). Limits to plan around before building a frontend (CORS,
+live tests): [docs/api-contract.md](docs/api-contract.md). Integration details (CORS,
 authentication, retries, OpenAPI, errors): [Known limitations for frontend integration](docs/api-contract.md#known-limitations-for-frontend-integration).
 
 ## Layout
@@ -92,9 +92,7 @@ exits 0 for an empty selection.
 
 `.github/workflows/ci.yml` runs on pull requests and on pushes to `main` and `backend`: the `dotnet` job (locked restore, build
 with warnings as errors, all non-live tests against a PostgreSQL service, `AMR_REQUIRE_POSTGRES=true`), the `python` job (full
-`pytest`) and the `live` job (this script, no skipping). The three jobs completed successfully on GitHub for the push to
-`backend` at `e11e0e5` (run #2) and for pull request #1 (run #3), according to the Actions run pages. The job logs were not
-inspected, so the remote test counts and skip counts are not independently confirmed.
+`pytest`) and the `live` job (this script, no skipping).
 
 ## Endpoint status
 

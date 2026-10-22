@@ -65,11 +65,6 @@ class EpisodeResult:
     def cumulative_reward(self) -> float:
         return sum(self.rewards, start=0.0) + self.terminal_reward_adjustment
 
-    @property
-    def treatment_step_count(self) -> int:
-        return len(self.steps)
-
-
 @dataclass(frozen=True)
 class EvaluationResult:
     scenario_id: str

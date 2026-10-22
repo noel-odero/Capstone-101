@@ -1,4 +1,4 @@
-"""Step 9A multi-seed PPO study: fixed protocol, run ledger, manifest, and statistics."""
+"""Multi-seed PPO study: fixed protocol, run ledger, manifest, and statistics."""
 
 from __future__ import annotations
 
@@ -1116,7 +1116,7 @@ def report_study(root: Path | str = STUDY_ROOT) -> dict[str, Any]:
 
 def main(argv: Sequence[str] | None = None) -> int:
     """Exit codes: 0 success; 1 verify incomplete; 2 refused before running; 3 run failed."""
-    parser = argparse.ArgumentParser(description="Step 9A multi-seed PPO study: train, quarantine, verify, evaluate, report.")
+    parser = argparse.ArgumentParser(description="Multi-seed PPO study: train, quarantine, verify, evaluate, report.")
     commands = parser.add_subparsers(dest="command", required=True)
     train_parser = commands.add_parser("train", help="Train one new seed at the fixed budget (realized 100096 at n_steps=256).")
     train_parser.add_argument("--seed", type=int, required=True)

@@ -1,8 +1,13 @@
+import { onUnauthenticated, setCsrfToken } from '@/api/http-client'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { useEffect, useMemo, useState, type ReactNode } from 'react'
-import { onUnauthenticated, setCsrfToken } from '@/api/http-client'
+import {
+  getSession,
+  register as registerRequest,
+  signIn as signInRequest,
+  signOut as signOutRequest,
+} from './auth-api'
 import { AuthContext, type AuthContextValue } from './auth-context'
-import { getSession, register as registerRequest, signIn as signInRequest, signOut as signOutRequest } from './auth-api'
 import { SESSION_QUERY_KEY, type AuthStatus, type Session } from './auth-types'
 
 /**
@@ -32,7 +37,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         if (current?.isAuthenticated) {
           setSessionExpired(true)
           setCsrfToken(null)
-          queryClient.setQueryData<Session>(SESSION_QUERY_KEY, { ...current, isAuthenticated: false, user: null })
+          queryClient.setQueryData<Session>(SESSION_QUERY_KEY, {
+            ...current,
+            isAuthenticated: false,
+            user: null,
+          })
         }
       }),
     [queryClient],
@@ -47,8 +56,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     queryClient.setQueryData<Session>(SESSION_QUERY_KEY, session)
   }
 
-  const { mutateAsync: signInAsync } = useMutation({ mutationFn: signInRequest, onSuccess: startSession })
-  const { mutateAsync: registerAsync } = useMutation({ mutationFn: registerRequest, onSuccess: startSession })
+  const { mutateAsync: signInAsync } = useMutation({
+    mutationFn: signInRequest,
+    onSuccess: startSession,
+  })
+  const { mutateAsync: registerAsync } = useMutation({
+    mutationFn: registerRequest,
+    onSuccess: startSession,
+  })
 
   const { mutateAsync: signOutAsync, isPending: signingOut } = useMutation({
     mutationFn: signOutRequest,
@@ -57,14 +72,24 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setCsrfToken(null)
       setSessionExpired(false)
       setSignedOutByUser(true)
-      queryClient.setQueryData<Session>(SESSION_QUERY_KEY, { isAuthenticated: false, user: null, csrfToken: '' })
+      queryClient.setQueryData<Session>(SESSION_QUERY_KEY, {
+        isAuthenticated: false,
+        user: null,
+        csrfToken: '',
+      })
       queryClient.removeQueries({ predicate: (candidate) => candidate.queryKey[0] !== 'auth' })
       await queryClient.invalidateQueries({ queryKey: SESSION_QUERY_KEY })
     },
   })
 
   const session = query.data
-  const status: AuthStatus = query.isPending ? 'loading' : query.isError ? 'error' : session?.isAuthenticated ? 'authenticated' : 'anonymous'
+  const status: AuthStatus = query.isPending
+    ? 'loading'
+    : query.isError
+      ? 'error'
+      : session?.isAuthenticated
+        ? 'authenticated'
+        : 'anonymous'
 
   const value = useMemo<AuthContextValue>(
     () => ({
@@ -85,7 +110,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       retry: () => void query.refetch(),
       error: query.error,
     }),
-    [status, session, sessionExpired, signedOutByUser, signInAsync, registerAsync, signOutAsync, signingOut, query],
+    [
+      status,
+      session,
+      sessionExpired,
+      signedOutByUser,
+      signInAsync,
+      registerAsync,
+      signOutAsync,
+      signingOut,
+      query,
+    ],
   )
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>
