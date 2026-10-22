@@ -1,5 +1,3 @@
-import { Card } from '@/components/ui/Card'
-import { Disclosure } from '@/components/ui/Disclosure'
 import { ProfileOverview, ProfileActivity } from './ProfileOverview'
 import { ButtonLink } from '@/components/ui/Button'
 import { ContentContainer } from '@/components/layout/ContentContainer'
@@ -8,14 +6,9 @@ import { EmptyState } from '@/components/ui/EmptyState'
 import { ErrorState } from '@/components/ui/ErrorState'
 import { LoadingState } from '@/components/ui/LoadingState'
 import { useAntibiotics } from '@/hooks/useAntibiotics'
-import { EvolutionPanel } from './EvolutionPanel'
-import { KeyInsights } from './KeyInsights'
-import { ModelParameters } from './ModelParameters'
 import { ProfileStrip } from './ProfileStrip'
 import { ProfileTabs } from './ProfileTabs'
-import { RunInfoCard } from './RunInfoCard'
 import { useProfileRun } from './useProfileRun'
-import styles from './profile.module.css'
 
 const SUBTITLE =
   'The resistance profile of your latest simulation, and the sequence PPO chose for it.'
@@ -85,18 +78,6 @@ export function ProfilePage() {
         <div className="stack-lg">
           <ProfileStrip profile={run.ppo.initialProfile} entries={antibiotics.data} />
           <ProfileActivity run={run} />
-          <Disclosure summary="Explore resistance evolution and model details">
-            <div className={styles['main']}>
-              <Card as="div" className={styles['mainCard']}>
-                <EvolutionPanel run={run} entries={antibiotics.data} />
-              </Card>
-              <div className={styles['aside']}>
-                <KeyInsights run={run} entries={antibiotics.data} />
-                <ModelParameters run={run} />
-              </div>
-            </div>
-            <RunInfoCard run={run} />
-          </Disclosure>
         </div>
       ) : null}
     </ContentContainer>

@@ -1,13 +1,11 @@
-import { useState } from 'react'
+﻿import { useState } from 'react'
 import { useParams } from 'react-router'
 import { isApiError } from '@/api/api-errors'
 import { ContentContainer } from '@/components/layout/ContentContainer'
 import { PageHeader } from '@/components/layout/PageHeader'
 import { ComparisonMetrics } from '@/components/scientific/ComparisonMetrics'
-import { StepInspector } from '@/components/scientific/StepInspector'
 import { ButtonLink } from '@/components/ui/Button'
 import { Card, CardHeader } from '@/components/ui/Card'
-import { Disclosure } from '@/components/ui/Disclosure'
 import { EmptyState } from '@/components/ui/EmptyState'
 import { ErrorState } from '@/components/ui/ErrorState'
 import { LoadingState } from '@/components/ui/LoadingState'
@@ -125,37 +123,6 @@ export function SimulationPage() {
         <LoadingState label="Loading the antibiotic catalogue" lines={3} block />
       )}
 
-      <div style={{ marginTop: 'var(--space-5)' }}>
-        {antibiotics.data && !noSteps ? (
-          <Disclosure
-            summary={`Inspect step ${selectedStep}: actions, transition support and outcome`}
-          >
-            <div className={styles['inspectors']}>
-              <StepInspector
-                heading="PPO · selected step"
-                selectionLabel="Policy-selected action"
-                strategyName="PPO"
-                initialProfile={ppo.initialProfile}
-                steps={ppo.steps}
-                terminationReason={ppo.terminationReason}
-                step={selectedStep}
-                antibiotics={antibiotics.data}
-              />
-              <StepInspector
-                heading="Random baseline · selected step"
-                selectionLabel="Sampled susceptible action"
-                strategyName="Random Susceptible Baseline"
-                initialProfile={baseline.initialProfile}
-                steps={baseline.steps}
-                terminationReason={baseline.terminationReason}
-                step={selectedStep}
-                antibiotics={antibiotics.data}
-              />
-            </div>
-            <ComparisonMetrics comparison={data} />
-          </Disclosure>
-        ) : null}
-      </div>
       <p className="muted" style={{ marginTop: 'var(--space-3)', fontSize: 'var(--text-xs)' }}>
         {data.disclaimer}
       </p>

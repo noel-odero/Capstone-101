@@ -1,6 +1,6 @@
-import { useId, useState } from 'react'
+﻿import { useId, useState } from 'react'
 import { Link } from 'react-router'
-import { FiArrowRight, FiCheck } from 'react-icons/fi'
+import { FiArrowRight, FiCheck, FiLayers } from 'react-icons/fi'
 import {
   CartesianGrid,
   Legend,
@@ -18,7 +18,7 @@ import { Tooltip } from '@/components/ui/Tooltip'
 import { drugLabel, type AntibioticEntry } from '@/domain/antibiotics'
 import { buildTrajectorySeries, formatMetricValue, type MetricKey } from '@/domain/metrics'
 import { profileToCode } from '@/domain/profile'
-import { outcomeLabel, STRATEGY_NAMES, terminationLabel, GLOSSARY } from '@/domain/terminology'
+import { STRATEGY_NAMES, terminationLabel, GLOSSARY } from '@/domain/terminology'
 import type { Comparison, Simulation, StrategyResult } from '@/domain/types'
 import { useStepParam } from './useStepParam'
 import styles from './results.module.css'
@@ -79,7 +79,6 @@ export function ResultsWorkbench({
   const id = useId()
   const active = strategy === 'baseline' && baseline ? baseline : ppo
   const label = STRATEGY_NAMES[active.strategy]
-  const ordered = [...active.steps].sort((a, b) => a.treatmentStepAfter - b.treatmentStepAfter)
   const trace = active.steps.find((item) => item.treatmentStepAfter === step)
   const initial = profileToCode(ppo.initialProfile)
   const points = baseline
@@ -98,7 +97,13 @@ export function ResultsWorkbench({
           key={result.strategy}
           aria-label={`${STRATEGY_NAMES[result.strategy]} antibiotic order`}
         >
-          <h3>{STRATEGY_NAMES[result.strategy]}</h3>
+          <div className={styles.sequenceHeading}>
+            <h3>
+              <i className={result.strategy === 'ppo' ? styles.ppoDot : styles.baselineDot} />
+              {result.strategy === 'ppo' ? 'PPO strategy' : 'Random baseline'}
+            </h3>
+            <span>{result.steps.length} steps</span>
+          </div>
           {result.steps.length ? (
             <ol className={styles.sequence}>
               {[...result.steps]
@@ -115,14 +120,18 @@ export function ResultsWorkbench({
                         setStep(item.treatmentStepAfter)
                       }}
                     >
-                      <span>{item.treatmentStepAfter}</span>
-                      {drugLabel(antibiotics, item.antibiotic)}
+                      <span className={styles.stepNumber}>{item.treatmentStepAfter}</span>
+                      <span className={styles.drugName}>
+                        {drugLabel(antibiotics, item.antibiotic)}
+                      </span>
                       {item.selectedTargetDrug &&
                       (item.transitionStatus === 'cross_resistance' ||
                         item.transitionStatus === 'collateral_sensitivity') ? (
                         <span className={styles.effectTag}>
-                          {item.transitionStatus === 'cross_resistance' ? 'XR' : 'CS'} →{' '}
-                          {drugLabel(antibiotics, item.selectedTargetDrug)}
+                          <b data-effect={item.transitionStatus}>
+                            {item.transitionStatus === 'cross_resistance' ? 'XR' : 'CS'}
+                          </b>
+                          <span>{drugLabel(antibiotics, item.selectedTargetDrug)}</span>
                         </span>
                       ) : null}
                     </button>
@@ -132,6 +141,7 @@ export function ResultsWorkbench({
           ) : (
             <p className={styles.muted}>No feasible actions were available.</p>
           )}
+          <p className={styles.note}>{terminationLabel(result.terminationReason)}</p>
         </section>
       ))}
     </div>
@@ -150,7 +160,7 @@ export function ResultsWorkbench({
         subtitle={`E. coli resistance model · 7 antibiotics · ${run.provenance.horizon}-step horizon`}
         action={
           <ButtonLink to={`/app/simulation/new?profile=${initial}`} variant="secondary" size="sm">
-            New simulation <FiArrowRight aria-hidden="true" />
+            New simulation
           </ButtonLink>
         }
       />
@@ -158,31 +168,12 @@ export function ResultsWorkbench({
         <span>
           Starting profile <code>{initial}</code>
         </span>
-        <span>
-          Scenario <code>{run.provenance.scenarioId}</code>
-        </span>
         {comparisonId ? (
           <Link to={`/app/simulation/${comparisonId}`}>
-            Open 3D simulation <FiArrowRight aria-hidden="true" />
+            <FiLayers aria-hidden="true" /> 3D simulation
           </Link>
         ) : null}
       </div>
-      <ol className={styles.workflow} aria-label="Completed simulation workflow">
-        {[
-          ['Configure', 'Starting profile'],
-          ['Simulate', 'Strategy evaluation'],
-          ['Review', 'Results and evidence'],
-        ].map(([title, description], index) => (
-          <li key={title}>
-            <span>0{index + 1}</span>
-            <div>
-              <strong>{title}</strong>
-              <small>{description}</small>
-            </div>
-            <FiCheck aria-hidden="true" />
-          </li>
-        ))}
-      </ol>
       <div className={styles.tabs} role="tablist" aria-label="Simulation results">
         {tabs.map((name, index) => (
           <button
@@ -227,75 +218,30 @@ export function ResultsWorkbench({
       >
         {tab === 'Overview' ? (
           <>
-            <section className={styles.summary} aria-labelledby={`${id}-strategy`}>
-              <div className={styles.sectionHeading}>
-                <p className={styles.eyebrow}>Simulated strategy</p>
-                <div className={styles.switcher} role="group" aria-label="Strategy summary">
-                  {[ppo, ...(baseline ? [baseline] : [])].map((result) => (
-                    <button
-                      key={result.strategy}
-                      type="button"
-                      aria-pressed={active.strategy === result.strategy}
-                      onClick={() => {
-                        setStrategy(result.strategy === 'ppo' ? 'ppo' : 'baseline')
-                        setStep(0)
-                      }}
-                    >
-                      {result.strategy === 'ppo' ? 'PPO' : 'Random baseline'}
-                    </button>
-                  ))}
-                </div>
-              </div>
-              <h2 id={`${id}-strategy`}>
-                {ordered.length
-                  ? ordered.map((item) => drugLabel(antibiotics, item.antibiotic)).join(' → ')
-                  : 'No feasible antibiotic selections'}
-              </h2>
-              <p className={styles.muted}>
-                {label} · {terminationLabel(active.terminationReason)}
-              </p>
-              <div className={styles.metrics}>
-                {primaryMetrics.map((metric) => (
-                  <div key={metric.key}>
-                    <span>
-                      {metric.label}{' '}
-                      <Tooltip label={`Definition of ${metric.label}`}>
-                        {run.metricDefinitions[metric.key]?.definition ?? metric.hint}
-                      </Tooltip>
-                    </span>
-                    <strong>{value(active, metric.key)}</strong>
-                    <small>{metric.hint}</small>
-                  </div>
-                ))}
-              </div>
-              <p className={styles.note}>Susceptibility is a model state, not clinical efficacy.</p>
-            </section>
             <section className={styles.section}>
               <div className={styles.sectionHeading}>
                 <h2>Order of antibiotics</h2>
-                <span className={styles.muted}>Select a step to inspect</span>
+                {baseline ? (
+                  <button
+                    className={styles.textButton}
+                    type="button"
+                    onClick={() => setTab('Compare')}
+                  >
+                    Compare strategies <FiArrowRight aria-hidden="true" />
+                  </button>
+                ) : null}
               </div>
+              <p className={styles.sequenceHint}>
+                Select any step for its transition details.{' '}
+                <span>CS: collateral sensitivity · XR: cross-resistance</span>
+              </p>
               {sequences}
             </section>
-            {baseline ? (
-              <section className={styles.comparisonIntro}>
-                <div>
-                  <h2>How do the strategies differ?</h2>
-                  <p>Compare each outcome under the same starting conditions.</p>
-                </div>
-                <button type="button" onClick={() => setTab('Compare')}>
-                  Compare strategies <FiArrowRight aria-hidden="true" />
-                </button>
-              </section>
-            ) : null}
           </>
         ) : tab === 'Trajectory' ? (
           <section className={styles.section}>
             <h2>Resistance over time</h2>
-            <p className={styles.muted}>
-              Resistant antibiotics at each saved state. Select a step below to inspect the
-              transition.
-            </p>
+            <p className={styles.muted}>Resistant antibiotics by simulation step.</p>
             <div className={styles.chart}>
               <ResponsiveContainer width="100%" height="100%">
                 <LineChart data={points} margin={{ top: 15, right: 20, bottom: 10, left: -20 }}>
@@ -337,10 +283,33 @@ export function ResultsWorkbench({
               </ResponsiveContainer>
             </div>
             <p className={styles.note}>
-              Step on the horizontal axis · resistant antibiotics (0–7) on the vertical axis. Lines
-              stop when an episode ends.
+              Step · resistant antibiotics (0–7). Lines stop when an episode ends.
             </p>
-            {sequences}
+            <div className={styles.trajectoryControls}>
+              <div className={styles.switcher} role="group" aria-label="Inspect strategy">
+                {[ppo, ...(baseline ? [baseline] : [])].map((result) => (
+                  <button
+                    key={result.strategy}
+                    type="button"
+                    aria-pressed={active.strategy === result.strategy}
+                    onClick={() => setStrategy(result.strategy === 'ppo' ? 'ppo' : 'baseline')}
+                  >
+                    {result.strategy === 'ppo' ? 'PPO' : 'Random baseline'}
+                  </button>
+                ))}
+              </div>
+              <label>
+                Step {step}
+                <input
+                  type="range"
+                  aria-label="Inspect treatment step"
+                  min={0}
+                  max={run.provenance.horizon}
+                  value={step}
+                  onChange={(event) => setStep(Number(event.target.value))}
+                />
+              </label>
+            </div>
           </section>
         ) : (
           <section className={styles.section}>
@@ -380,11 +349,7 @@ export function ResultsWorkbench({
                 </tbody>
               </table>
             </div>
-            <p className={styles.note}>
-              {'singleRunCaveat' in run ? run.singleRunCaveat : GLOSSARY.singleRun}
-            </p>
             <p className={styles.note}>Greedy comparison is not available in the current model.</p>
-            {sequences}
           </section>
         )}
       </div>
@@ -401,70 +366,51 @@ export function ResultsWorkbench({
               {trace.selectedTargetDrug &&
               (trace.transitionStatus === 'cross_resistance' ||
                 trace.transitionStatus === 'collateral_sensitivity') ? (
-                <>
-                  <strong>
-                    {drugLabel(antibiotics, trace.antibiotic)} →{' '}
-                    {drugLabel(antibiotics, trace.selectedTargetDrug)} ·{' '}
-                    {trace.transitionStatus === 'cross_resistance'
-                      ? 'XR — Cross-resistance'
-                      : 'CS — Collateral sensitivity'}
-                  </strong>
-                  <p>
-                    The simulator sampled {trace.transitionStatus === 'cross_resistance' ? 'cross-resistance' : 'collateral sensitivity'} targeting {drugLabel(antibiotics, trace.selectedTargetDrug)} after selecting {drugLabel(antibiotics, trace.antibiotic)}.
-                  </p>
-                </>
+                <div className={styles.effectPair}>
+                  <div>
+                    <small>Selected drug</small>
+                    <strong>{drugLabel(antibiotics, trace.antibiotic)}</strong>
+                  </div>
+                  <span className={styles.effectBadge} data-effect={trace.transitionStatus}>
+                    {trace.transitionStatus === 'cross_resistance' ? 'XR' : 'CS'}
+                  </span>
+                  <div>
+                    <small>Affected drug</small>
+                    <strong>{drugLabel(antibiotics, trace.selectedTargetDrug)}</strong>
+                  </div>
+                </div>
               ) : (
                 <>
                   <strong>
+                    {drugLabel(antibiotics, trace.antibiotic)} ·{' '}
                     {trace.hasCandidateTransition ? 'No resistance change' : 'No transition data'}
                   </strong>
                   <p>
+                    Profile unchanged
                     {trace.hasCandidateTransition
-                      ? 'The sampled transition left the resistance profile unchanged.'
-                      : 'No candidate transition was available; the simulator kept the profile unchanged.'}
+                      ? ' in this step.'
+                      : '; transition evidence unavailable.'}
                   </p>
                 </>
               )}
               <small>
-                The affected target is not necessarily the next antibiotic in the sequence.
+                Simulated effect; the target may differ from the next drug in the sequence.
               </small>
             </div>
-            <dl className={styles.traceGrid}>
-              <div>
-                <dt>Selected action</dt>
-                <dd>{drugLabel(antibiotics, trace.antibiotic)}</dd>
-              </div>
-              <div>
-                <dt>Simulated outcome</dt>
-                <dd>{outcomeLabel(trace)}</dd>
-              </div>
-              <div>
-                <dt>Resistance profile</dt>
-                <dd>
-                  <code>
-                    {profileToCode(trace.resistanceProfileBefore)} →{' '}
-                    {profileToCode(trace.resistanceProfileAfter)}
-                  </code>
-                </dd>
-              </div>
-              <div>
-                <dt>Transition support</dt>
-                <dd>
-                  {trace.hasCandidateTransition
-                    ? 'Candidate data available'
-                    : 'No candidate transition data'}
-                </dd>
-              </div>
-            </dl>
             <details>
               <summary>Transition evidence and assumptions</summary>
               <dl className={styles.traceGrid}>
                 <div>
-                  <dt>Scenario</dt>
+                  <dt>Resistance profile</dt>
                   <dd>
-                    <code>{run.provenance.scenarioId}</code>
+                    <code>
+                      {profileToCode(trace.resistanceProfileBefore)} →{' '}
+                      {profileToCode(trace.resistanceProfileAfter)}
+                    </code>
                   </dd>
                 </div>
+              </dl>
+              <dl className={styles.traceGrid}>
                 <div>
                   <dt>Sampled outcome probability</dt>
                   <dd>
@@ -495,9 +441,6 @@ export function ResultsWorkbench({
                   </dd>
                 </div>
               </dl>
-              {!trace.hasCandidateTransition ? (
-                <p className={styles.note}>{GLOSSARY.unsupported}</p>
-              ) : null}
               <p className={styles.note}>
                 Transition evidence describes the simulator’s outcome. It does not explain PPO’s
                 internal reasoning for selecting an action.
@@ -528,10 +471,8 @@ export function ResultsWorkbench({
             </dd>
           </div>
           <div>
-            <dt>Scenario / horizon</dt>
-            <dd>
-              {run.provenance.scenarioId} / {run.provenance.horizon} steps
-            </dd>
+            <dt>Scenario</dt>
+            <dd>{run.provenance.scenarioId}</dd>
           </div>
           <div>
             <dt>Environment / policy seeds</dt>
@@ -543,16 +484,6 @@ export function ResultsWorkbench({
           <div>
             <dt>Action mask</dt>
             <dd>{run.provenance.actionMaskRule}</dd>
-          </div>
-          <div>
-            <dt>Transition coverage</dt>
-            <dd>
-              {ppo.metrics.unsupportedStepCount} of {ppo.steps.length} PPO steps
-              {baseline
-                ? `; ${baseline.metrics.unsupportedStepCount} of ${baseline.steps.length} baseline steps`
-                : ''}{' '}
-              without candidate transition data.
-            </dd>
           </div>
           <div>
             <dt>Checkpoint SHA-256</dt>
@@ -574,7 +505,9 @@ export function ResultsWorkbench({
             {note}
           </p>
         ))}
-        <p className={styles.note}>{run.disclaimer}</p>
+        <p className={styles.note}>
+          {'singleRunCaveat' in run ? run.singleRunCaveat : GLOSSARY.singleRun}
+        </p>
       </details>
       <p className={styles.footer}>
         Research simulation only. Not a clinical prescribing recommendation.{' '}

@@ -285,6 +285,24 @@
   height: clamp(230px, 36dvh, 350px);
   margin-top: 1.25rem;
 }
+.trajectoryControls {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 1rem 2rem;
+  margin-top: 1rem;
+}
+.trajectoryControls label {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  font-size: 0.75rem;
+  color: var(--color-text-muted);
+}
+.trajectoryControls input {
+  accent-color: var(--color-primary);
+  width: min(200px, 40vw);
+}
 .tableWrap {
   overflow-x: auto;
   margin-top: 1.5rem;
@@ -418,5 +436,269 @@
   }
   .tabContent {
     padding-top: 1.25rem;
+  }
+}
+
+/* Quiet editorial hierarchy; sequences are ordered panels rather than text chains. */
+.topline {
+  margin-bottom: 1rem;
+}
+.completed {
+  padding: 0.3rem 0.65rem;
+  border: 1px solid var(--color-border);
+  border-radius: 2rem;
+  background: var(--color-surface);
+  font-size: 0.7rem;
+}
+.context {
+  margin-bottom: 1.25rem;
+}
+.tabs {
+  gap: 0.35rem;
+  border-bottom: 0;
+  background: var(--color-surface-subtle);
+  padding: 0.3rem;
+  border-radius: 0.6rem;
+  width: fit-content;
+}
+.tabs button {
+  padding: 0.5rem 1.1rem;
+  border: 0;
+  border-radius: 0.4rem;
+  font-size: 0.8rem;
+}
+.tabs button[aria-selected='true'] {
+  background: var(--color-surface);
+  box-shadow: 0 1px 4px #0000000a;
+}
+.summary {
+  padding: 1.25rem 1.5rem;
+}
+.summary .sectionHeading {
+  margin-bottom: 1.25rem;
+}
+.metrics {
+  padding-top: 0;
+  margin-top: 0;
+  border-top: 0;
+  gap: 0;
+}
+.metrics > div {
+  padding-inline: 1.25rem;
+  border-left: 1px solid var(--color-border);
+  gap: 0.6rem;
+}
+.metrics > div:first-child {
+  padding-left: 0;
+  border-left: 0;
+}
+.metrics strong {
+  font-size: clamp(1.7rem, 2.8vw, 2.4rem);
+}
+.summaryFoot {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  gap: 0.5rem;
+  margin-top: 1.25rem;
+  padding-top: 0.85rem;
+  border-top: 1px solid var(--color-border);
+  color: var(--color-text-muted);
+  font-size: 0.67rem;
+}
+.textButton {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.3rem 0;
+  background: transparent;
+  border: 0;
+  color: var(--color-text);
+  font: inherit;
+  font-size: 0.75rem;
+  cursor: pointer;
+}
+.sequenceHint {
+  color: var(--color-text-muted);
+  font-size: 0.7rem;
+  line-height: 1.8;
+  margin: -0.5rem 0 1rem;
+}
+.sequenceHint span {
+  margin-left: 0.5rem;
+}
+.sequences {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 1rem;
+  margin-top: 1rem;
+}
+.sequences:has(> section:only-child) {
+  grid-template-columns: minmax(0, 1fr);
+}
+.sequences > section {
+  border: 1px solid var(--color-border);
+  border-radius: 0.75rem;
+  padding: 1rem;
+  background: var(--color-surface);
+}
+.sequenceHeading {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 0.75rem;
+  padding-bottom: 0.9rem;
+  border-bottom: 1px solid var(--color-border);
+}
+.sequenceHeading h3 {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+.sequenceHeading > span {
+  font-size: 0.65rem;
+  color: var(--color-text-muted);
+  white-space: nowrap;
+}
+.ppoDot,
+.baselineDot {
+  width: 0.45rem;
+  height: 0.45rem;
+  border-radius: 50%;
+  background: var(--color-series-ppo);
+  flex-shrink: 0;
+}
+.baselineDot {
+  background: var(--color-series-baseline);
+}
+.sequence {
+  display: grid;
+  gap: 0.25rem;
+}
+.sequence li {
+  min-width: 0;
+}
+.sequence button {
+  display: grid;
+  grid-template-columns: 1.6rem minmax(0, 1fr);
+  width: 100%;
+  text-align: left;
+  padding: 0.65rem 0.5rem;
+  border-color: transparent;
+  background: transparent;
+  column-gap: 0.6rem;
+}
+.sequence button > .stepNumber {
+  display: grid;
+  place-items: center;
+  width: 1.5rem;
+  height: 1.5rem;
+  border-radius: 50%;
+  border: 1px solid var(--color-border);
+  background: var(--color-surface-subtle);
+  font-size: 0.65rem;
+  grid-row: span 2;
+}
+.sequence button > .drugName {
+  font: inherit;
+  color: var(--color-text);
+  font-weight: 500;
+  overflow-wrap: anywhere;
+}
+.sequence button > .effectTag {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  border: 0;
+  padding: 0.3rem 0 0;
+  grid-column: 2;
+  font-size: 0.65rem;
+  color: var(--color-text-muted);
+}
+.effectTag b,
+.effectBadge {
+  border-radius: 0.3rem;
+  padding: 0.1rem 0.3rem;
+  font-size: 0.6rem;
+  font-weight: 500;
+  color: var(--color-resistant-fg);
+  background: var(--color-resistant-bg);
+}
+.effectTag b[data-effect='collateral_sensitivity'],
+.effectBadge[data-effect='collateral_sensitivity'] {
+  color: var(--color-susceptible-fg);
+  background: var(--color-susceptible-bg);
+}
+.inspector {
+  margin-top: 1.25rem;
+}
+.inspector .sectionHeading {
+  margin-bottom: 0.75rem;
+}
+.effectSummary {
+  border: 0;
+  padding: 1rem;
+}
+.effectSummary > small {
+  display: block;
+  margin-top: 0.75rem;
+  font-size: 0.65rem;
+}
+.effectPair {
+  display: flex;
+  align-items: center;
+  gap: 1.5rem;
+  flex-wrap: wrap;
+}
+.effectPair > div {
+  display: grid;
+  gap: 0.3rem;
+}
+.effectPair > div > small {
+  font-size: 0.65rem;
+}
+.effectBadge {
+  font-size: 0.85rem;
+  padding: 0.4rem 0.55rem;
+}
+.inspector > .muted {
+  margin: 0;
+}
+.inspector details {
+  margin-top: 0.65rem;
+}
+.tableWrap {
+  border: 1px solid var(--color-border);
+  border-radius: 0.65rem;
+  background: var(--color-surface);
+}
+.tableWrap tbody tr:last-child > * {
+  border-bottom: 0;
+}
+.tableWrap thead {
+  background: var(--color-surface-subtle);
+}
+@media (max-width: 700px) {
+  .sequences {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .metrics {
+    gap: 1.25rem 0;
+  }
+  .metrics > div:nth-child(3) {
+    border-left: 0;
+    padding-left: 0;
+  }
+  .summary {
+    padding: 1rem;
+  }
+  .metrics > div {
+    padding-inline: 0.75rem;
+  }
+  .sequenceHint span {
+    display: block;
+    margin-left: 0;
+  }
+  .effectPair {
+    gap: 1rem;
   }
 }

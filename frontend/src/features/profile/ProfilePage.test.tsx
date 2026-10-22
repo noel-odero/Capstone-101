@@ -1,4 +1,4 @@
-﻿import { fireEvent, screen, within } from '@testing-library/react'
+﻿import { screen, within } from '@testing-library/react'
 import { describe, expect, it } from 'vitest'
 import { profileToCode } from '@/domain/profile'
 import { baseRoutes, mockFetch } from '@/test/mock-api'
@@ -37,7 +37,6 @@ describe('E. coli Profile page', () => {
         { timeout: 10000 },
       ),
     ).toBeInTheDocument()
-    fireEvent.click(screen.getByText('Explore resistance evolution and model details'))
     expect(screen.getByLabelText(`Profile ${profileToCode(initial)}`)).toBeInTheDocument()
 
     const drugs = within(
@@ -52,9 +51,6 @@ describe('E. coli Profile page', () => {
 
     const resistant = initial.filter((state) => state === 1).length
     expect(screen.getByLabelText('Resistance level')).toHaveTextContent(`${resistant} / 7`)
-    expect(
-      screen.getByRole('list', { name: 'PPO-selected antibiotics in order' }).children.length,
-    ).toBe(fixtures.comparison.ppo?.steps.length)
   })
 
   it('links to the recommendations of this run and to the treatment history', async () => {
@@ -76,22 +72,14 @@ describe('E. coli Profile page', () => {
     )
   })
 
-  it('reads the key insights and the model parameters from the run, and starts a new simulation from this profile', async () => {
+  it('does not show the removed evolution and model-details section', async () => {
     mockFetch(routes())
     renderApp('/app/profile')
 
     await screen.findByRole('heading', { name: 'Current Resistance Profile' })
-    fireEvent.click(screen.getByText('Explore resistance evolution and model details'))
-    const insights = await screen.findByRole('region', { name: 'Key insights' })
-    expect(within(insights).getAllByRole('heading', { level: 3 })).toHaveLength(3)
-    const parameters = screen.getByRole('region', { name: 'Model parameters' })
-    expect(parameters).toHaveTextContent(rawFixtures.comparison.provenance.algorithm)
-    expect(parameters).toHaveTextContent(`${rawFixtures.comparison.provenance.horizon} steps`)
-    const initial = fixtures.comparison.ppo?.initialProfile ?? []
-    expect(screen.getByRole('link', { name: 'Run New Simulation' })).toHaveAttribute(
-      'href',
-      `/app/simulation/new?profile=${profileToCode(initial)}`,
-    )
+    expect(screen.queryByText('Explore resistance evolution and model details')).not.toBeInTheDocument()
+    expect(screen.queryByRole('region', { name: 'Key insights' })).not.toBeInTheDocument()
+    expect(screen.queryByRole('region', { name: 'Model parameters' })).not.toBeInTheDocument()
   })
 
   it('invites a first simulation instead of showing numbers when there are no runs, and disables the recommendations tab', async () => {
