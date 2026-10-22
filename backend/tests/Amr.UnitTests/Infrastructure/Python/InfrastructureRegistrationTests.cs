@@ -18,6 +18,7 @@ public class InfrastructureRegistrationTests
         var settings = new Dictionary<string, string?> { ["PythonService:BaseUrl"] = baseUrl, ["ConnectionStrings:Amr"] = connectionString };
         var configuration = new ConfigurationBuilder().AddInMemoryCollection(settings).Build();
         var services = new ServiceCollection().AddLogging().AddInfrastructure(configuration);
+        services.AddSingleton<Amr.Application.Interfaces.Identity.ICurrentUser>(new Amr.TestSupport.FixedCurrentUser("test:owner"));
         services.AddHttpClient<IPythonServiceClient, PythonServiceClient>().ConfigurePrimaryHttpMessageHandler(() => handler);
         return services.BuildServiceProvider();
     }

@@ -13,16 +13,16 @@ namespace Amr.Infrastructure.Persistence;
 /// </summary>
 internal static class RunEntityMapper
 {
-    public static ExperimentRun ToEntity(SimulationDto simulation, Guid modelVersionId, DateTimeOffset recordedAtUtc)
+    public static ExperimentRun ToEntity(SimulationDto simulation, Guid modelVersionId, DateTimeOffset recordedAtUtc, string ownerId)
     {
         var result = simulation.Result ?? throw new InvalidOperationException("Only completed simulations are stored.");
-        var run = NewRun(simulation.Id, ExperimentKind.Simulation, simulation.Status, simulation.CreatedAtUtc, modelVersionId, recordedAtUtc,
+        var run = NewRun(simulation.Id, ownerId, ExperimentKind.Simulation, simulation.Status, simulation.CreatedAtUtc, modelVersionId, recordedAtUtc,
             result.InitialProfile, simulation.Provenance, simulation.SeedConfiguration, simulation.MetricDefinitions, simulation.Disclaimer);
         run.StrategyRuns.Add(ToEntity(result, run.Id));
         return run;
     }
 
-    public static ExperimentRun ToEntity(ComparisonDto comparison, Guid modelVersionId, DateTimeOffset recordedAtUtc)
+    public static ExperimentRun ToEntity(ComparisonDto comparison, Guid modelVersionId, DateTimeOffset recordedAtUtc, string ownerId)
     {
         var (ppo, baseline, contract) = (comparison.Ppo, comparison.Baseline, comparison.Contract);
         if (ppo is null || baseline is null || contract is null)
@@ -30,9 +30,10 @@ internal static class RunEntityMapper
             throw new InvalidOperationException("Only completed comparisons are stored.");
         }
 
-        var run = NewRun(comparison.Id, ExperimentKind.Comparison, comparison.Status, comparison.CreatedAtUtc, modelVersionId, recordedAtUtc,
+        var run = NewRun(comparison.Id, ownerId, ExperimentKind.Comparison, comparison.Status, comparison.CreatedAtUtc, modelVersionId, recordedAtUtc,
             contract.Shared.InitialProfile, comparison.Provenance, comparison.SeedConfiguration, comparison.MetricDefinitions, comparison.Disclaimer);
         run.PairingSemantics = comparison.PairingSemantics;
+        run.SampleId = comparison.SampleId;
         run.SingleRunCaveat = comparison.SingleRunCaveat;
         run.ComparisonContractJson = PersistenceJson.Serialize(contract);
         run.StrategyRuns.Add(ToEntity(ppo, run.Id));
@@ -66,10 +67,11 @@ internal static class RunEntityMapper
         Error: null,
         PersistenceJson.Deserialize<Dictionary<string, MetricDefinitionDto>>(run.MetricDefinitionsJson),
         run.SingleRunCaveat!,
-        run.Disclaimer);
+        run.Disclaimer) { SampleId = run.SampleId };
 
     private static ExperimentRun NewRun(
         Guid id,
+        string ownerId,
         ExperimentKind kind,
         RunStatus status,
         DateTimeOffset createdAtUtc,
@@ -82,6 +84,7 @@ internal static class RunEntityMapper
         string disclaimer) => new()
         {
             Id = id,
+            OwnerId = ownerId,
             Kind = kind,
             Status = status,
             ModelVersionId = modelVersionId,

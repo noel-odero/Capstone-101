@@ -49,7 +49,7 @@ public class RunEntityMapperTests
     {
         var simulation = await SimulationAsync(fixture, new() { ResistanceProfile = [0, 1, 0, 0, 0, 0, 0], Strategy = strategy, EnvironmentSeed = seed, PolicySeed = policySeed });
 
-        var entity = Stored(RunEntityMapper.ToEntity(simulation, Guid.NewGuid(), Now), simulation.Provenance);
+        var entity = Stored(RunEntityMapper.ToEntity(simulation, Guid.NewGuid(), Now, "test:owner"), simulation.Provenance);
         var restored = RunEntityMapper.ToSimulationDto(entity);
 
         AssertSameJson(simulation with { IsPersisted = true }, restored);
@@ -60,7 +60,7 @@ public class RunEntityMapperTests
     {
         var simulation = await SimulationAsync("simulate_200_terminal", new() { ResistanceProfile = [1, 1, 1, 1, 1, 1, 1], Strategy = StrategyKind.Ppo, EnvironmentSeed = 1 });
 
-        var entity = Stored(RunEntityMapper.ToEntity(simulation, Guid.NewGuid(), Now), simulation.Provenance);
+        var entity = Stored(RunEntityMapper.ToEntity(simulation, Guid.NewGuid(), Now, "test:owner"), simulation.Provenance);
 
         Assert.Empty(entity.StrategyRuns.Single().StepTraces);
         AssertSameJson(simulation with { IsPersisted = true }, RunEntityMapper.ToSimulationDto(entity));
@@ -71,7 +71,7 @@ public class RunEntityMapperTests
     {
         var comparison = await ComparisonAsync();
 
-        var entity = Stored(RunEntityMapper.ToEntity(comparison, Guid.NewGuid(), Now), comparison.Provenance);
+        var entity = Stored(RunEntityMapper.ToEntity(comparison, Guid.NewGuid(), Now, "test:owner"), comparison.Provenance);
         var restored = RunEntityMapper.ToComparisonDto(entity);
 
         AssertSameJson(comparison with { IsPersisted = true }, restored);
@@ -82,7 +82,7 @@ public class RunEntityMapperTests
     public async Task Steps_are_restored_in_step_order_whatever_order_the_rows_come_back_in()
     {
         var simulation = await SimulationAsync("simulate_200_ppo", new() { ResistanceProfile = [0, 1, 0, 0, 0, 0, 0], Strategy = StrategyKind.Ppo, EnvironmentSeed = 100001 });
-        var entity = Stored(RunEntityMapper.ToEntity(simulation, Guid.NewGuid(), Now), simulation.Provenance);
+        var entity = Stored(RunEntityMapper.ToEntity(simulation, Guid.NewGuid(), Now, "test:owner"), simulation.Provenance);
         entity.StrategyRuns.Single().StepTraces.Reverse();
 
         var restored = RunEntityMapper.ToSimulationDto(entity);
@@ -95,7 +95,7 @@ public class RunEntityMapperTests
     {
         var simulation = await SimulationAsync("simulate_200_ppo", new() { ResistanceProfile = [0, 1, 0, 0, 0, 0, 0], Strategy = StrategyKind.Ppo, EnvironmentSeed = 100001 });
 
-        var rows = RunEntityMapper.ToEntity(simulation, Guid.NewGuid(), Now).StrategyRuns.Single().StepTraces;
+        var rows = RunEntityMapper.ToEntity(simulation, Guid.NewGuid(), Now, "test:owner").StrategyRuns.Single().StepTraces;
 
         var unsupported = rows.Where(step => step.TransitionStatus == "unsupported_no_candidate").ToList();
         Assert.NotEmpty(unsupported);
@@ -114,9 +114,9 @@ public class RunEntityMapperTests
         var simulation = await SimulationAsync("simulate_200_ppo", new() { ResistanceProfile = [0, 1, 0, 0, 0, 0, 0], Strategy = StrategyKind.Ppo, EnvironmentSeed = 100001 });
         var comparison = await ComparisonAsync();
 
-        Assert.Throws<InvalidOperationException>(() => RunEntityMapper.ToEntity(simulation with { Result = null }, Guid.NewGuid(), Now));
-        Assert.Throws<InvalidOperationException>(() => RunEntityMapper.ToEntity(comparison with { Contract = null }, Guid.NewGuid(), Now));
-        Assert.Throws<InvalidOperationException>(() => RunEntityMapper.ToEntity(comparison with { Baseline = null }, Guid.NewGuid(), Now));
+        Assert.Throws<InvalidOperationException>(() => RunEntityMapper.ToEntity(simulation with { Result = null }, Guid.NewGuid(), Now, "test:owner"));
+        Assert.Throws<InvalidOperationException>(() => RunEntityMapper.ToEntity(comparison with { Contract = null }, Guid.NewGuid(), Now, "test:owner"));
+        Assert.Throws<InvalidOperationException>(() => RunEntityMapper.ToEntity(comparison with { Baseline = null }, Guid.NewGuid(), Now, "test:owner"));
     }
 
     [Fact]
@@ -124,7 +124,7 @@ public class RunEntityMapperTests
     {
         var comparison = await ComparisonAsync();
 
-        var run = RunEntityMapper.ToEntity(comparison, Guid.NewGuid(), Now);
+        var run = RunEntityMapper.ToEntity(comparison, Guid.NewGuid(), Now, "test:owner");
 
         Assert.Equal((ExperimentKind.Comparison, RunStatus.Completed), (run.Kind, run.Status));
         Assert.Equal(new[] { 0, 1, 0, 0, 0, 0, 0 }, run.InitialProfile);

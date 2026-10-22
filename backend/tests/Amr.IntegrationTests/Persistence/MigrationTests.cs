@@ -45,10 +45,13 @@ public class MigrationTests
         var applied = (await context.Database.GetAppliedMigrationsAsync()).ToList();
         await context.Database.MigrateAsync();
 
-        Assert.Single(applied);
+        Assert.Equal(4, applied.Count);
         Assert.EndsWith("_InitialCreate", applied[0], StringComparison.Ordinal);
+        Assert.EndsWith("_AddRunOwner", applied[1], StringComparison.Ordinal);
+        Assert.EndsWith("_AddUsers", applied[2], StringComparison.Ordinal);
+        Assert.EndsWith("_AddSamples", applied[3], StringComparison.Ordinal);
         Assert.Equal(applied, (await context.Database.GetAppliedMigrationsAsync()).ToList());
-        Assert.Equal(new[] { "__EFMigrationsHistory", "experiment_runs", "model_versions", "step_traces", "strategy_runs" }, await TablesAsync(temp.ConnectionString));
+        Assert.Equal(new[] { "__EFMigrationsHistory", "experiment_runs", "model_versions", "samples", "step_traces", "strategy_runs", "users" }, await TablesAsync(temp.ConnectionString));
         Assert.Empty(await context.Database.GetPendingMigrationsAsync());
         Assert.False(context.Database.HasPendingModelChanges());
     }
@@ -89,7 +92,7 @@ public class MigrationTests
         await using var context = temp.CreateContext();
         await context.Database.MigrateAsync();
         var simulation = (await SampleDtos.Simulation()) with { Id = Guid.NewGuid() };
-        await new RunRepository(context, TimeProvider.System, Microsoft.Extensions.Logging.Abstractions.NullLogger<RunRepository>.Instance).SaveSimulationAsync(simulation, CancellationToken.None);
+        await new RunRepository(context, TimeProvider.System, new Amr.TestSupport.FixedCurrentUser("test:owner"), Microsoft.Extensions.Logging.Abstractions.NullLogger<RunRepository>.Instance).SaveSimulationAsync(simulation, CancellationToken.None);
 
         await context.Database.MigrateAsync();
 

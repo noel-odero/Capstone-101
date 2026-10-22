@@ -18,6 +18,12 @@ public static class PersistenceErrors
         "The simulation ran but its result could not be saved. No record exists for this run.",
         innerException);
 
+    public static AmrException AccountsUnavailable(Exception? innerException = null) => new(
+        ErrorCategory.DependencyUnavailable,
+        ErrorCodes.DatabaseUnavailable,
+        "Accounts are unavailable because the database could not be reached. Try again shortly.",
+        innerException);
+
     public static AmrException ReadFailed(Exception? innerException = null) => new(
         ErrorCategory.DependencyUnavailable,
         ErrorCodes.DatabaseUnavailable,

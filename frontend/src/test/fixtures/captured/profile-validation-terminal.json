@@ -1,0 +1,1 @@
+{"resistanceProfile":[1,1,1,1,1,1,1],"resistantAntibiotics":["CIPROFLOXACIN","NITROFURANTOIN","FOSFOMYCIN","TRIMETHOPRIM","GENTAMICIN","MECILLINAM","CEFTAZIDIME"],"susceptibleAntibiotics":[],"resistantCount":7,"susceptibleOptionCount":0,"feasibleActions":[],"isTerminal":true,"terminalReason":"no_effective_antibiotic","horizon":8}

@@ -1,3 +1,4 @@
+using Amr.Api.Authentication;
 using Amr.Api.Configuration;
 using Amr.Api.Errors;
 using Amr.Application.Interfaces.Services;
@@ -18,6 +19,7 @@ public static class ServiceCollectionExtensions
         services.AddScoped<IComparisonService, ComparisonService>();
         services.AddScoped<IRecommendationService, RecommendationService>();
         services.AddScoped<IRunHistoryService, RunHistoryService>();
+        services.AddScoped<ISampleService, SampleService>();
         return services;
     }
 
@@ -25,7 +27,7 @@ public static class ServiceCollectionExtensions
     public static IServiceCollection AddAmrApi(this IServiceCollection services)
     {
         services
-            .AddControllers()
+            .AddControllers(options => options.Filters.Add<CsrfValidationFilter>())
             .AddJsonOptions(options => ApiJsonOptions.Configure(options.JsonSerializerOptions))
             .ConfigureApiBehaviorOptions(options => options.InvalidModelStateResponseFactory = AmrProblemDetails.FromModelState);
 

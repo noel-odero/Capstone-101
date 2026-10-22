@@ -1,0 +1,33 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="theme-color" content="#ffffff" />
+    <script>
+      // Set the theme before the first paint, including when storage is blocked.
+      try {
+        var theme = localStorage.getItem('amr.theme')
+        document.documentElement.dataset.theme =
+          theme === 'dark' ||
+          (theme !== 'light' && matchMedia('(prefers-color-scheme: dark)').matches)
+            ? 'dark'
+            : 'light'
+      } catch (_) {
+        document.documentElement.dataset.theme = matchMedia('(prefers-color-scheme: dark)').matches
+          ? 'dark'
+          : 'light'
+      }
+    </script>
+    <meta
+      name="description"
+      content="AMR Decision Support: a research and educational prototype for exploring antibiotic sequencing under simulated antimicrobial resistance."
+    />
+    <title>AMR Decision Support</title>
+  </head>
+  <body>
+    <div id="root"></div>
+    <script type="module" src="/src/main.tsx"></script>
+  </body>
+</html>

@@ -24,7 +24,7 @@ public sealed class ComparisonService(IPythonServiceClient python, IRunRepositor
             throw ComparisonErrors.ContractViolation();
         }
 
-        var comparison = run.ToComparisonDto();
+        var comparison = run.ToComparisonDto() with { SampleId = request.SampleId };
         var (ppo, baseline) = (comparison.Ppo!, comparison.Baseline!);
         if (ppo.Strategy != StrategyKind.Ppo || baseline.Strategy != StrategyKind.RandomSusceptibleBaseline)
         {

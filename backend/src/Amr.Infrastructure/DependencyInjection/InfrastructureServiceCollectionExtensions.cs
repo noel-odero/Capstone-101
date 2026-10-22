@@ -1,4 +1,5 @@
 using Amr.Application.Interfaces.Clients;
+using Amr.Application.Interfaces.Identity;
 using Amr.Application.Interfaces.Persistence;
 using Amr.Infrastructure.Persistence;
 using Amr.Infrastructure.Python;
@@ -47,6 +48,8 @@ public static class InfrastructureServiceCollectionExtensions
 
         services.AddSingleton(TimeProvider.System);
         services.AddScoped<IRunRepository, RunRepository>();
+        services.AddScoped<ISampleRepository, SampleRepository>();
+        services.AddScoped<IUserAccounts, UserAccountStore>();
         services.AddScoped<IDependencyHealthProbe, DatabaseHealthProbe>();
     }
 

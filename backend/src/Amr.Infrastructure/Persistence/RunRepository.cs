@@ -2,6 +2,7 @@ using Amr.Application.DTOs.Common;
 using Amr.Application.DTOs.Comparisons;
 using Amr.Application.DTOs.Simulations;
 using Amr.Application.Errors;
+using Amr.Application.Interfaces.Identity;
 using Amr.Application.Interfaces.Persistence;
 using Amr.Domain.Enums;
 using Amr.Infrastructure.Persistence.Entities;
@@ -13,14 +14,20 @@ namespace Amr.Infrastructure.Persistence;
 /// <summary>
 /// PostgreSQL storage of completed runs. A save is one transaction: the model version upsert, the run, its strategy runs
 /// and every step trace commit together or roll back together. There are no retries and no partial rows.
+/// Every operation is scoped to the authenticated user: another user's run is indistinguishable from a missing one.
 /// </summary>
-public sealed partial class RunRepository(AmrDbContext db, TimeProvider clock, ILogger<RunRepository> logger) : IRunRepository
+public sealed partial class RunRepository(AmrDbContext db, TimeProvider clock, ICurrentUser currentUser, ILogger<RunRepository> logger) : IRunRepository
 {
+    private string RequireOwner() =>
+        currentUser.UserId is { Length: > 0 } id
+            ? id
+            : throw new InvalidOperationException("Runs are stored per user, but the request has no authenticated user.");
+
     public Task SaveSimulationAsync(SimulationDto simulation, CancellationToken cancellationToken) =>
-        SaveAsync(simulation.Id, ExperimentKind.Simulation, simulation.Provenance, (modelId, now) => RunEntityMapper.ToEntity(simulation, modelId, now), cancellationToken);
+        SaveAsync(simulation.Id, ExperimentKind.Simulation, simulation.Provenance, (modelId, now, owner) => RunEntityMapper.ToEntity(simulation, modelId, now, owner), cancellationToken);
 
     public Task SaveComparisonAsync(ComparisonDto comparison, CancellationToken cancellationToken) =>
-        SaveAsync(comparison.Id, ExperimentKind.Comparison, comparison.Provenance, (modelId, now) => RunEntityMapper.ToEntity(comparison, modelId, now), cancellationToken);
+        SaveAsync(comparison.Id, ExperimentKind.Comparison, comparison.Provenance, (modelId, now, owner) => RunEntityMapper.ToEntity(comparison, modelId, now, owner), cancellationToken);
 
     public async Task<SimulationDto?> FindSimulationAsync(Guid id, CancellationToken cancellationToken)
     {
@@ -36,16 +43,18 @@ public sealed partial class RunRepository(AmrDbContext db, TimeProvider clock, I
 
     public async Task<PagedResultDto<RunSummaryDto>> ListRecentAsync(RecentRunsQuery query, CancellationToken cancellationToken)
     {
+        var owner = RequireOwner();
         try
         {
-            var total = await db.ExperimentRuns.CountAsync(cancellationToken);
+            var mine = db.ExperimentRuns.Where(run => run.OwnerId == owner);
+            var total = await mine.CountAsync(cancellationToken);
             var skip = (long)(query.Page - 1) * query.PageSize;
             if (skip >= total)
             {
                 return new PagedResultDto<RunSummaryDto>([], query.Page, query.PageSize, total);
             }
 
-            var rows = await db.ExperimentRuns
+            var rows = await mine
                 .OrderByDescending(run => run.CreatedAtUtc)
                 .ThenByDescending(run => run.Id)
                 .Skip((int)skip)
@@ -91,6 +100,7 @@ public sealed partial class RunRepository(AmrDbContext db, TimeProvider clock, I
 
     private async Task<ExperimentRun?> FindAsync(Guid id, ExperimentKind kind, CancellationToken cancellationToken)
     {
+        var owner = RequireOwner();
         try
         {
             return await db.ExperimentRuns
@@ -98,7 +108,7 @@ public sealed partial class RunRepository(AmrDbContext db, TimeProvider clock, I
                 .Include(run => run.StrategyRuns)
                 .ThenInclude(strategy => strategy.StepTraces)
                 .AsSplitQuery()
-                .SingleOrDefaultAsync(run => run.Id == id && run.Kind == kind, cancellationToken);
+                .SingleOrDefaultAsync(run => run.Id == id && run.Kind == kind && run.OwnerId == owner, cancellationToken);
         }
         catch (Exception exception) when (IsDatabaseFailure(exception, cancellationToken))
         {
@@ -111,15 +121,25 @@ public sealed partial class RunRepository(AmrDbContext db, TimeProvider clock, I
         Guid runId,
         ExperimentKind kind,
         ModelProvenanceDto provenance,
-        Func<Guid, DateTimeOffset, ExperimentRun> build,
+        Func<Guid, DateTimeOffset, string, ExperimentRun> build,
         CancellationToken cancellationToken)
     {
+        var owner = RequireOwner();
         try
         {
             var now = clock.GetUtcNow();
             await using var transaction = await db.Database.BeginTransactionAsync(cancellationToken);
             var modelVersionId = await EnsureModelVersionAsync(provenance, now, cancellationToken);
-            db.ExperimentRuns.Add(build(modelVersionId, now));
+            var entity = build(modelVersionId, now, owner);
+            if (entity.SampleId is { } sampleId)
+            {
+                var sample = await db.Samples.SingleOrDefaultAsync(sample => sample.Id == sampleId && sample.OwnerId == owner, cancellationToken);
+                if (sample is null || !sample.InitialProfile.SequenceEqual(entity.InitialProfile))
+                {
+                    throw new AmrException(ErrorCategory.InvalidRequest, "sample_profile_mismatch", "The sample and run must have the same owner and initial resistance profile.");
+                }
+            }
+            db.ExperimentRuns.Add(entity);
             await db.SaveChangesAsync(cancellationToken);
             await transaction.CommitAsync(cancellationToken);
         }

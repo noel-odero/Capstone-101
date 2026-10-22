@@ -10,6 +10,10 @@ public sealed class ExperimentRun
 {
     public Guid Id { get; set; }
 
+    /// <summary>The authenticated user who created the run (provider-prefixed subject). Every read and write is scoped to it; legacy rows hold an empty string and belong to no one.</summary>
+    public required string OwnerId { get; set; }
+    public Guid? SampleId { get; set; }
+
     public ExperimentKind Kind { get; set; }
 
     public RunStatus Status { get; set; }

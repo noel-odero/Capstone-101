@@ -8,7 +8,7 @@ using Microsoft.AspNetCore.Mvc;
 namespace Amr.Api.Controllers;
 
 [Route(ApiRoutes.Comparisons)]
-public sealed class ComparisonsController(IComparisonService comparisons) : ApiControllerBase
+public sealed class ComparisonsController(IComparisonService comparisons, ISampleService samples) : ApiControllerBase
 {
     /// <summary>
     /// Runs PPO and the Random Susceptible Baseline from one profile and environment seed and stores the verified pair. A
@@ -21,6 +21,7 @@ public sealed class ComparisonsController(IComparisonService comparisons) : ApiC
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status503ServiceUnavailable, AmrProblemDetails.ContentType)]
     public async Task<ActionResult<ComparisonDto>> Create(CreateComparisonRequest request, CancellationToken cancellationToken)
     {
+        await samples.ValidateRunAsync(request.SampleId, request.ResistanceProfile, cancellationToken);
         var comparison = await comparisons.RunAsync(request, cancellationToken);
         return CreatedAtAction(nameof(Get), new { id = comparison.Id, version = ApiRoutes.UrlVersion1 }, comparison);
     }

@@ -107,6 +107,10 @@ inspected, so the remote test counts and skip counts are not independently confi
 | `GET /api/v1/simulations/{id}`, `GET /api/v1/comparisons/{id}` | The stored run; 404 for an unknown id or the other kind |
 | `GET /api/v1/recommendations/{simulationId}` | PPO steps of a stored simulation; 404 `recommendation_not_found` otherwise |
 | `GET /api/v1/simulations/recent` | Simulations and comparisons, newest first, paged |
+| `GET /api/v1/samples`, `GET /api/v1/samples/{id}` | The authenticated account's saved profiles, labels, dates and linked comparisons |
+| `POST /api/v1/samples` | Save a labeled starting profile without running a simulation; 201 Created |
+
+`POST /api/v1/comparisons` also accepts an optional `sampleId`. The sample service checks ownership and the original profile before execution; the run and sample link are then committed together. See [the sample workflow](../docs/ui/samples-workflow.md).
 
 If Python succeeds but the save fails, the response is 503 `database_unavailable` or 500 `persistence_failed`, no id is
 issued, and the failure is logged with the run id and correlation id. Python is never called twice for one request.
