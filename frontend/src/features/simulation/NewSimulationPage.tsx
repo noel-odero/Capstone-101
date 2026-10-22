@@ -62,7 +62,7 @@ export function NewSimulationPage() {
       ...(policySeed.value === undefined ? {} : { policySeed: policySeed.value }),
     }
     create.mutate(request, {
-      onSuccess: (comparison) => void navigate(`/app/simulation/${comparison.id}`),
+      onSuccess: (comparison) => void navigate(`/app/recommendations/comparison/${comparison.id}`),
     })
   }
 

@@ -117,7 +117,9 @@ test('simulation configuration toggles, reviews and submits the selected profile
   )
   await page.getByRole('button', { name: 'Run Simulation', exact: true }).click()
   expect((await request).postDataJSON()).toEqual({ resistanceProfile: [0, 1, 0, 0, 0, 0, 0] })
-  await expect(page.getByRole('heading', { name: 'Simulation', exact: true })).toBeVisible()
+  await expect(
+    page.getByRole('heading', { name: 'Results and Recommendations', exact: true }),
+  ).toBeVisible()
 })
 
 test('home introduces the workbench journey before the sequence panel', async ({
@@ -193,7 +195,7 @@ for (const theme of ['light', 'dark'] as const) {
       [
         'sequence',
         `/app/recommendations/comparison/${comparisonId}`,
-        'Recommended Antibiotic Sequence',
+        'Results and Recommendations',
       ],
       ['profile', '/app/profile', 'E. coli Profile'],
       ['new-experiment', '/app/simulation/new', 'Configure your simulation'],
