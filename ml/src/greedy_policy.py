@@ -3,7 +3,7 @@ from collections.abc import Sequence
 
 from gymnasium.spaces import Discrete
 
-from simulation.decoder import decode_observation
+from simulation.observation import decode_observation
 from simulation.resistance_state import ANTIBIOTICS
 
 

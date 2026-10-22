@@ -19,7 +19,7 @@ public class VersioningAndStartupTests(AmrApiFactory factory) : IClassFixture<Am
     [Fact]
     public async Task An_unsupported_version_is_a_404_problem_with_a_correlation_id()
     {
-        var response = await factory.CreateClient().GetAsync("/api/v2/stage-a-probe/ok");
+        var response = await factory.CreateClient().GetAsync("/api/v2/pipeline-probe/ok");
 
         await response.ReadProblemAsync(HttpStatusCode.NotFound, "not_found");
     }
@@ -27,7 +27,7 @@ public class VersioningAndStartupTests(AmrApiFactory factory) : IClassFixture<Am
     [Fact]
     public async Task An_unversioned_route_is_not_served()
     {
-        var response = await factory.CreateClient().GetAsync("/api/stage-a-probe/ok");
+        var response = await factory.CreateClient().GetAsync("/api/pipeline-probe/ok");
 
         Assert.Equal(HttpStatusCode.NotFound, response.StatusCode);
     }

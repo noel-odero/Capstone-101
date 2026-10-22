@@ -10,11 +10,11 @@ using Microsoft.AspNetCore.Mvc;
 
 namespace Amr.IntegrationTests.Infrastructure;
 
-/// <summary>Test-only endpoints that exercise the Stage A pipeline (versioning, binding, validation, error handling) before real controllers exist.</summary>
+/// <summary>Test-only endpoints for versioning, binding, validation and error handling.</summary>
 [ApiController]
 [ApiVersion(ApiRoutes.Version1)]
-[Route(ApiRoutes.Base + "/stage-a-probe")]
-public sealed class StageAProbeController : ControllerBase
+[Route(ApiRoutes.Base + "/pipeline-probe")]
+public sealed class PipelineProbeController : ControllerBase
 {
     public const string SafeMessage = "Safe probe message.";
     public const string SecretMessage = @"secret C:\private\path\appsettings.json";

@@ -6,9 +6,8 @@ import pytest
 from gymnasium.spaces import Box, Discrete
 
 from ml.src.greedy_policy import GreedyPolicy
-from simulation.encoder import encode_observation
+from simulation.observation import Observation, encode_observation
 from simulation.environment import AntibioticEnvironment
-from simulation.observation import Observation
 
 
 def encoded_observation(susceptibility, last_action=(0,) * 7, treatment_step=0):

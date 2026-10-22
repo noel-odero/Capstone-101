@@ -1,6 +1,3 @@
-﻿# represents and validates the seven-value resistance vector.
-
-
 from dataclasses import dataclass
 
 ANTIBIOTICS = (

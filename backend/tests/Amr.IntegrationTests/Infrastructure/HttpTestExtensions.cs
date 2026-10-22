@@ -6,7 +6,7 @@ namespace Amr.IntegrationTests.Infrastructure;
 
 public static class HttpTestExtensions
 {
-    public static string Probe(string path) => $"/api/v1/stage-a-probe/{path}";
+    public static string Probe(string path) => $"/api/v1/pipeline-probe/{path}";
 
     public static Task<HttpResponseMessage> PostJsonAsync(this HttpClient client, string path, string json) =>
         client.PostAsync(path, new StringContent(json, Encoding.UTF8, "application/json"));

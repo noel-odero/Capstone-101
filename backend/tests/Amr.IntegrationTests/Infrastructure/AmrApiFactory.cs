@@ -24,7 +24,7 @@ public sealed class AmrApiFactory : WebApplicationFactory<Program>
         builder.ConfigureLogging(logging => logging.AddProvider(Logs));
         builder.ConfigureTestServices(services =>
         {
-            services.AddControllers().AddApplicationPart(typeof(StageAProbeController).Assembly);
+            services.AddControllers().AddApplicationPart(typeof(PipelineProbeController).Assembly);
 
             // A request with X-Test-User is authenticated as that test user; otherwise the real cookie session applies.
             services.AddAuthentication(options => options.DefaultAuthenticateScheme = TestAuthHandler.PolicyScheme)

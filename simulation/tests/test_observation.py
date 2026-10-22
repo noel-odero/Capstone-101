@@ -1,83 +1,43 @@
 import pytest
 
-from simulation.observation import Observation
+from simulation.observation import (
+    OBSERVATION_VECTOR_SIZE,
+    Observation,
+    decode_observation,
+    encode_observation,
+)
 
 
-def test_valid_observation():
-    observation = Observation(
-        susceptibility=(0, -1, 0, 1, -1, 0, 1),
-        last_action=(0, 0, 1, 0, 0, 0, 0),
-        treatment_step=3,
-    )
+@pytest.mark.parametrize("profile,action,step", [
+    ((0, 0, 0, 0, 0, 0, 0), (0, 0, 0, 0, 0, 0, 0), 0),
+    ((0, 1, 0, -1, 0, 1, 0), (1, 0, 0, 0, 0, 0, 0), 3),
+])
+def test_observation_codec_preserves_canonical_vector(profile, action, step):
+    observation = Observation(profile, action, step)
+    vector = encode_observation(observation)
 
-    assert observation.treatment_step == 3
-    assert len(observation.to_vector()) == 15
-
-
-def test_observation_vector():
-    observation = Observation(
-        susceptibility=(0, -1, 0, 1, -1, 0, 1),
-        last_action=(0, 0, 1, 0, 0, 0, 0),
-        treatment_step=3,
-    )
-
-    assert observation.to_vector() == (
-        0, -1, 0, 1, -1, 0, 1,
-        0, 0, 1, 0, 0, 0, 0,
-        3,
-    )
+    assert vector == profile + action + (step,)
+    assert vector == observation.to_vector()
+    assert len(vector) == OBSERVATION_VECTOR_SIZE == 15
+    assert decode_observation(vector) == observation
 
 
-def test_initial_observation():
-    observation = Observation(
-        susceptibility=(0, 0, 0, 0, 0, 0, 0),
-        last_action=(0, 0, 0, 0, 0, 0, 0),
-        treatment_step=0,
-    )
-
-    assert len(observation.to_vector()) == 15
-
-
-def test_invalid_susceptibility_value():
+@pytest.mark.parametrize("profile,action,step", [
+    ((0, 1, 2, 0, 0, 0, 0), (0, 0, 0, 0, 0, 0, 0), 0),
+    ((0, 1, 0), (0, 0, 0, 0, 0, 0, 0), 0),
+    ((0, 0, 0, 0, 0, 0, 0), (1, 0), 0),
+    ((0, 0, 0, 0, 0, 0, 0), (1, 1, 0, 0, 0, 0, 0), 0),
+    ((0, 0, 0, 0, 0, 0, 0), (2, 0, 0, 0, 0, 0, 0), 0),
+    ((0, 0, 0, 0, 0, 0, 0), (0, 0, 0, 0, 0, 0, 0), -1),
+])
+def test_invalid_observation_is_rejected(profile, action, step):
     with pytest.raises(ValueError):
-        Observation(
-            susceptibility=(0, 1, 2, 0, 0, 0, 0),
-            last_action=(0, 0, 0, 0, 0, 0, 0),
-            treatment_step=0,
-        )
-
-
-def test_invalid_susceptibility_length():
+        Observation(profile, action, step)
     with pytest.raises(ValueError):
-        Observation(
-            susceptibility=(0, 1, 0),
-            last_action=(0, 0, 0, 0, 0, 0, 0),
-            treatment_step=0,
-        )
+        decode_observation(profile + action + (step,))
 
 
-def test_invalid_last_action_length():
+@pytest.mark.parametrize("vector", [(), (0, 1, 0), (0,) * 16])
+def test_decoder_rejects_wrong_vector_size(vector):
     with pytest.raises(ValueError):
-        Observation(
-            susceptibility=(0, 0, 0, 0, 0, 0, 0),
-            last_action=(1, 0),
-            treatment_step=0,
-        )
-
-
-def test_multiple_last_actions():
-    with pytest.raises(ValueError):
-        Observation(
-            susceptibility=(0, 0, 0, 0, 0, 0, 0),
-            last_action=(1, 1, 0, 0, 0, 0, 0),
-            treatment_step=0,
-        )
-
-
-def test_invalid_treatment_step():
-    with pytest.raises(ValueError):
-        Observation(
-            susceptibility=(0, 0, 0, 0, 0, 0, 0),
-            last_action=(0, 0, 0, 0, 0, 0, 0),
-            treatment_step=-1,
-        )
+        decode_observation(vector)

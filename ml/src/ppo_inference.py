@@ -20,10 +20,9 @@ from sb3_contrib import MaskablePPO
 
 from ml.src.matched_policy_evaluation import MaskablePPOObservationPolicy
 from ml.src.ppo_training import PPOConfig, environment_manifest, make_training_environment
-from simulation.encoder import OBSERVATION_VECTOR_SIZE, encode_observation
 from simulation.episode import EpisodeState
 from simulation.episode_termination import EpisodeTermination
-from simulation.observation import Observation
+from simulation.observation import OBSERVATION_VECTOR_SIZE, Observation, encode_observation
 from simulation.resistance_state import ANTIBIOTICS, ResistanceState
 
 REPO_ROOT = Path(__file__).resolve().parents[2]

@@ -7,8 +7,7 @@ from simulation.episode import EpisodeState
 from simulation.episode_progression import EpisodeProgression
 from simulation.episode_step import EpisodeStep
 from simulation.episode_termination import EpisodeTermination
-from simulation.encoder import encode_observation
-from simulation.observation import Observation
+from simulation.observation import Observation, encode_observation
 from simulation.resistance_state import ResistanceState
 from simulation.reward import RewardFunction
 
