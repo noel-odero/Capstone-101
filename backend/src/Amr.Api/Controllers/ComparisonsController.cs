@@ -3,12 +3,13 @@ using Amr.Api.Routing;
 using Amr.Application.DTOs.Comparisons;
 using Amr.Application.Errors;
 using Amr.Application.Interfaces.Services;
+using Amr.Application.Interfaces.Persistence;
 using Microsoft.AspNetCore.Mvc;
 
 namespace Amr.Api.Controllers;
 
 [Route(ApiRoutes.Comparisons)]
-public sealed class ComparisonsController(IComparisonService comparisons) : ApiControllerBase
+public sealed class ComparisonsController(IComparisonService comparisons, ISampleRepository samples) : ApiControllerBase
 {
     /// <summary>
     /// Runs PPO and the Random Susceptible Baseline from one profile and environment seed and stores the verified pair. A
@@ -21,6 +22,15 @@ public sealed class ComparisonsController(IComparisonService comparisons) : ApiC
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status503ServiceUnavailable, AmrProblemDetails.ContentType)]
     public async Task<ActionResult<ComparisonDto>> Create(CreateComparisonRequest request, CancellationToken cancellationToken)
     {
+        if (request.SampleId is { } sampleId)
+        {
+            var sample = await samples.FindAsync(sampleId, cancellationToken);
+            if (sample is null) return NotFoundProblem("sample_not_found", "No sample has this id.");
+            if (!sample.ResistanceProfile.SequenceEqual(request.ResistanceProfile))
+            {
+                throw new AmrException(ErrorCategory.InvalidRequest, "sample_profile_mismatch", "Use the saved sample's initial resistance profile.");
+            }
+        }
         var comparison = await comparisons.RunAsync(request, cancellationToken);
         return CreatedAtAction(nameof(Get), new { id = comparison.Id, version = ApiRoutes.UrlVersion1 }, comparison);
     }

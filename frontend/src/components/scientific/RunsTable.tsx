@@ -10,16 +10,19 @@ import styles from './runs-table.module.css'
 
 function burdenOf(run: RunSummary, strategy: 'ppo' | 'random_susceptible_baseline'): string {
   const found = run.strategies.find((candidate) => candidate.strategy === strategy)
-  return found ? formatMetricValue('cumulativeResistanceBurden', found.cumulativeResistanceBurden) : '\u2014'
+  return found
+    ? formatMetricValue('cumulativeResistanceBurden', found.cumulativeResistanceBurden)
+    : '\u2014'
 }
 
 export interface RunsTableProps {
   runs: readonly RunSummary[]
   caption: string
+  sampleLabels?: ReadonlyMap<string, string>
 }
 
 /** Stored runs: when, from which profile, the resistance burden of each strategy, and a link to open it. */
-export function RunsTable({ runs, caption }: RunsTableProps) {
+export function RunsTable({ runs, caption, sampleLabels }: RunsTableProps) {
   return (
     <div className={styles['wrap']}>
       <table className={styles['table']}>
@@ -48,13 +51,17 @@ export function RunsTable({ runs, caption }: RunsTableProps) {
             return (
               <tr key={run.id}>
                 <th scope="row" title={run.id}>
-                  {run.kind === 'comparison' ? 'Comparison' : 'Simulation'} <span className="muted">{shortId(run.id)}</span>
+                  {sampleLabels?.get(run.id) ??
+                    (run.kind === 'comparison' ? 'Comparison' : 'Simulation')}{' '}
+                  <span className="muted">{shortId(run.id)}</span>
                 </th>
                 <td>{formatDateTime(run.createdAtUtc)}</td>
                 <td className={styles['code']}>{profileToCode(run.initialProfile)}</td>
                 <td className="tabular">{burdenOf(run, 'ppo')}</td>
                 <td className="tabular">{burdenOf(run, 'random_susceptible_baseline')}</td>
-                <td>{path ? <Link to={path}>Open</Link> : <span className="muted">No view</span>}</td>
+                <td>
+                  {path ? <Link to={path}>Open</Link> : <span className="muted">No view</span>}
+                </td>
               </tr>
             )
           })}
@@ -77,10 +84,20 @@ export function Pager({ data, onPage }: PagerProps) {
         Page {data.page} of {pages} &middot; {data.totalCount} runs
       </span>
       <span className="row">
-        <Button variant="secondary" size="sm" disabled={data.page <= 1} onClick={() => onPage(data.page - 1)}>
+        <Button
+          variant="secondary"
+          size="sm"
+          disabled={data.page <= 1}
+          onClick={() => onPage(data.page - 1)}
+        >
           Previous
         </Button>
-        <Button variant="secondary" size="sm" disabled={data.page >= pages} onClick={() => onPage(data.page + 1)}>
+        <Button
+          variant="secondary"
+          size="sm"
+          disabled={data.page >= pages}
+          onClick={() => onPage(data.page + 1)}
+        >
           Next
         </Button>
       </span>

@@ -147,6 +147,10 @@ namespace Amr.Infrastructure.Persistence.Migrations
                         .HasColumnType("timestamp with time zone")
                         .HasColumnName("recorded_at_utc");
 
+                    b.Property<Guid?>("SampleId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("sample_id");
+
                     b.PrimitiveCollection<string[]>("SeedNotes")
                         .IsRequired()
                         .HasColumnType("text[]")
@@ -174,6 +178,8 @@ namespace Amr.Infrastructure.Persistence.Migrations
                     b.HasIndex("CreatedAtUtc", "Id")
                         .IsDescending()
                         .HasDatabaseName("ix_experiment_runs_recent");
+
+                    b.HasIndex("SampleId", "OwnerId");
 
                     b.HasIndex("OwnerId", "CreatedAtUtc", "Id")
                         .IsDescending(false, true, true)
@@ -280,6 +286,45 @@ namespace Amr.Infrastructure.Persistence.Migrations
                             t.HasCheckConstraint("ck_model_versions_horizon", "horizon > 0");
 
                             t.HasCheckConstraint("ck_model_versions_interaction_data_sha256", "interaction_data_sha256 ~ '^[0-9a-f]{64}$'");
+                        });
+                });
+
+            modelBuilder.Entity("Amr.Infrastructure.Persistence.Entities.Sample", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<DateTimeOffset>("AddedAtUtc")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("added_at_utc");
+
+                    b.PrimitiveCollection<int[]>("InitialProfile")
+                        .IsRequired()
+                        .HasColumnType("integer[]")
+                        .HasColumnName("initial_profile");
+
+                    b.Property<string>("Label")
+                        .IsRequired()
+                        .HasMaxLength(80)
+                        .HasColumnType("character varying(80)")
+                        .HasColumnName("label");
+
+                    b.Property<string>("OwnerId")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("character varying(200)")
+                        .HasColumnName("owner_id");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("OwnerId", "AddedAtUtc");
+
+                    b.ToTable("samples", null, t =>
+                        {
+                            t.HasCheckConstraint("ck_samples_label", "length(btrim(label)) > 0");
+
+                            t.HasCheckConstraint("ck_samples_profile", "cardinality(initial_profile) = 7 AND initial_profile <@ ARRAY[0,1]");
                         });
                 });
 
@@ -536,6 +581,12 @@ namespace Amr.Infrastructure.Persistence.Migrations
                         .HasForeignKey("ModelVersionId")
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
+
+                    b.HasOne("Amr.Infrastructure.Persistence.Entities.Sample", null)
+                        .WithMany()
+                        .HasForeignKey("SampleId", "OwnerId")
+                        .HasPrincipalKey("Id", "OwnerId")
+                        .OnDelete(DeleteBehavior.Restrict);
 
                     b.Navigation("ModelVersion");
                 });

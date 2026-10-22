@@ -3,6 +3,7 @@ import {
   FiHome as House,
   FiList as ListChecks,
   FiCrosshair as Microscope,
+  FiArchive as Archive,
 } from 'react-icons/fi'
 import type { IconType } from 'react-icons'
 
@@ -19,6 +20,7 @@ export interface NavigationItem {
 /** The signed-in workspace: four pages. */
 export const workspaceNavigation: readonly NavigationItem[] = [
   { to: '/app', label: 'Home', icon: House, end: true },
+  { to: '/app/samples', label: 'Samples', icon: Archive },
   { to: '/app/simulation', label: 'Simulation', icon: ChartLine },
   { to: '/app/recommendations', label: 'Recommendations', icon: ListChecks },
   {

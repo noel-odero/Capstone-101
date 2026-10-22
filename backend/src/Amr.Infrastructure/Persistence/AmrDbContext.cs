@@ -25,6 +25,7 @@ public sealed class AmrDbContext(DbContextOptions<AmrDbContext> options) : DbCon
     public DbSet<StepTrace> StepTraces => Set<StepTrace>();
 
     public DbSet<AppUser> Users => Set<AppUser>();
+    public DbSet<Sample> Samples => Set<Sample>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -33,6 +34,24 @@ public sealed class AmrDbContext(DbContextOptions<AmrDbContext> options) : DbCon
         ConfigureStrategyRun(modelBuilder);
         ConfigureStepTrace(modelBuilder);
         ConfigureUser(modelBuilder);
+        modelBuilder.Entity<Sample>(entity =>
+        {
+            entity.ToTable("samples", table =>
+            {
+                table.HasCheckConstraint("ck_samples_profile", "cardinality(initial_profile) = 7 AND initial_profile <@ ARRAY[0,1]");
+                table.HasCheckConstraint("ck_samples_label", "length(btrim(label)) > 0");
+            });
+            entity.HasKey(sample => sample.Id);
+            entity.Property(sample => sample.Id).ValueGeneratedNever();
+            entity.Property(sample => sample.OwnerId).HasMaxLength(200).IsRequired();
+            entity.Property(sample => sample.Label).HasMaxLength(80).IsRequired();
+            entity.HasAlternateKey(sample => new { sample.Id, sample.OwnerId });
+            entity.HasIndex(sample => new { sample.OwnerId, sample.AddedAtUtc });
+        });
+        modelBuilder.Entity<ExperimentRun>().HasOne<Sample>().WithMany()
+            .HasForeignKey(run => new { run.SampleId, run.OwnerId })
+            .HasPrincipalKey(sample => new { sample.Id, sample.OwnerId })
+            .OnDelete(DeleteBehavior.Restrict);
         ApplySnakeCaseNames(modelBuilder);
     }
 

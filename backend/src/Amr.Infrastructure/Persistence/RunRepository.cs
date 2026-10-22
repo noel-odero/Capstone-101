@@ -130,7 +130,16 @@ public sealed partial class RunRepository(AmrDbContext db, TimeProvider clock, I
             var now = clock.GetUtcNow();
             await using var transaction = await db.Database.BeginTransactionAsync(cancellationToken);
             var modelVersionId = await EnsureModelVersionAsync(provenance, now, cancellationToken);
-            db.ExperimentRuns.Add(build(modelVersionId, now, owner));
+            var entity = build(modelVersionId, now, owner);
+            if (entity.SampleId is { } sampleId)
+            {
+                var sample = await db.Samples.SingleOrDefaultAsync(sample => sample.Id == sampleId && sample.OwnerId == owner, cancellationToken);
+                if (sample is null || !sample.InitialProfile.SequenceEqual(entity.InitialProfile))
+                {
+                    throw new AmrException(ErrorCategory.InvalidRequest, "sample_profile_mismatch", "The sample and run must have the same owner and initial resistance profile.");
+                }
+            }
+            db.ExperimentRuns.Add(entity);
             await db.SaveChangesAsync(cancellationToken);
             await transaction.CommitAsync(cancellationToken);
         }

@@ -15,6 +15,7 @@ export function useCreateComparison() {
     onSuccess: (comparison) => {
       queryClient.setQueryData(queryKeys.comparison(comparison.id), comparison)
       void queryClient.invalidateQueries({ queryKey: queryKeys.recentRunsRoot })
+      void queryClient.invalidateQueries({ queryKey: ['samples'] })
     },
   })
 }

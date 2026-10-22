@@ -24,7 +24,10 @@ export type MockRoutes = Record<string, Handler>
 export function mockFetch(routes: MockRoutes) {
   const calls: RecordedCall[] = []
   const fetchMock = vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
-    const url = new URL(typeof input === 'string' ? input : input instanceof URL ? input.href : input.url, 'http://localhost')
+    const url = new URL(
+      typeof input === 'string' ? input : input instanceof URL ? input.href : input.url,
+      'http://localhost',
+    )
     const method = init?.method ?? 'GET'
     const call: RecordedCall = {
       method,
@@ -36,7 +39,9 @@ export function mockFetch(routes: MockRoutes) {
 
     const handler = routes[`${method} ${url.pathname}`]
     if (!handler) {
-      return new Response(JSON.stringify({ title: `No mock for ${method} ${url.pathname}` }), { status: 599 })
+      return new Response(JSON.stringify({ title: `No mock for ${method} ${url.pathname}` }), {
+        status: 599,
+      })
     }
     const response = typeof handler === 'function' ? handler(call) : handler
     if (response.networkError) {
@@ -44,11 +49,20 @@ export function mockFetch(routes: MockRoutes) {
     }
     return new Response(response.body === undefined ? null : JSON.stringify(response.body), {
       status: response.status ?? 200,
-      headers: { 'Content-Type': response.status && response.status >= 400 ? 'application/problem+json' : 'application/json' },
+      headers: {
+        'Content-Type':
+          response.status && response.status >= 400
+            ? 'application/problem+json'
+            : 'application/json',
+      },
     })
   })
   vi.stubGlobal('fetch', fetchMock)
-  return { calls, fetchMock, callsTo: (key: string) => calls.filter((call) => `${call.method} ${call.path}` === key) }
+  return {
+    calls,
+    fetchMock,
+    callsTo: (key: string) => calls.filter((call) => `${call.method} ${call.path}` === key),
+  }
 }
 
 /** The read endpoints every page needs, answered with real captured responses. Override per test as needed. */
@@ -58,6 +72,7 @@ export function baseRoutes(overrides: MockRoutes = {}): MockRoutes {
     'GET /api/v1/model': { body: rawFixtures.model },
     'GET /api/v1/antibiotics': { body: rawFixtures.antibiotics },
     'GET /api/v1/simulations/recent': { body: emptyRecentRuns },
+    'GET /api/v1/samples': { body: [] },
     ...overrides,
   }
 }

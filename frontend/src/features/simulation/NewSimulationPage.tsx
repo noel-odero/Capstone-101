@@ -22,17 +22,22 @@ import type { CreateComparisonRequest } from '@/domain/types'
 import { useAntibiotics } from '@/hooks/useAntibiotics'
 import { useCreateComparison } from '@/hooks/useCreateComparison'
 import { useModelMetadata } from '@/hooks/useModelMetadata'
+import { useSample } from '@/features/samples/useSamples'
+import type { SavedSample } from '@/features/samples/sample-api'
 import styles from './simulation.module.css'
 import setup from './setup.module.css'
 
 /** The input form behind "Run Simulation": a starting profile and optional seeds, then both strategies run for the fixed horizon. */
-export function NewSimulationPage() {
+function SimulationForm({ sample }: { sample?: SavedSample }) {
   const [params] = useSearchParams()
   const navigate = useNavigate()
   const environmentSeedId = useId()
   const policySeedId = useId()
   const [profile, setProfile] = useState(
-    () => parseProfileCode(params.get('profile')) ?? allSusceptibleProfile(),
+    () =>
+      sample?.resistanceProfile ??
+      parseProfileCode(params.get('profile')) ??
+      allSusceptibleProfile(),
   )
   const [environmentSeedText, setEnvironmentSeedText] = useState('')
   const [policySeedText, setPolicySeedText] = useState('')
@@ -57,6 +62,7 @@ export function NewSimulationPage() {
       return
     }
     const request: CreateComparisonRequest = {
+      ...(sample ? { sampleId: sample.id } : {}),
       resistanceProfile: profile,
       ...(environmentSeed.value === undefined ? {} : { environmentSeed: environmentSeed.value }),
       ...(policySeed.value === undefined ? {} : { policySeed: policySeed.value }),
@@ -84,6 +90,16 @@ export function NewSimulationPage() {
                 : 'Set a starting profile. Explore what happens next.'
             }
           />
+          {sample ? (
+            <p className={setup.note}>
+              Sample: <strong>{sample.label}</strong> ·{' '}
+              <Link to="/app/samples">Sample library</Link>
+            </p>
+          ) : (
+            <p className={setup.note}>
+              Preparing several samples? <Link to="/app/samples">Record profiles first</Link>
+            </p>
+          )}
           <form
             onSubmit={submit}
             noValidate
@@ -97,6 +113,7 @@ export function NewSimulationPage() {
                   <Button
                     size="sm"
                     variant="ghost"
+                    disabled={!!sample}
                     onClick={() => setProfile(allSusceptibleProfile())}
                   >
                     Reset
@@ -129,6 +146,7 @@ export function NewSimulationPage() {
                         <button
                           type="button"
                           role="switch"
+                          disabled={!!sample}
                           aria-label={`${entry.displayName} resistant`}
                           aria-checked={profile[entry.index] === 1}
                           className={setup.toggle}
@@ -150,7 +168,10 @@ export function NewSimulationPage() {
                 {terminal ? (
                   <p role="alert">
                     <StatusIndicator kind="warning" label="No feasible actions" />{' '}
-                    {GLOSSARY.noFeasibleActions} Change the profile to continue.
+                    {GLOSSARY.noFeasibleActions}{' '}
+                    {sample
+                      ? 'Record a different sample to continue.'
+                      : 'Change the profile to continue.'}
                   </p>
                 ) : null}
               </div>
@@ -262,5 +283,29 @@ export function NewSimulationPage() {
         </div>
       </div>
     </ContentContainer>
+  )
+}
+
+export function NewSimulationPage() {
+  const [params] = useSearchParams()
+  const sampleId = params.get('sample')
+  const sample = useSample(sampleId)
+  if (sampleId && sample.isPending)
+    return (
+      <ContentContainer>
+        <LoadingState label="Loading sample profile" lines={3} />
+      </ContentContainer>
+    )
+  if (sampleId && sample.isError)
+    return (
+      <ContentContainer>
+        <ErrorState error={sample.error} onRetry={() => void sample.refetch()} />
+      </ContentContainer>
+    )
+  return (
+    <SimulationForm
+      key={sampleId ?? params.get('profile') ?? 'new'}
+      {...(sample.data ? { sample: sample.data } : {})}
+    />
   )
 }

@@ -54,4 +54,7 @@ public sealed record ComparisonDto(
     RunErrorDto? Error,
     IReadOnlyDictionary<string, MetricDefinitionDto> MetricDefinitions,
     string SingleRunCaveat,
-    string Disclaimer);
+    string Disclaimer)
+{
+    public Guid? SampleId { get; init; }
+}

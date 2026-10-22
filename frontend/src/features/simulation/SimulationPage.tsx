@@ -13,6 +13,7 @@ import { StatusIndicator } from '@/components/ui/StatusIndicator'
 import { GLOSSARY } from '@/domain/terminology'
 import { useAntibiotics } from '@/hooks/useAntibiotics'
 import { useComparison } from '@/hooks/useComparison'
+import { useSample } from '@/features/samples/useSamples'
 import { StatePanel } from './StatePanel'
 import { TrajectoryChart } from './TrajectoryChart'
 import { SimulationControls } from './SimulationControls'
@@ -22,6 +23,7 @@ import styles from './simulation.module.css'
 export function SimulationPage() {
   const { comparisonId } = useParams()
   const comparison = useComparison(comparisonId)
+  const sample = useSample(comparison.data?.sampleId)
   const antibiotics = useAntibiotics()
   const [selectedStep, setSelectedStep] = useState(0)
 
@@ -73,6 +75,13 @@ export function SimulationPage() {
       <PageHeader
         title="Simulation"
         subtitle="Compare antibiotic strategies and see how they impact simulated resistance over time."
+        action={
+          sample.data ? (
+            <ButtonLink to="/app/samples" variant="secondary" size="sm">
+              Sample: {sample.data.label}
+            </ButtonLink>
+          ) : undefined
+        }
       />
 
       <SimulationControls

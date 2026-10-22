@@ -21,6 +21,7 @@ import { profileToCode } from '@/domain/profile'
 import { STRATEGY_NAMES, terminationLabel, GLOSSARY } from '@/domain/terminology'
 import type { Comparison, Simulation, StrategyResult } from '@/domain/types'
 import { useStepParam } from './useStepParam'
+import { useSample } from '@/features/samples/useSamples'
 import styles from './results.module.css'
 
 const primaryMetrics = [
@@ -76,6 +77,7 @@ export function ResultsWorkbench({
   const [tab, setTab] = useState<(typeof tabs)[number]>('Overview')
   const [strategy, setStrategy] = useState<'ppo' | 'baseline'>('ppo')
   const [step, setStep] = useStepParam()
+  const sample = useSample('sampleId' in run ? run.sampleId : undefined)
   const id = useId()
   const active = strategy === 'baseline' && baseline ? baseline : ppo
   const label = STRATEGY_NAMES[active.strategy]
@@ -165,6 +167,7 @@ export function ResultsWorkbench({
         }
       />
       <div className={styles.context}>
+        {sample.data ? <Link to="/app/samples">Sample: {sample.data.label}</Link> : null}
         <span>
           Starting profile <code>{initial}</code>
         </span>

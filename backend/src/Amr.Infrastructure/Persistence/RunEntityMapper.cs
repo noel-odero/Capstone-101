@@ -33,6 +33,7 @@ internal static class RunEntityMapper
         var run = NewRun(comparison.Id, ownerId, ExperimentKind.Comparison, comparison.Status, comparison.CreatedAtUtc, modelVersionId, recordedAtUtc,
             contract.Shared.InitialProfile, comparison.Provenance, comparison.SeedConfiguration, comparison.MetricDefinitions, comparison.Disclaimer);
         run.PairingSemantics = comparison.PairingSemantics;
+        run.SampleId = comparison.SampleId;
         run.SingleRunCaveat = comparison.SingleRunCaveat;
         run.ComparisonContractJson = PersistenceJson.Serialize(contract);
         run.StrategyRuns.Add(ToEntity(ppo, run.Id));
@@ -66,7 +67,7 @@ internal static class RunEntityMapper
         Error: null,
         PersistenceJson.Deserialize<Dictionary<string, MetricDefinitionDto>>(run.MetricDefinitionsJson),
         run.SingleRunCaveat!,
-        run.Disclaimer);
+        run.Disclaimer) { SampleId = run.SampleId };
 
     private static ExperimentRun NewRun(
         Guid id,
