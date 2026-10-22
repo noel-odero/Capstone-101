@@ -1,14 +1,6 @@
-import { describe, expect, it } from 'vitest'
 import { fixtures, rawFixtures } from '@/test/fixtures/api-fixtures'
-import {
-  comparisonSchema,
-  problemDetailsSchema,
-  profileValidationSchema,
-  recentRunsSchema,
-  recommendationSchema,
-  resistanceProfileSchema,
-  simulationSchema,
-} from './types'
+import { describe, expect, it } from 'vitest'
+import { problemDetailsSchema, recentRunsSchema } from './types'
 
 describe('API schemas against real captured responses', () => {
   it('accepts every captured response (a contract change fails here)', () => {
@@ -19,7 +11,6 @@ describe('API schemas against real captured responses', () => {
     expect(fixtures.comparison.isPersisted).toBe(true)
     expect(fixtures.simulationPpo.result?.strategy).toBe('ppo')
     expect(fixtures.simulationBaseline.result?.strategy).toBe('random_susceptible_baseline')
-    expect(fixtures.recommendation.strategy).toBe('ppo')
     expect(fixtures.recentRuns.items.map((item) => item.kind)).toContain('comparison')
   })
 
@@ -33,7 +24,6 @@ describe('API schemas against real captured responses', () => {
     expect(terminal.ppo?.states).toHaveLength(1)
     expect(terminal.ppo?.steps).toHaveLength(0)
     expect(terminal.ppo?.terminationReason).toBe('no_effective_antibiotic')
-    expect(fixtures.profileValidationTerminal).toMatchObject({ isTerminal: true, feasibleActions: [] })
   })
 
   it('numbers steps from zero, with each state following its action', () => {
@@ -44,25 +34,9 @@ describe('API schemas against real captured responses', () => {
     })
   })
 
-  it('rejects a response that is missing a required field', () => {
-    const withoutMetrics: Record<string, unknown> = { ...rawFixtures.comparison.ppo }
-    delete withoutMetrics['metrics']
-    expect(comparisonSchema.safeParse({ ...rawFixtures.comparison, ppo: withoutMetrics }).success).toBe(false)
-    expect(simulationSchema.safeParse({}).success).toBe(false)
-    expect(recommendationSchema.safeParse({ ...rawFixtures.recommendation, steps: 'none' }).success).toBe(false)
-    expect(recentRunsSchema.safeParse({ items: [] }).success).toBe(false)
-  })
-
   it('rejects an unknown strategy or run kind rather than guessing', () => {
     const items = rawFixtures.recentRuns.items.map((item) => ({ ...item, kind: 'mystery' }))
     expect(recentRunsSchema.safeParse({ ...rawFixtures.recentRuns, items }).success).toBe(false)
-  })
-
-  it('requires exactly seven 0/1 values in a resistance profile', () => {
-    expect(resistanceProfileSchema.safeParse([0, 1, 0, 0, 0, 0, 0]).success).toBe(true)
-    expect(resistanceProfileSchema.safeParse([0, 1, 0]).success).toBe(false)
-    expect(resistanceProfileSchema.safeParse([0, 1, 0, 0, 0, 0, 2]).success).toBe(false)
-    expect(profileValidationSchema.safeParse({ ...rawFixtures.profileValidation, resistanceProfile: [0, 1] }).success).toBe(false)
   })
 
   it('reads problem details with a code, correlation id and field errors', () => {

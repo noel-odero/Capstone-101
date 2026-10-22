@@ -1,5 +1,5 @@
-import { useEffect, useMemo } from 'react'
 import { Environment, Lightformer } from '@react-three/drei'
+import { useEffect, useMemo } from 'react'
 import {
   AdditiveBlending,
   BackSide,
@@ -96,7 +96,7 @@ function RenalPelvis({ cool }: { cool: boolean }) {
 function Kidney({ side }: { side: number }) {
   const geometry = useMemo(() => {
     const result = new SphereGeometry(1, 64, 48)
-    const positions = result.attributes.position!
+    const positions = result.getAttribute('position')
     for (let index = 0; index < positions.count; index++) {
       const x = positions.getX(index),
         y = positions.getY(index),
@@ -226,7 +226,7 @@ function Ureter({ side }: { side: number }) {
 function Bladder() {
   const geometry = useMemo(() => {
     const result = new SphereGeometry(1, 56, 40)
-    const positions = result.attributes.position!
+    const positions = result.getAttribute('position')
     for (let i = 0; i < positions.count; i++) {
       const x = positions.getX(i),
         y = positions.getY(i),

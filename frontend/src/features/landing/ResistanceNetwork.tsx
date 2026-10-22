@@ -1,7 +1,7 @@
 import { useEffect, useId, useState } from 'react'
 import { FiPause, FiPlay } from 'react-icons/fi'
-import edges from './network-edges.json'
 import styles from './landing.module.css'
+import edges from './network-edges.json'
 
 const NODES = [
   { code: 'CIP', name: 'Ciprofloxacin', x: 190, y: 155, r: 27 },
@@ -27,7 +27,7 @@ export function ResistanceNetwork() {
     }, 3600)
     return () => window.clearInterval(timer)
   }, [paused])
-  const profile = PROFILES[phase]!
+  const profile = PROFILES[phase] ?? '0001000'
   return (
     <figure
       className={styles['network']}
@@ -89,8 +89,9 @@ export function ResistanceNetwork() {
           />
           <circle cx="327" cy="286" r="240" fill={`url(#${id}-aura)`} />
           {edges.map((edge) => {
-            const from = NODES[edge.from]!,
-              to = NODES[edge.to]!
+            const from = NODES[edge.from],
+              to = NODES[edge.to]
+            if (!from || !to) return null
             return (
               <line
                 key={`${edge.from}-${edge.to}`}

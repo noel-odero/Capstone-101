@@ -1,28 +1,28 @@
-﻿import { useId, useState } from 'react'
-import { Link } from 'react-router'
-import { FiArrowRight, FiCheck, FiLayers } from 'react-icons/fi'
-import {
-  CartesianGrid,
-  Legend,
-  Line,
-  LineChart,
-  ReferenceLine,
-  ResponsiveContainer,
-  Tooltip as ChartTooltip,
-  XAxis,
-  YAxis,
-} from 'recharts'
-import { PageHeader } from '@/components/layout/PageHeader'
+﻿import { PageHeader } from '@/components/layout/PageHeader'
 import { ButtonLink } from '@/components/ui/Button'
 import { Tooltip } from '@/components/ui/Tooltip'
 import { drugLabel, type AntibioticEntry } from '@/domain/antibiotics'
 import { buildTrajectorySeries, formatMetricValue, type MetricKey } from '@/domain/metrics'
 import { profileToCode } from '@/domain/profile'
-import { STRATEGY_NAMES, terminationLabel, GLOSSARY } from '@/domain/terminology'
+import { GLOSSARY, STRATEGY_NAMES, terminationLabel } from '@/domain/terminology'
 import type { Comparison, Simulation, StrategyResult } from '@/domain/types'
-import { useStepParam } from './useStepParam'
 import { useSample } from '@/features/samples/useSamples'
+import { useId, useState } from 'react'
+import { FiArrowRight, FiCheck, FiLayers } from 'react-icons/fi'
+import { Link } from 'react-router'
+import {
+  CartesianGrid,
+  Tooltip as ChartTooltip,
+  Legend,
+  Line,
+  LineChart,
+  ReferenceLine,
+  ResponsiveContainer,
+  XAxis,
+  YAxis,
+} from 'recharts'
 import styles from './results.module.css'
+import { useStepParam } from './useStepParam'
 
 const primaryMetrics = [
   {

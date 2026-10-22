@@ -1,13 +1,16 @@
+import { rawFixtures } from '@/test/fixtures/api-fixtures'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { z } from 'zod'
-import { rawFixtures } from '@/test/fixtures/api-fixtures'
 import { ApiError } from './api-errors'
 import { buildUrl, requestJson } from './http-client'
 
 const schema = z.object({ value: z.number() })
 
 function respond(status: number, body: unknown, contentType = 'application/json') {
-  return new Response(typeof body === 'string' ? body : JSON.stringify(body), { status, headers: { 'Content-Type': contentType } })
+  return new Response(typeof body === 'string' ? body : JSON.stringify(body), {
+    status,
+    headers: { 'Content-Type': contentType },
+  })
 }
 
 async function failureOf(promise: Promise<unknown>): Promise<ApiError> {
@@ -29,7 +32,9 @@ afterEach(() => {
 describe('buildUrl', () => {
   it('prefixes every path with /api/v1 and honours the base URL', () => {
     expect(buildUrl('/model', undefined, '')).toBe('/api/v1/model')
-    expect(buildUrl('/model', undefined, 'https://api.example.org')).toBe('https://api.example.org/api/v1/model')
+    expect(buildUrl('/model', undefined, 'https://api.example.org')).toBe(
+      'https://api.example.org/api/v1/model',
+    )
   })
 
   it('adds query parameters and skips undefined ones', () => {
@@ -51,7 +56,10 @@ describe('requestJson', () => {
   it('serialises a JSON body for POST and sends no content type without one', async () => {
     const fetchMock = vi.fn().mockImplementation(() => Promise.resolve(respond(201, { value: 1 })))
     vi.stubGlobal('fetch', fetchMock)
-    await requestJson('/x', schema, { method: 'POST', body: { resistanceProfile: [0, 1, 0, 0, 0, 0, 0] } })
+    await requestJson('/x', schema, {
+      method: 'POST',
+      body: { resistanceProfile: [0, 1, 0, 0, 0, 0, 0] },
+    })
     const init = fetchMock.mock.calls[0]?.[1] as RequestInit
     expect(init.method).toBe('POST')
     expect(init.body).toBe('{"resistanceProfile":[0,1,0,0,0,0,0]}')
@@ -64,7 +72,12 @@ describe('requestJson', () => {
   })
 
   it('maps a 422 problem to a validation error carrying field errors and the correlation id', async () => {
-    vi.stubGlobal('fetch', vi.fn().mockResolvedValue(respond(422, rawFixtures.problemValidation, 'application/problem+json')))
+    vi.stubGlobal(
+      'fetch',
+      vi
+        .fn()
+        .mockResolvedValue(respond(422, rawFixtures.problemValidation, 'application/problem+json')),
+    )
     const error = await failureOf(requestJson('/x', schema, { method: 'POST', body: {} }))
     expect(error.kind).toBe('validation')
     expect(error.status).toBe(422)
@@ -73,7 +86,11 @@ describe('requestJson', () => {
   })
 
   it('does not retry a failed creation request', async () => {
-    const fetchMock = vi.fn().mockResolvedValue(respond(503, { code: 'database_unavailable', detail: 'down' }, 'application/problem+json'))
+    const fetchMock = vi
+      .fn()
+      .mockResolvedValue(
+        respond(503, { code: 'database_unavailable', detail: 'down' }, 'application/problem+json'),
+      )
     vi.stubGlobal('fetch', fetchMock)
     const error = await failureOf(requestJson('/comparisons', schema, { method: 'POST', body: {} }))
     expect(error.kind).toBe('dependency_unavailable')
@@ -95,7 +112,10 @@ describe('requestJson', () => {
   })
 
   it('uses a generic error when an error response is not JSON', async () => {
-    vi.stubGlobal('fetch', vi.fn().mockResolvedValue(respond(500, '<html>boom</html>', 'text/html')))
+    vi.stubGlobal(
+      'fetch',
+      vi.fn().mockResolvedValue(respond(500, '<html>boom</html>', 'text/html')),
+    )
     const error = await failureOf(requestJson('/x', schema))
     expect(error.kind).toBe('server_error')
     expect(error.message).not.toContain('boom')
@@ -110,7 +130,14 @@ describe('requestJson', () => {
     const controller = new AbortController()
     vi.stubGlobal(
       'fetch',
-      vi.fn((_url: string, init: RequestInit) => new Promise((_resolve, reject) => init.signal?.addEventListener('abort', () => reject(new DOMException('x', 'AbortError'))))),
+      vi.fn(
+        (_url: string, init: RequestInit) =>
+          new Promise((_resolve, reject) =>
+            init.signal?.addEventListener('abort', () =>
+              reject(new DOMException('x', 'AbortError')),
+            ),
+          ),
+      ),
     )
     const pending = failureOf(requestJson('/x', schema, { signal: controller.signal }))
     controller.abort()
@@ -121,7 +148,14 @@ describe('requestJson', () => {
     vi.useFakeTimers()
     vi.stubGlobal(
       'fetch',
-      vi.fn((_url: string, init: RequestInit) => new Promise((_resolve, reject) => init.signal?.addEventListener('abort', () => reject(new DOMException('x', 'AbortError'))))),
+      vi.fn(
+        (_url: string, init: RequestInit) =>
+          new Promise((_resolve, reject) =>
+            init.signal?.addEventListener('abort', () =>
+              reject(new DOMException('x', 'AbortError')),
+            ),
+          ),
+      ),
     )
     const pending = failureOf(requestJson('/x', schema, { timeoutMs: 1000 }))
     await vi.advanceTimersByTimeAsync(1001)

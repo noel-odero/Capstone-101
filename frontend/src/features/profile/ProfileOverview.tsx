@@ -1,18 +1,18 @@
-﻿import { FiActivity, FiArrowUpRight, FiCheck, FiInfo } from 'react-icons/fi'
+﻿import { ButtonLink } from '@/components/ui/Button'
+import { profileToCode } from '@/domain/profile'
+import { profilesFromSteps } from '@/domain/trajectory'
+import { FiActivity, FiArrowUpRight, FiCheck, FiInfo } from 'react-icons/fi'
 import {
-  LineChart,
-  Line,
-  XAxis,
-  YAxis,
   CartesianGrid,
+  Line,
+  LineChart,
   ResponsiveContainer,
   Tooltip,
+  XAxis,
+  YAxis,
 } from 'recharts'
-import type { ProfileRun } from './useProfileRun'
-import { profilesFromSteps } from '@/domain/trajectory'
-import { profileToCode } from '@/domain/profile'
-import { ButtonLink } from '@/components/ui/Button'
 import styles from './profile.module.css'
+import type { ProfileRun } from './useProfileRun'
 
 export function ProfileOverview({ run }: { run: ProfileRun }) {
   return (

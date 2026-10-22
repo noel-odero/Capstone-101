@@ -1,6 +1,6 @@
 import type { ModelProvenance, RunSummary, StrategyResult } from '@/domain/types'
-import { useLatestPpoRun } from '@/hooks/useLatestPpoRun'
 import { useComparison } from '@/hooks/useComparison'
+import { useLatestPpoRun } from '@/hooks/useLatestPpoRun'
 import { useSimulation } from '@/hooks/useSimulation'
 
 export interface ProfileRun {
@@ -43,10 +43,26 @@ export function useProfileRun(): ProfileRunState {
   }
 
   if (comparison.data?.ppo) {
-    return { status: 'ready', run: { summary, provenance: comparison.data.provenance, ppo: comparison.data.ppo, baseline: comparison.data.baseline } }
+    return {
+      status: 'ready',
+      run: {
+        summary,
+        provenance: comparison.data.provenance,
+        ppo: comparison.data.ppo,
+        baseline: comparison.data.baseline,
+      },
+    }
   }
   if (simulation.data?.result?.strategy === 'ppo') {
-    return { status: 'ready', run: { summary, provenance: simulation.data.provenance, ppo: simulation.data.result, baseline: null } }
+    return {
+      status: 'ready',
+      run: {
+        summary,
+        provenance: simulation.data.provenance,
+        ppo: simulation.data.result,
+        baseline: null,
+      },
+    }
   }
   return { status: 'empty' }
 }

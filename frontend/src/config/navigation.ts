@@ -1,11 +1,11 @@
+import type { IconType } from 'react-icons'
 import {
+  FiArchive as Archive,
   FiTrendingUp as ChartLine,
   FiHome as House,
   FiList as ListChecks,
   FiCrosshair as Microscope,
-  FiArchive as Archive,
 } from 'react-icons/fi'
-import type { IconType } from 'react-icons'
 
 export interface NavigationItem {
   to: string

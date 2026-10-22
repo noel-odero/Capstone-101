@@ -5,13 +5,6 @@
   max-width: 42rem;
   padding: 1.5rem 0 3rem;
 }
-.eyebrow {
-  color: var(--color-text-muted);
-  font: 0.65rem var(--font-mono);
-  letter-spacing: 0.13em;
-  text-transform: uppercase;
-  margin: 0 0 1.25rem;
-}
 .welcome h1 {
   margin: 0 0 1.5rem;
   font-size: clamp(2.2rem, 4vw, 3.25rem);
@@ -90,12 +83,6 @@
   font-weight: 500;
   letter-spacing: -0.035em;
   margin: 0 0 1rem;
-}
-.launchCopy > p:not(.eyebrow) {
-  color: var(--color-text-muted);
-  font-size: 0.9rem;
-  line-height: 1.9;
-  max-width: 35ch;
 }
 .launchLink {
   display: inline-flex;
@@ -208,9 +195,6 @@
     font-size: clamp(2rem, 3vw, 2.6rem);
     margin-bottom: 1.25rem;
   }
-  .eyebrow {
-    margin-bottom: 0.75rem;
-  }
   .intro {
     font-size: 0.9rem;
     line-height: 1.7;
@@ -231,10 +215,6 @@
   }
   .launchCopy h2 {
     font-size: 1.65rem;
-  }
-  .launchCopy > p:not(.eyebrow) {
-    line-height: 1.7;
-    font-size: 0.85rem;
   }
   .laptop {
     max-width: 420px;

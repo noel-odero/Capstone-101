@@ -1,4 +1,3 @@
-/* Button */
 .button {
   display: inline-flex;
   align-items: center;
@@ -98,8 +97,6 @@
     transform: rotate(360deg);
   }
 }
-
-/* Card */
 .card {
   background: var(--color-surface);
   border: 1px solid var(--color-border);
@@ -148,8 +145,6 @@
   color: var(--color-text-muted);
   font-size: var(--text-sm);
 }
-
-/* Badge and status */
 .badge {
   display: inline-flex;
   align-items: center;
@@ -205,51 +200,6 @@
   border-color: var(--color-neutral-border);
   color: var(--color-neutral-fg);
 }
-
-/* Metric card */
-.metric {
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-2);
-  min-height: 100%;
-}
-
-.metricLabel {
-  display: flex;
-  align-items: center;
-  gap: var(--space-1);
-  color: var(--color-text-muted);
-  font-size: var(--text-sm);
-  font-weight: 600;
-}
-
-.metricValue {
-  font-size: var(--text-3xl);
-  font-weight: 700;
-  line-height: 1.1;
-  letter-spacing: -0.02em;
-  font-variant-numeric: tabular-nums;
-}
-
-.metricUnavailable {
-  font-size: var(--text-lg);
-  font-weight: 600;
-  color: var(--color-text-muted);
-}
-
-.metricCaption {
-  color: var(--color-text-muted);
-  font-size: var(--text-xs);
-}
-
-.metricSecondary {
-  margin-top: auto;
-  padding-top: var(--space-2);
-  border-top: 1px solid var(--color-border);
-  font-size: var(--text-sm);
-}
-
-/* States */
 .state {
   display: flex;
   flex-direction: column;
@@ -336,8 +286,6 @@
     background-position: -200% 0;
   }
 }
-
-/* Tooltip */
 .tooltip {
   position: relative;
   display: inline-flex;
@@ -380,27 +328,6 @@
   left: auto;
   right: 0;
 }
-
-/* Disclosure */
-.disclosure {
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius-md);
-  background: var(--color-surface-subtle);
-}
-
-.disclosure > summary {
-  padding: var(--space-3) var(--space-4);
-  font-size: var(--text-sm);
-  font-weight: 600;
-  cursor: pointer;
-}
-
-.disclosureBody {
-  padding: 0 var(--space-4) var(--space-4);
-  font-size: var(--text-sm);
-}
-
-/* Shared Radix controls: neutral, compact, keyboard accessible. */
 .themeControl {
   display: inline-flex;
   gap: 2px;

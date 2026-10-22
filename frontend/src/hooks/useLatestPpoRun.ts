@@ -1,5 +1,5 @@
-import { useRecentRuns, RECENT_RUNS_PAGE_SIZE } from '@/hooks/useRecentRuns'
 import type { RunSummary } from '@/domain/types'
+import { RECENT_RUNS_PAGE_SIZE, useRecentRuns } from '@/hooks/useRecentRuns'
 
 const hasPpo = (run: RunSummary) => run.strategies.some((strategy) => strategy.strategy === 'ppo')
 

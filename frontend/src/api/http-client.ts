@@ -1,5 +1,5 @@
-import type { z } from 'zod'
 import { getEnvironment } from '@/config/environment'
+import type { z } from 'zod'
 import {
   ApiError,
   abortedError,
@@ -40,7 +40,11 @@ export interface RequestOptions {
   alsoAccept?: readonly number[]
 }
 
-export function buildUrl(path: string, query?: QueryParams, baseUrl = getEnvironment().apiBaseUrl): string {
+export function buildUrl(
+  path: string,
+  query?: QueryParams,
+  baseUrl = getEnvironment().apiBaseUrl,
+): string {
   const url = `${baseUrl}${API_PREFIX}${path}`
   if (!query) {
     return url

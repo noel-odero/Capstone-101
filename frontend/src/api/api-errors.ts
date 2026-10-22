@@ -1,5 +1,5 @@
-import { problemDetailsSchema, type ProblemDetails } from '@/domain/types'
 import { humanise } from '@/domain/terminology'
+import { problemDetailsSchema, type ProblemDetails } from '@/domain/types'
 
 export type ApiErrorKind =
   | 'validation'
@@ -54,7 +54,9 @@ export class ApiError extends Error {
    * retried automatically, whatever this returns.
    */
   get isTransient(): boolean {
-    return this.kind === 'network' || this.kind === 'timeout' || this.kind === 'dependency_unavailable'
+    return (
+      this.kind === 'network' || this.kind === 'timeout' || this.kind === 'dependency_unavailable'
+    )
   }
 }
 
@@ -91,18 +93,16 @@ const FALLBACK_MESSAGES: Readonly<Record<ApiErrorKind, string>> = {
   unauthenticated: 'Your session has ended. Sign in again to continue.',
   forbidden: 'The request could not be verified. Reload the page and try again.',
   unsupported_media_type: 'The server could not read the request format.',
-  dependency_unavailable: 'A service the API depends on is currently unavailable. Try again shortly.',
+  dependency_unavailable:
+    'A service the API depends on is currently unavailable. Try again shortly.',
   upstream_failure: 'The scientific service returned a response the API could not use.',
   server_error: 'The server hit an unexpected problem.',
   client_error: 'The server rejected the request.',
-  network: 'The API could not be reached. Check that the backend is running and your connection is working.',
+  network:
+    'The API could not be reached. Check that the backend is running and your connection is working.',
   timeout: 'The request took too long and was stopped.',
   aborted: 'The request was cancelled.',
   malformed_response: 'The server sent a response this application could not understand.',
-}
-
-export function fallbackMessage(kind: ApiErrorKind): string {
-  return FALLBACK_MESSAGES[kind]
 }
 
 /** Backend problem `detail` strings are written for clients; anything long or absent falls back to generic text. */
@@ -159,7 +159,11 @@ export function normalizeError(error: unknown): ApiError {
   if (error instanceof DOMException && error.name === 'AbortError') {
     return abortedError()
   }
-  return new ApiError({ kind: 'server_error', message: FALLBACK_MESSAGES.server_error, cause: error })
+  return new ApiError({
+    kind: 'server_error',
+    message: FALLBACK_MESSAGES.server_error,
+    cause: error,
+  })
 }
 
 /** Short heading for an error state. */

@@ -1,5 +1,5 @@
-import type { Antibiotic, AntibioticCatalogue } from './types'
 import { ANTIBIOTIC_COUNT } from './profile'
+import type { Antibiotic, AntibioticCatalogue } from './types'
 
 /**
  * One antibiotic as the interface uses it. `index` is the position in a resistance profile and equals `actionId`
@@ -44,7 +44,9 @@ export function formatDrugName(name: string): string {
 export function buildCatalogue(catalogue: AntibioticCatalogue): AntibioticEntry[] {
   const { antibiotics } = catalogue
   if (antibiotics.length !== ANTIBIOTIC_COUNT) {
-    throw new CatalogueError(`Expected ${ANTIBIOTIC_COUNT} antibiotics but the API returned ${antibiotics.length}.`)
+    throw new CatalogueError(
+      `Expected ${ANTIBIOTIC_COUNT} antibiotics but the API returned ${antibiotics.length}.`,
+    )
   }
   return antibiotics.map((antibiotic: Antibiotic, index) => {
     if (antibiotic.actionId !== index) {

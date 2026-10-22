@@ -24,13 +24,17 @@ export function loadEnvironment(raw: { VITE_API_BASE_URL?: string }): Environmen
   try {
     url = new URL(value)
   } catch {
-    throw new ConfigurationError(`VITE_API_BASE_URL must be an absolute http(s) URL or empty, but was "${value}".`)
+    throw new ConfigurationError(
+      `VITE_API_BASE_URL must be an absolute http(s) URL or empty, but was "${value}".`,
+    )
   }
   if (url.protocol !== 'http:' && url.protocol !== 'https:') {
     throw new ConfigurationError('VITE_API_BASE_URL must use http or https.')
   }
   if (url.pathname !== '/' || url.search !== '' || url.hash !== '') {
-    throw new ConfigurationError('VITE_API_BASE_URL must be an origin only, without a path, query or fragment.')
+    throw new ConfigurationError(
+      'VITE_API_BASE_URL must be an origin only, without a path, query or fragment.',
+    )
   }
   if (url.username !== '' || url.password !== '') {
     throw new ConfigurationError('VITE_API_BASE_URL must not contain credentials.')
