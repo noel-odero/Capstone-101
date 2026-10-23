@@ -77,4 +77,9 @@ public sealed record StrategyResultDto(
     string TerminationReason,
     IReadOnlyList<StateSnapshotDto> States,
     IReadOnlyList<StepTraceDto> Steps,
-    StrategyMetricsDto Metrics);
+    StrategyMetricsDto Metrics)
+{
+    public PolicyModelDto? Model { get; init; }
+}
+
+public sealed record PolicyModelDto(string ModelId, string Algorithm, string CheckpointSha256);

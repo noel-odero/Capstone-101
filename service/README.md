@@ -1,6 +1,6 @@
 # Internal simulation service
 
-FastAPI service over the existing frozen PPO inference layer (`ml/src/ppo_inference.py`) and the stochastic
+FastAPI service over the shared frozen PPO/DQN inference layer (`ml/src/ppo_inference.py`) and the stochastic
 resistance simulator. It is internal: the ASP.NET Core API is the intended caller, not the browser. It
 stores nothing, and all output is simulation output, not clinical advice.
 
@@ -27,7 +27,7 @@ service. Substitute `.\.venv\Scripts\python.exe` below if you use it. `venv/` is
 
 ## Run
 
-From the repository root. Use one worker: the model is verified and loaded once per process and predictions
+From the repository root. Use one worker: both models are verified and loaded once per process and predictions
 are serialized inside the engine.
 
 ```powershell
@@ -49,13 +49,13 @@ and every model-dependent endpoint returns the same 503 error. Interactive docs:
 
 | Method and path | Purpose |
 |---|---|
-| `GET /internal/health` | 200 when the frozen model is verified and loaded, otherwise 503. |
-| `GET /internal/model` | Model id, checkpoint and interaction-data hashes, scenario, horizon, observation layout, mask rule. |
+| `GET /internal/health` | 200 when both frozen models are verified and loaded, otherwise 503. |
+| `GET /internal/model` | PPO/DQN identities and hashes, shared data hash, scenario, horizon, observation layout and mask rule. |
 | `GET /internal/antibiotics` | Canonical action ids, names and drug classes (from `data/processed/action_space.csv`). |
 | `POST /internal/profiles/validate` | Validate a 7-value 0/1 profile; returns feasible actions and terminal status. |
 | `POST /internal/recommend` | One frozen-PPO action for a full context (`resistance_profile`, `last_action`, `treatment_step`). |
-| `POST /internal/simulate` | One full episode for `strategy` `ppo` or `greedy` (Random Susceptible Baseline). |
-| `POST /internal/compare` | PPO and the baseline from one profile and one environment seed. |
+| `POST /internal/simulate` | One full episode for `strategy` `ppo`, `dqn` or `greedy` (Random Susceptible Baseline). |
+| `POST /internal/compare` | PPO, DQN and the baseline from one profile and one environment seed. |
 
 Horizon (8) and scenario (`REF_UNIFORM_SUPPORTED`) come from the verified manifest and are not request fields.
 Unknown request fields are rejected.
@@ -67,8 +67,7 @@ Unknown request fields are rejected.
 - A feasible action is a currently susceptible antibiotic. A policy-selected action, a feasible action, an
   action with supported transition data and a clinically effective treatment are different things.
 - `transition_status` `unsupported_no_candidate` means the simulator has no candidate transition for that action
-  in that state and leaves the profile unchanged. It is a data gap, not evidence of effectiveness. FOSFOMYCIN,
-  GENTAMICIN and CEFTAZIDIME never have candidates; support for the other drugs depends on the state.
+  in that state and leaves the profile unchanged. A candidate set may be empty because directed evidence is absent or cannot apply to the current binary state; an unchanged profile does not demonstrate effectiveness.
 - `selected_drug_susceptible` and `susceptible_action_rate` are simulator susceptibility flags, not efficacy.
 - A valid all-resistant profile is a terminal result (HTTP 200): no feasible actions, `terminal_reason`
   `no_effective_antibiotic`, and a simulation with zero steps. A context at step 8 is terminal with
@@ -76,8 +75,8 @@ Unknown request fields are rejected.
 - Traces: `states` has `steps + 1` entries (state 0 is the initial state); each `steps[i]` goes from
   `states[i]` to `states[i + 1]`. Profile differences are derived from before/after profiles.
 - Seeds: `environment_seed` and `policy_seed` are optional (0 to 4294967295); omitted seeds are generated and
-  reported. PPO is deterministic and ignores `policy_seed`; the baseline uses it for tie-breaking.
-- Comparison contract (`POST /internal/compare`): before returning, the service verifies that PPO and the
+  reported. PPO and DQN are deterministic and ignore `policy_seed`; the baseline uses it for tie-breaking.
+- Comparison contract (`POST /internal/compare`): before returning, the service verifies that PPO, DQN and the
   baseline shared the initial profile, environment seed, scenario, horizon, transition-data hash, reward
   configuration and action-mask configuration (using the existing `match_run_pairs` plus explicit checks against
   the pinned model), and that their per-step transition seeds are equal by step index. The verified items are
@@ -88,7 +87,7 @@ Unknown request fields are rejected.
   Equal transition seeds therefore do not guarantee identical transition outcomes
   (`transition_outcomes_guaranteed_identical` is always `false`), and trajectories can diverge once the actions
   differ. `comparison_contract.observed` reports the first divergent step. One paired run is a single sample and
-  does not show either strategy is better.
+  does not establish a superior strategy.
 
 ## Errors
 

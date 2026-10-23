@@ -41,13 +41,14 @@ def direct_episode(runtime, policy_factory, profile, environment_seed, policy_se
 
 
 @pytest.mark.parametrize("profile", PROFILES)
-def test_ppo_adapter_matches_direct_engine_inference_at_every_step(runtime, profile):
-    result = simulate(runtime, "ppo", profile, environment_seed=100001)
+@pytest.mark.parametrize("strategy", ["ppo", "dqn"])
+def test_learned_adapter_matches_direct_engine_inference_at_every_step(runtime, profile, strategy):
+    result = simulate(runtime, strategy, profile, environment_seed=100001)
 
     last_action = None
     for index, step in enumerate(result["steps"]):
         context = InferenceContext(tuple(step["resistance_profile_before"]), last_action, index)
-        assert runtime.engine.recommend(context).action_id == step["action_id"]
+        assert runtime.engine_for(strategy).recommend(context).action_id == step["action_id"]
         last_action = step["action_id"]
 
 

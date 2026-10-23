@@ -50,10 +50,10 @@ public class SimulationServiceTests
         var simulation = await service.RunAsync(Request(), CancellationToken.None);
 
         var provenance = simulation.Provenance;
-        Assert.Equal("ppo_seed_12000", provenance.ModelId);
+        Assert.Equal("ppo_public_v2_seed_19000", provenance.ModelId);
         Assert.Equal("MaskablePPO", provenance.Algorithm);
-        Assert.Equal("d10c26185c9903d96d0f2003643b76be6df4f03c39e0d2e5f7945e763b7d9093", provenance.CheckpointSha256);
-        Assert.Equal("7a5e3e1fe730676a0793674e4ff4aaf3c6ce1177ad5588eed4bb2e5d627edb44", provenance.InteractionDataSha256);
+        Assert.Equal("1747b68cb572cc320c7c53ae105dfa9dd6827f689839b35c4f2bcf9520384001", provenance.CheckpointSha256);
+        Assert.Equal("af62f389fe92b4ecddfbc1df6c967c5da9992ed928c09dd3a68673819f42591c", provenance.InteractionDataSha256);
         Assert.Equal(("REF_UNIFORM_SUPPORTED", 8, "susceptible_actions_only"), (provenance.ScenarioId, provenance.Horizon, provenance.ActionMaskRule));
         Assert.Equal(7, provenance.AntibioticOrder.Count);
         Assert.Equal(("client", "not_applicable", null), (simulation.SeedConfiguration.EnvironmentSeedSource, simulation.SeedConfiguration.PolicySeedSource, simulation.SeedConfiguration.PolicySeed));

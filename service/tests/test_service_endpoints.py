@@ -6,7 +6,7 @@ from ml.src.ppo_inference import DEFAULT_MANIFEST_PATH, InferenceContext
 from service.tests.conftest import EXPECTED_CHECKPOINT_SHA256
 from simulation.resistance_state import ANTIBIOTICS
 
-UNSUPPORTED = {"FOSFOMYCIN", "GENTAMICIN", "CEFTAZIDIME"}
+UNSUPPORTED = {"FOSFOMYCIN"}
 
 
 def assert_error(response, status, codes):
@@ -24,7 +24,7 @@ def test_health_reports_real_model_readiness(client):
     assert response.status_code == 200
     body = response.json()
     assert body["status"] == "ok" and body["model_ready"] is True
-    assert body["model_id"] == "ppo_seed_12000"
+    assert body["model_id"] == "ppo_public_v2_seed_19000"
     assert body["checkpoint_sha256"] == EXPECTED_CHECKPOINT_SHA256
     assert response.headers["X-Request-ID"]
 
@@ -121,7 +121,7 @@ def test_recommend_matches_direct_engine_inference(client, runtime):
     assert [item["antibiotic"] for item in body["feasible_actions"]] == list(direct.feasible_antibiotics)
     assert body["transition_status"] == direct.transition_status
     assert body["has_candidate_transition"] == direct.has_candidate_transition
-    assert body["model_id"] == "ppo_seed_12000" and body["checkpoint_sha256"] == EXPECTED_CHECKPOINT_SHA256
+    assert body["model_id"] == "ppo_public_v2_seed_19000" and body["checkpoint_sha256"] == EXPECTED_CHECKPOINT_SHA256
     assert (body["last_action_id"], body["last_action_antibiotic"], body["treatment_step"]) == (1, "NITROFURANTOIN", 2)
     assert "clinically effective" in body["interpretation"]
 
@@ -174,7 +174,7 @@ def test_recommend_rejects_invalid_contexts(client, payload):
     assert_error(client.post("/internal/recommend", json=payload), 422, {"invalid_context", "request_validation_error"})
 
 
-@pytest.mark.parametrize("strategy", ["ppo", "greedy"])
+@pytest.mark.parametrize("strategy", ["ppo", "dqn", "greedy"])
 def test_simulate_returns_complete_run(client, strategy):
     response = client.post(
         "/internal/simulate",
@@ -184,9 +184,11 @@ def test_simulate_returns_complete_run(client, strategy):
     body = response.json()
     assert response.status_code == 200 and body["kind"] == "simulation"
     assert body["run_id"] and body["created_at_utc"]
-    assert body["provenance"]["checkpoint_sha256"] == EXPECTED_CHECKPOINT_SHA256
+    expected = ("3afac9221dd29662708ba37f9a32326f389feb15efc31151706f738c0fd8c72d"
+                if strategy == "dqn" else EXPECTED_CHECKPOINT_SHA256)
+    assert body["provenance"]["checkpoint_sha256"] == expected
     assert body["provenance"]["scenario_id"] == "REF_UNIFORM_SUPPORTED" and body["provenance"]["horizon"] == 8
-    assert body["provenance"]["interaction_data_sha256"] == "7a5e3e1fe730676a0793674e4ff4aaf3c6ce1177ad5588eed4bb2e5d627edb44"
+    assert body["provenance"]["interaction_data_sha256"] == "af62f389fe92b4ecddfbc1df6c967c5da9992ed928c09dd3a68673819f42591c"
     result = body["result"]
     assert result["strategy"] == strategy and result["initial_profile"] == [0, 1, 0, 0, 0, 0, 0]
     assert len(result["steps"]) == 8 and len(result["states"]) == 9
@@ -205,7 +207,7 @@ def test_simulate_labels_and_seed_semantics(client):
         "/internal/simulate", json={"resistance_profile": [0] * 7, "strategy": "greedy", "environment_seed": 3, "policy_seed": 9}
     ).json()
 
-    assert ppo["result"]["display_label"] == "Frozen PPO Policy"
+    assert ppo["result"]["display_label"] == "PPO"
     assert ppo["seed_configuration"]["policy_seed"] is None
     assert ppo["seed_configuration"]["policy_seed_source"] == "not_applicable"
     assert greedy["result"]["display_label"] == "Random Susceptible Baseline"
@@ -252,23 +254,25 @@ def test_simulate_rejects_invalid_requests_and_fixed_settings(client, payload):
     assert_error(client.post("/internal/simulate", json=payload), 422, {"request_validation_error", "invalid_context"})
 
 
-def test_compare_returns_both_complete_strategy_results(client):
+def test_compare_returns_all_three_complete_strategy_results(client):
     response = client.post(
         "/internal/compare", json={"resistance_profile": [0, 0, 1, 0, 0, 0, 0], "environment_seed": 21, "policy_seed": 8}
     )
 
     body = response.json()
     assert response.status_code == 200 and body["kind"] == "comparison"
-    for key, label in (("ppo", "Frozen PPO Policy"), ("greedy", "Random Susceptible Baseline")):
+    for key, label in (("ppo", "PPO"), ("dqn", "DQN"), ("greedy", "Random Susceptible Baseline")):
         result = body[key]
         assert result["strategy"] == key and result["display_label"] == label
+        if key != "greedy":
+            assert result["model"]["model_id"] == ("ppo_public_v2_seed_19000" if key == "ppo" else "dqn_public_v2_seed_15000")
         assert result["initial_profile"] == [0, 0, 1, 0, 0, 0, 0]
         assert len(result["steps"]) == 8 and len(result["states"]) == 9
         assert result["environment_seed"] == 21
     assert body["ppo"]["policy_seed"] is None and body["greedy"]["policy_seed"] == 8
     assert "identical transition outcomes" in body["pairing_semantics"]
-    assert "does not show that either strategy is better" in body["single_run_caveat"]
-    assert "superior" not in response.text.lower()
+    assert "does not establish a superior strategy" in body["single_run_caveat"]
+    assert "winner" not in body
 
 
 def test_compare_validates_input(client):

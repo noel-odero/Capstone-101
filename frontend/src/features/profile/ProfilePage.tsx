@@ -1,5 +1,6 @@
 import { ContentContainer } from '@/components/layout/ContentContainer'
 import { PageHeader } from '@/components/layout/PageHeader'
+import { ComparisonNotice } from '@/components/scientific/ComparisonNotice'
 import { ButtonLink } from '@/components/ui/Button'
 import { EmptyState } from '@/components/ui/EmptyState'
 import { ErrorState } from '@/components/ui/ErrorState'
@@ -10,8 +11,7 @@ import { ProfileStrip } from './ProfileStrip'
 import { ProfileTabs } from './ProfileTabs'
 import { useProfileRun } from './useProfileRun'
 
-const SUBTITLE =
-  'The resistance profile of your latest simulation, and the sequence PPO chose for it.'
+const SUBTITLE = 'Your latest resistance profile and strategy comparison.'
 
 /** The E. coli Profile: the latest stored run's starting profile, how resistance changes along PPO's sequence, and links to the history. */
 export function ProfilePage() {
@@ -63,6 +63,7 @@ export function ProfilePage() {
         subtitle="View your simulation profile and experiment history."
       />
       <ProfileOverview run={run} />
+      {run.baseline ? <ComparisonNotice comparison={run} /> : null}
       <ProfileTabs />
       {antibiotics.isPending ? (
         <LoadingState label="Loading the antibiotics" lines={3} block />

@@ -106,11 +106,12 @@ def test_committed_artifacts_verify_on_this_checkout():
 @needs_artifacts
 def test_frozen_checkpoint_checksum_matches_the_frozen_manifest():
     manifest = json.loads((REPO_ROOT / "ml" / "frozen_ppo_manifest.json").read_text(encoding="utf-8"))
-    relative = manifest["checkpoint"]["path"].removeprefix("artifacts/ppo/")
-    recorded = {path: digest for digest, path in parse_sums(DEFAULT_SUMS_PATH.read_text(encoding="utf-8-sig"))}
+    sums = REPO_ROOT / "artifacts/frozen/public-data-v2/SHA256SUMS.txt"
+    relative = (REPO_ROOT / manifest["checkpoint"]["path"]).relative_to(sums.parent).as_posix()
+    recorded = {path: digest for digest, path in parse_sums(sums.read_text(encoding="utf-8-sig"))}
 
     assert recorded[relative] == manifest["checkpoint"]["sha256"].lower()
-    assert checksum_of(relative, (ARTIFACTS / relative).read_bytes()) == manifest["checkpoint"]["sha256"].lower()
+    assert checksum_of(relative, (sums.parent / relative).read_bytes()) == manifest["checkpoint"]["sha256"].lower()
 
 
 @needs_artifacts

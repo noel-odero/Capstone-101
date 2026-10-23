@@ -5,7 +5,7 @@ import { ErrorState } from '@/components/ui/ErrorState'
 import { LoadingState } from '@/components/ui/LoadingState'
 import { RECENT_RUNS_PAGE_SIZE, useRecentRuns } from '@/hooks/useRecentRuns'
 
-/** `/app/simulation`: opens your latest comparison, or the new-simulation form when you have none. */
+/** Open the latest three-strategy run, or configure a comparison with the current policies. */
 export function SimulationIndex() {
   const recent = useRecentRuns(1, RECENT_RUNS_PAGE_SIZE)
 
@@ -26,6 +26,9 @@ export function SimulationIndex() {
     )
   }
 
-  const latest = recent.data.items.find((run) => run.kind === 'comparison')
+  const latest = recent.data.items.find(
+    (run) =>
+      run.kind === 'comparison' && run.strategies.some((strategy) => strategy.strategy === 'dqn'),
+  )
   return <Navigate to={latest ? `/app/simulation/${latest.id}` : '/app/simulation/new'} replace />
 }

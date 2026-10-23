@@ -115,7 +115,7 @@ public sealed class AmrDbContext(DbContextOptions<AmrDbContext> options) : DbCon
         {
             entity.ToTable("strategy_runs", table =>
             {
-                table.HasCheckConstraint("ck_strategy_runs_strategy", "strategy IN ('ppo', 'random_susceptible_baseline')");
+                table.HasCheckConstraint("ck_strategy_runs_strategy", "strategy IN ('ppo', 'dqn', 'random_susceptible_baseline')");
                 table.HasCheckConstraint("ck_strategy_runs_profiles", $"cardinality(initial_profile) = {ProfileLength} AND cardinality(final_profile) = {ProfileLength}");
                 table.HasCheckConstraint("ck_strategy_runs_environment_seed", "environment_seed BETWEEN 0 AND 4294967295");
                 table.HasCheckConstraint("ck_strategy_runs_policy_seed", "policy_seed IS NULL OR policy_seed BETWEEN 0 AND 4294967295");
@@ -125,6 +125,7 @@ public sealed class AmrDbContext(DbContextOptions<AmrDbContext> options) : DbCon
             entity.Property(strategy => strategy.Id).ValueGeneratedNever();
             entity.Property(strategy => strategy.Strategy).HasConversion(SnakeCaseEnum<StrategyKind>()).HasMaxLength(32);
             entity.Property(strategy => strategy.StatesJson).HasColumnType("jsonb");
+            entity.Property(strategy => strategy.ModelJson).HasColumnType("jsonb");
             entity.HasOne(strategy => strategy.ExperimentRun)
                 .WithMany(run => run.StrategyRuns)
                 .HasForeignKey(strategy => strategy.ExperimentRunId)

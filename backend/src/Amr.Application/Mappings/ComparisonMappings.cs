@@ -21,7 +21,7 @@ public static class ComparisonMappings
         Error: null,
         MetricCatalogue.Describe(run.MetricDefinitions),
         run.SingleRunCaveat,
-        run.Disclaimer);
+        run.Disclaimer) { Dqn = run.Dqn?.ToDto() };
 
     private static ComparisonContractDto ToDto(this PythonComparisonContract contract) => new(
         contract.Verified,

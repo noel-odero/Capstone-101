@@ -91,7 +91,7 @@ def create_app(manifest_path: str | Path | None = None) -> FastAPI:
     app = FastAPI(
         title="Antibiotic stewardship simulation service (internal)",
         version=__version__,
-        description="Internal API over the frozen PPO policy and stochastic resistance simulator. "
+        description="Internal API over frozen PPO/DQN policies and the stochastic resistance simulator. "
         "Simulation output only; not clinical advice.",
         lifespan=lifespan,
     )

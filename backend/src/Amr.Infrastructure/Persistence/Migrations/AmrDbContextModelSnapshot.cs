@@ -514,6 +514,10 @@ namespace Amr.Infrastructure.Persistence.Migrations
                         .HasColumnType("integer")
                         .HasColumnName("initial_resistant_count");
 
+                    b.Property<string>("ModelJson")
+                        .HasColumnType("jsonb")
+                        .HasColumnName("model");
+
                     b.Property<long?>("PolicySeed")
                         .HasColumnType("bigint")
                         .HasColumnName("policy_seed");
@@ -570,7 +574,7 @@ namespace Amr.Infrastructure.Persistence.Migrations
 
                             t.HasCheckConstraint("ck_strategy_runs_profiles", "cardinality(initial_profile) = 7 AND cardinality(final_profile) = 7");
 
-                            t.HasCheckConstraint("ck_strategy_runs_strategy", "strategy IN ('ppo', 'random_susceptible_baseline')");
+                            t.HasCheckConstraint("ck_strategy_runs_strategy", "strategy IN ('ppo', 'dqn', 'random_susceptible_baseline')");
                         });
                 });
 

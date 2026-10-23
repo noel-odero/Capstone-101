@@ -44,6 +44,7 @@ public class RunEntityMapperTests
 
     [Theory]
     [InlineData("simulate_200_ppo", StrategyKind.Ppo, 100001L, null)]
+    [InlineData("simulate_200_dqn", StrategyKind.Dqn, 100001L, null)]
     [InlineData("simulate_200_baseline", StrategyKind.RandomSusceptibleBaseline, 100001L, 900001L)]
     public async Task A_simulation_survives_the_entity_round_trip_unchanged(string fixture, StrategyKind strategy, long seed, long? policySeed)
     {
@@ -66,16 +67,20 @@ public class RunEntityMapperTests
         AssertSameJson(simulation with { IsPersisted = true }, RunEntityMapper.ToSimulationDto(entity));
     }
 
-    [Fact]
-    public async Task A_comparison_round_trips_with_both_strategies_the_contract_and_the_caveat()
+    [Theory]
+    [InlineData(true)]
+    [InlineData(false)]
+    public async Task New_and_legacy_comparisons_round_trip_without_changing_the_recorded_strategies(bool includeDqn)
     {
         var comparison = await ComparisonAsync();
+        if (!includeDqn) comparison = comparison with { Dqn = null, Ppo = comparison.Ppo! with { Model = null } };
 
         var entity = Stored(RunEntityMapper.ToEntity(comparison, Guid.NewGuid(), Now, "test:owner"), comparison.Provenance);
         var restored = RunEntityMapper.ToComparisonDto(entity);
 
         AssertSameJson(comparison with { IsPersisted = true }, restored);
-        Assert.Equal(2, entity.StrategyRuns.Count);
+        Assert.Equal(includeDqn ? 3 : 2, entity.StrategyRuns.Count);
+        Assert.Equal(comparison.Dqn?.Model, restored.Dqn?.Model);
     }
 
     [Fact]
@@ -137,7 +142,7 @@ public class RunEntityMapperTests
 
 public class ModelVersionFingerprintTests
 {
-    private static ModelProvenanceDto Provenance(Action<Dictionary<string, JsonElement>>? reward = null, string checkpoint = "d10c26185c9903d96d0f2003643b76be6df4f03c39e0d2e5f7945e763b7d9093", string service = "0.1.0")
+    private static ModelProvenanceDto Provenance(Action<Dictionary<string, JsonElement>>? reward = null, string checkpoint = "1747b68cb572cc320c7c53ae105dfa9dd6827f689839b35c4f2bcf9520384001", string service = "0.1.0")
     {
         var spec = new Dictionary<string, JsonElement>
         {
@@ -147,7 +152,7 @@ public class ModelVersionFingerprintTests
         };
         reward?.Invoke(spec);
         return new ModelProvenanceDto(
-            "ppo_seed_12000", "MaskablePPO", checkpoint, "7a5e3e1fe730676a0793674e4ff4aaf3c6ce1177ad5588eed4bb2e5d627edb44",
+            "ppo_public_v2_seed_19000", "MaskablePPO", checkpoint, "af62f389fe92b4ecddfbc1df6c967c5da9992ed928c09dd3a68673819f42591c",
             "REF_UNIFORM_SUPPORTED", 8, spec, "susceptible_actions_only", ["A", "B", "C", "D", "E", "F", "G"], service);
     }
 

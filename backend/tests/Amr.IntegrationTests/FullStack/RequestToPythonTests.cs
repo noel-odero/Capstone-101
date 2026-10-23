@@ -23,7 +23,7 @@ public class RequestToPythonTests(AmrApiFactory factory) : IClassFixture<AmrApiF
         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
         Assert.Equal("/internal/model", python.Requests.Single().Uri.AbsolutePath);
         var text = await response.Content.ReadAsStringAsync();
-        Assert.Contains("ppo_seed_12000", text, StringComparison.Ordinal);
+        Assert.Contains("ppo_public_v2_seed_19000", text, StringComparison.Ordinal);
         Assert.DoesNotContain("artifacts/", text, StringComparison.Ordinal);
         Assert.DoesNotContain("python.test", text, StringComparison.Ordinal);
     }

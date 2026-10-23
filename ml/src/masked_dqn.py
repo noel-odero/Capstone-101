@@ -15,6 +15,17 @@ from simulation.observation import OBSERVATION_VECTOR_SIZE
 from simulation.resistance_state import ANTIBIOTICS
 
 
+class DQNObservationPolicy:
+    def __init__(self, action_space, model, seed=None):
+        if action_space.n != len(ANTIBIOTICS) or action_space.start != 0:
+            raise ValueError("DQN requires the canonical seven actions.")
+        self.model = model
+
+    def select_action(self, observation) -> int:
+        action, _ = self.model.predict(observation, deterministic=True)
+        return int(action)
+
+
 def susceptible_mask(observations: torch.Tensor) -> torch.Tensor:
     if observations.ndim != 2 or observations.shape[1] != OBSERVATION_VECTOR_SIZE:
         raise ValueError("Masked DQN requires batches of 15-value observations.")

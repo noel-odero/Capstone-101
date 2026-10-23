@@ -239,3 +239,32 @@ def test_freeze_verification_rejects_a_changed_selected_checkpoint(tmp_path):
     (tmp_path / "ppo/final_model.zip").write_bytes(b"changed")
     with pytest.raises(ValueError, match="checkpoint differs"):
         verify_frozen(tmp_path)
+
+
+def test_enumerated_review_matches_hand_calculated_occurrence_and_fallback_costs():
+    from types import SimpleNamespace
+    from experiments.review_frozen_policies import EnumeratedModel
+    from simulation.candidate_transition import CandidateTransition
+
+    candidate = CandidateTransition("NITROFURANTOIN", "collateral_sensitivity", ("test",))
+    generator = SimpleNamespace(generate=lambda state, action: (candidate,) if state.resistance[1] and action == 0 else ())
+    model = EnumeratedModel(generator, "SENSITIVITY_Q_025", 2, lambda *context: 0)
+    profile = (0, 1, 1, 1, 1, 1, 1)
+    # At t=1, resistance is 6 with probability .75; at t=2, with probability .75**2.
+    expected = ((5 + .75) + (5 + .75**2)) / 7
+    assert model.optimal(profile, 2) == pytest.approx(expected)
+    values = model.policy("ppo", profile, None, 2)
+    assert values == pytest.approx((expected, 0, 2 - .75**2, .25, 1))
+    assert model.policy("random_susceptible_baseline", profile, None, 2)[0] == pytest.approx(expected)
+
+
+def test_enumerated_review_preserves_terminal_tail_cost_without_inventing_actions():
+    from types import SimpleNamespace
+    from experiments.review_frozen_policies import EnumeratedModel
+    from simulation.candidate_transition import CandidateTransition
+
+    candidate = CandidateTransition("CIPROFLOXACIN", "cross_resistance", ("test",))
+    model = EnumeratedModel(SimpleNamespace(generate=lambda *args: (candidate,)), "REF_UNIFORM_SUPPORTED", 3, lambda *context: 0)
+    assert model.optimal((0, 1, 1, 1, 1, 1, 1), 3) == 3
+    assert model.policy("ppo", (0, 1, 1, 1, 1, 1, 1), None, 3) == (3, 1, 0, 0, 0)
+    assert model.policy("ppo", (1,) * 7, None, 3) == (3, 0, 0, 0, 0)

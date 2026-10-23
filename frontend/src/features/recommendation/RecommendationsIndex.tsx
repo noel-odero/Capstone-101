@@ -28,7 +28,11 @@ export function RecommendationsIndex() {
     )
   }
 
-  const comparison = recent.data.items.find((run) => run.kind === 'comparison')
+  const comparison =
+    recent.data.items.find(
+      (run) =>
+        run.kind === 'comparison' && run.strategies.some((strategy) => strategy.strategy === 'dqn'),
+    ) ?? recent.data.items.find((run) => run.kind === 'comparison')
   if (comparison) {
     return <Navigate to={`/app/recommendations/comparison/${comparison.id}`} replace />
   }
@@ -40,10 +44,13 @@ export function RecommendationsIndex() {
   }
   return (
     <ContentContainer>
-      <PageHeader title="Recommendations" subtitle="The PPO-selected sequence from your runs." />
+      <PageHeader
+        title="Recommendations"
+        subtitle="Strategy sequences and outcomes from your runs."
+      />
       <EmptyState
         title="No sequences yet"
-        description="Run a simulation and its PPO-selected sequence will appear here."
+        description="Compare PPO, DQN and the baseline to review their sequences and outcomes."
         action={
           <ButtonLink to="/app/simulation/new" variant="dark">
             Run New Simulation

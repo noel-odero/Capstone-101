@@ -11,11 +11,11 @@ Decisions that are easy to get wrong. Code comments on the DTOs and interfaces c
 | `GET /api/v1/model` | 200 | Frozen-model metadata from Python |
 | `GET /api/v1/antibiotics` | 200 | Seven-drug catalogue in action order |
 | `POST /api/v1/profiles/validate` | 200 | Any valid profile, including terminal all-resistant |
-| `POST /api/v1/simulations` | 201 | Runs `ppo` or `random_susceptible_baseline` in Python, stores the result, returns it with `Location` |
-| `POST /api/v1/comparisons` | 201 | Runs the paired comparison in Python, verifies the contract, stores the pair, returns it with `Location` |
+| `POST /api/v1/simulations` | 201 | Runs `ppo`, `dqn` or `random_susceptible_baseline` in Python, stores the result, returns it with `Location` |
+| `POST /api/v1/comparisons` | 201 | Runs the paired comparison in Python, verifies the contract, stores all strategy results, returns it with `Location` |
 | `GET /api/v1/simulations/{id}` | 200 / 404 | The stored simulation, in the same representation as the POST response |
 | `GET /api/v1/comparisons/{id}` | 200 / 404 | The stored comparison, in the same representation as the POST response |
-| `GET /api/v1/recommendations/{simulationId}` | 200 / 404 | PPO-selected steps of a stored simulation |
+| `GET /api/v1/recommendations/{simulationId}` | 200 / 404 | Learned-policy steps of a stored simulation |
 | `GET /api/v1/simulations/recent` | 200 | Stored simulations and comparisons, newest first |
 
 Any database-backed route answers 503 `database_unavailable` while the database cannot be reached. A missing run is never
@@ -60,7 +60,7 @@ constraint allowing only `completed`, and a comparison row must carry its contra
 |---|---|
 | `model_versions` | The exact model and simulator configuration: model id, algorithm, checkpoint SHA-256, interaction-data SHA-256, scenario, horizon, action-mask rule, reward specification, antibiotic order. Unique on a SHA-256 fingerprint of those fields (the service version is excluded). |
 | `experiment_runs` | One simulation or comparison. Primary key is the public id. References one model version, and records inputs (initial profile, seeds and their sources), service version, Python's creation time, the commit time, metric definitions, and for comparisons the pairing semantics, caveat and verified contract. |
-| `strategy_runs` | One strategy's trajectory and its 12 metrics. Unique on (experiment run, strategy): a simulation has one, a comparison has `ppo` and `random_susceptible_baseline`. Also holds the state snapshots. |
+| `strategy_runs` | One strategy's trajectory and its 12 metrics. Unique on (experiment run, strategy): a simulation has one, a comparison has `ppo`, `dqn` and `random_susceptible_baseline` (older runs have two). Also holds the state snapshots and each learned policy?s model id, algorithm and checkpoint hash. |
 | `step_traces` | One step. Primary key (strategy run, step index), so order is stable and duplicates are impossible. |
 
 `ModelVersion` relates one-to-many to experiment runs, which relate one-to-many to strategy runs, which relate
@@ -76,7 +76,7 @@ Paths, devices and Python class names are never stored or returned.
 ## Metrics: `metricDefinitions`
 
 Every simulation and comparison response (POST and GET) carries `metricDefinitions`, keyed by the metric's property name
-in `result.metrics` (`ppo.metrics` / `baseline.metrics` for comparisons). Each entry has:
+in `result.metrics` (`ppo.metrics` / `dqn.metrics` / `baseline.metrics` for comparisons). Each entry has:
 
 - `definition`: the Python service's text, verbatim as returned with that run and stored with it;
 - `kind`: `cumulative` (a running total of per-step quantities), `count` (a tally, or the count in one state),
@@ -100,7 +100,7 @@ the catalogue is rejected as `python_service_invalid_response` instead of being 
 | `changeInSusceptibleCount` | difference | antibiotics, signed | Final susceptible count minus initial susceptible count | final_susceptible_count minus the initial susceptible count. |
 | `resistanceEmergenceEvents` | count | steps | Number of steps after which the resistant count increased | Steps after which the resistant count increased (ml.src.metrics). |
 | `resistanceEmergenceRate` | rate | proportion of steps in [0, 1]; not a percentage | resistance_emergence_events divided by treatment_steps; null when there are no steps | resistance_emergence_events / treatment_steps; null when there are no steps. |
-| `susceptibleActionRate` | rate | proportion of steps in [0, 1]; not a percentage | Steps whose selected drug was susceptible in the simulator divided by treatment_steps; null when there are no steps | Fraction of steps whose selected drug was susceptible in the simulator (ml.src.metrics treatment_effectiveness_rate). The susceptible-only mask makes this 1.0 for both strategies, and it is not clinical efficacy; null when there are no steps. |
+| `susceptibleActionRate` | rate | proportion of steps in [0, 1]; not a percentage | Steps whose selected drug was susceptible in the simulator divided by treatment_steps; null when there are no steps | Fraction of steps whose selected drug was susceptible in the simulator (ml.src.metrics treatment_effectiveness_rate). The susceptible-only mask makes this 1.0 for all strategies, and it is not clinical efficacy; null when there are no steps. |
 | `unsupportedStepCount` | count | steps | Number of steps with transition_status unsupported_no_candidate | Steps with transition_status unsupported_no_candidate: the simulator had no candidate transition and left the profile unchanged. |
 | `cumulativeAntibioticExposure` | cumulative | antibiotic administrations | One per step, so it equals treatment_steps | Number of antibiotic administrations (one per step). |
 
@@ -142,7 +142,8 @@ profile, seeds and strategy) and reject mismatches as `python_service_invalid_re
 
 | Public (`/api/v1`) | Python wire | Display label |
 |---|---|---|
-| `ppo` | `ppo` | Frozen PPO Policy |
+| `ppo` | `ppo` | PPO |
+| `dqn` | `dqn` | DQN |
 | `random_susceptible_baseline` | `greedy` | Random Susceptible Baseline |
 
 `Amr.Application/Mappings/StrategyMapping.cs` is the only translation point. The baseline is Python's existing
@@ -158,8 +159,8 @@ values are rejected with 422, not clamped.
 
 ## Recommendations: `GET /api/v1/recommendations/{simulationId}`
 
-PPO-specific for the MVP. It returns the PPO-selected steps of a stored simulation. When the id is unknown, or the run has
-no PPO steps (a baseline simulation, a comparison id, a failed run), the response is the same explicit
+Returns the PPO- or DQN-selected steps of a stored simulation. When the id is unknown, or the run has
+no learned-policy steps (a baseline simulation, a comparison id, a failed run), the response is the same explicit
 `404 recommendation_not_found`; the two cases are deliberately indistinguishable. A recommendation is a policy choice
 among simulator-feasible (susceptible) drugs; it is not clinical advice.
 

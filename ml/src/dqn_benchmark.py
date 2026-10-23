@@ -23,7 +23,7 @@ from stable_baselines3.common.utils import set_random_seed
 
 from ml.src.greedy_policy import GreedyPolicy
 from ml.src.artifact_checksums import checksum_of, parse_sums, verify_checksums
-from ml.src.masked_dqn import MaskedDQN
+from ml.src.masked_dqn import DQNObservationPolicy, MaskedDQN
 from ml.src.matched_policy_evaluation import MaskablePPOObservationPolicy
 from ml.src.multi_seed_evaluation import MultiSeedResult, run_multi_seed_evaluation
 from ml.src.ppo_evaluation import canonical_initial_profiles
@@ -225,17 +225,6 @@ def train_dqn(config: PPOConfig, settings: DQNSettings, output: Path) -> dict:
     finally:
         training.close()
         validation.close()
-
-
-class DQNObservationPolicy:
-    def __init__(self, action_space, model: MaskedDQN, seed=None):
-        if action_space.n != len(ANTIBIOTICS) or action_space.start != 0:
-            raise ValueError("DQN requires the canonical seven actions.")
-        self.model = model
-
-    def select_action(self, observation) -> int:
-        action, _ = self.model.predict(observation, deterministic=True)
-        return int(action)
 
 
 def summarize(result: MultiSeedResult) -> dict:

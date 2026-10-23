@@ -1,3 +1,5 @@
+using Amr.Application.DTOs.Common;
+
 namespace Amr.Application.DTOs.Model;
 
 public sealed record ObservationLayoutDto(
@@ -25,4 +27,7 @@ public sealed record ModelInfoDto(
     bool DeterministicInference,
     IReadOnlyDictionary<string, string> TransitionStatusDefinitions,
     string ServiceVersion,
-    string Disclaimer);
+    string Disclaimer)
+{
+    public IReadOnlyDictionary<string, PolicyModelDto>? Policies { get; init; }
+}

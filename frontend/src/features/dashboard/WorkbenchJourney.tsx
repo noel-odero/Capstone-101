@@ -11,7 +11,7 @@ const steps = [
   },
   {
     title: 'Compare strategies',
-    description: 'Compare PPO with the random baseline.',
+    description: 'Compare PPO, DQN and the random baseline.',
     to: '/app/simulation',
     icon: FiGitBranch,
   },

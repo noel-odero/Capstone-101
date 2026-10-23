@@ -37,6 +37,7 @@ def healthy_fixtures() -> None:
         save("validate_422_invalid_context", client.post("/internal/profiles/validate", json={"resistance_profile": [0, 2, 0, 0, 0, 0, 0]}))
         save("validate_422_request_validation", client.post("/internal/profiles/validate", json={"resistance_profile": [0] * 6}))
         save("simulate_200_ppo", client.post("/internal/simulate", json={"resistance_profile": PROFILE, "strategy": "ppo", "environment_seed": 100001}))
+        save("simulate_200_dqn", client.post("/internal/simulate", json={"resistance_profile": PROFILE, "strategy": "dqn", "environment_seed": 100001}))
         save("simulate_200_baseline", client.post("/internal/simulate", json={"resistance_profile": PROFILE, "strategy": "greedy", "environment_seed": 100001, "policy_seed": 900001}))
         save("simulate_200_terminal", client.post("/internal/simulate", json={"resistance_profile": [1] * 7, "strategy": "ppo", "environment_seed": 1}))
         save("compare_200", client.post("/internal/compare", json={"resistance_profile": PROFILE, "environment_seed": 100001, "policy_seed": 900001}))

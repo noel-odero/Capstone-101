@@ -1,13 +1,13 @@
 {
-  "run_id": "6442e86b-233d-4f48-b6b1-17e7a3b6c6a9",
+  "run_id": "836ce119-5e53-448f-91e4-874c7a884f4b",
   "kind": "simulation",
-  "created_at_utc": "2026-10-15T13:37:17.922836+00:00",
+  "created_at_utc": "2026-10-23T12:35:32.325974+00:00",
   "provenance": {
     "service_version": "0.1.0",
-    "model_id": "ppo_seed_12000",
+    "model_id": "ppo_public_v2_seed_19000",
     "algorithm": "MaskablePPO",
-    "checkpoint_sha256": "d10c26185c9903d96d0f2003643b76be6df4f03c39e0d2e5f7945e763b7d9093",
-    "interaction_data_sha256": "7a5e3e1fe730676a0793674e4ff4aaf3c6ce1177ad5588eed4bb2e5d627edb44",
+    "checkpoint_sha256": "1747b68cb572cc320c7c53ae105dfa9dd6827f689839b35c4f2bcf9520384001",
+    "interaction_data_sha256": "af62f389fe92b4ecddfbc1df6c967c5da9992ed928c09dd3a68673819f42591c",
     "scenario_id": "REF_UNIFORM_SUPPORTED",
     "horizon": 8,
     "reward_specification": {
@@ -38,8 +38,13 @@
   },
   "result": {
     "strategy": "ppo",
-    "display_label": "Frozen PPO Policy",
-    "implementation": "service.rollout.FrozenEnginePolicy (wraps ml.src.ppo_inference.FrozenPPOInferenceEngine)",
+    "model": {
+      "model_id": "ppo_public_v2_seed_19000",
+      "algorithm": "MaskablePPO",
+      "checkpoint_sha256": "1747b68cb572cc320c7c53ae105dfa9dd6827f689839b35c4f2bcf9520384001"
+    },
+    "display_label": "PPO",
+    "implementation": "service.rollout.FrozenEnginePolicy (wraps ml.src.ppo_inference.FrozenPolicyInferenceEngine)",
     "initial_profile": [
       1,
       1,
@@ -116,7 +121,7 @@
     "change_in_susceptible_count": "final_susceptible_count minus the initial susceptible count.",
     "resistance_emergence_events": "Steps after which the resistant count increased (ml.src.metrics).",
     "resistance_emergence_rate": "resistance_emergence_events / treatment_steps; null when there are no steps.",
-    "susceptible_action_rate": "Fraction of steps whose selected drug was susceptible in the simulator (ml.src.metrics treatment_effectiveness_rate). The susceptible-only mask makes this 1.0 for both strategies, and it is not clinical efficacy; null when there are no steps.",
+    "susceptible_action_rate": "Fraction of steps whose selected drug was susceptible in the simulator (ml.src.metrics treatment_effectiveness_rate). The susceptible-only mask makes this 1.0 for all strategies, and it is not clinical efficacy; null when there are no steps.",
     "unsupported_step_count": "Steps with transition_status unsupported_no_candidate: the simulator had no candidate transition and left the profile unchanged.",
     "cumulative_antibiotic_exposure": "Number of antibiotic administrations (one per step)."
   },

@@ -1,9 +1,11 @@
 ﻿import { ButtonLink } from '@/components/ui/Button'
 import { profileToCode } from '@/domain/profile'
-import { profilesFromSteps } from '@/domain/trajectory'
+import { buildTrajectorySeries } from '@/domain/metrics'
+import { STRATEGY_COLORS, strategyLabel } from '@/domain/terminology'
 import { FiActivity, FiArrowUpRight, FiCheck, FiInfo } from 'react-icons/fi'
 import {
   CartesianGrid,
+  Legend,
   Line,
   LineChart,
   ResponsiveContainer,
@@ -41,40 +43,44 @@ export function ProfileOverview({ run }: { run: ProfileRun }) {
 }
 
 export function ProfileActivity({ run }: { run: ProfileRun }) {
-  const points = profilesFromSteps(run.ppo.initialProfile, run.ppo.steps).map((profile, step) => ({
-    step,
-    resistant: profile.reduce<number>((sum, state) => sum + state, 0),
-  }))
+  const results = [run.ppo, ...(run.dqn ? [run.dqn] : []), ...(run.baseline ? [run.baseline] : [])]
+  const points = buildTrajectorySeries(results, 'resistantCount')
   return (
     <div className={styles['overviewGrid']}>
       <section className={styles['overviewCard']}>
         <h2>Resistance Trend</h2>
-        <div style={{ height: 200, width: '100%' }}>
+        <div style={{ height: '12.5rem', width: '100%' }}>
           <ResponsiveContainer>
             <LineChart data={points} margin={{ top: 20, right: 16, left: -25, bottom: 10 }}>
               <CartesianGrid vertical={false} stroke="var(--color-border)" />
               <XAxis
                 dataKey="step"
-                tick={{ fontSize: 11, fill: '#7289ad' }}
+                tick={{ fontSize: '0.6875rem', fill: '#7289ad' }}
                 axisLine={false}
                 tickLine={false}
               />
               <YAxis
                 domain={[0, 7]}
-                tick={{ fontSize: 11, fill: '#7289ad' }}
+                tick={{ fontSize: '0.6875rem', fill: '#7289ad' }}
                 axisLine={false}
                 tickLine={false}
               />
               <Tooltip />
-              <Line
-                type="monotone"
-                dataKey="resistant"
-                name="Resistant antibiotics"
-                stroke="#347cff"
-                strokeWidth={2}
-                dot={{ r: 3, fill: '#347cff' }}
-                isAnimationActive={false}
-              />
+              <Legend wrapperStyle={{ fontSize: '0.6875rem' }} />
+              {results.map((result, index) => (
+                <Line
+                  key={result.strategy}
+                  type="stepAfter"
+                  dataKey={result.strategy}
+                  name={strategyLabel(result.strategy)}
+                  stroke={STRATEGY_COLORS[result.strategy]}
+                  strokeWidth={2}
+                  strokeDasharray={index === 0 ? undefined : index === 1 ? '3 3' : '6 3'}
+                  dot={{ r: 3 }}
+                  connectNulls={false}
+                  isAnimationActive={false}
+                />
+              ))}
             </LineChart>
           </ResponsiveContainer>
         </div>
@@ -87,7 +93,7 @@ export function ProfileActivity({ run }: { run: ProfileRun }) {
             <FiCheck />
             <div>
               Step {run.ppo.steps.length}
-              <p>PPO simulation completed</p>
+              <p>{results.map((result) => strategyLabel(result.strategy)).join(' · ')} completed</p>
             </div>
           </li>
           <li>
@@ -99,7 +105,7 @@ export function ProfileActivity({ run }: { run: ProfileRun }) {
           <li>
             <FiInfo />
             <div>
-              Model {run.provenance.algorithm}
+              {run.dqn ? 'PPO + DQN' : run.provenance.algorithm}
               <p>Research simulation · {run.provenance.horizon} steps</p>
             </div>
           </li>

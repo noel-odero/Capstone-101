@@ -1,4 +1,4 @@
-"""In-memory simulation and PPO-versus-baseline comparison built on the existing evaluation utilities."""
+"""Matched PPO, DQN and baseline rollouts through the shared evaluation utilities."""
 from __future__ import annotations
 
 from datetime import datetime, timezone
@@ -19,9 +19,9 @@ from service.errors import ComparisonContractError
 from service.runtime import DISCLAIMER, ModelRuntime
 from simulation.resistance_state import ANTIBIOTICS
 
-STRATEGY_LABELS = {"ppo": "Frozen PPO Policy", "greedy": "Random Susceptible Baseline"}
-_PPO_IMPLEMENTATION = "service.rollout.FrozenEnginePolicy (wraps ml.src.ppo_inference.FrozenPPOInferenceEngine)"
-_UNUSED_POLICY_SEED = 0  # PPO is deterministic; the evaluation runner still requires a policy seed.
+STRATEGY_LABELS = {"ppo": "PPO", "dqn": "DQN", "greedy": "Random Susceptible Baseline"}
+_POLICY_IMPLEMENTATION = "service.rollout.FrozenEnginePolicy (wraps ml.src.ppo_inference.FrozenPolicyInferenceEngine)"
+_UNUSED_POLICY_SEED = 0
 
 METRIC_DEFINITIONS = {
     "cumulative_resistance_burden": (
@@ -39,7 +39,7 @@ METRIC_DEFINITIONS = {
     "resistance_emergence_rate": "resistance_emergence_events / treatment_steps; null when there are no steps.",
     "susceptible_action_rate": (
         "Fraction of steps whose selected drug was susceptible in the simulator "
-        "(ml.src.metrics treatment_effectiveness_rate). The susceptible-only mask makes this 1.0 for both "
+        "(ml.src.metrics treatment_effectiveness_rate). The susceptible-only mask makes this 1.0 for all "
         "strategies, and it is not clinical efficacy; null when there are no steps."
     ),
     "unsupported_step_count": (
@@ -54,17 +54,17 @@ PAIRING_SEMANTICS = (
     "the same sequence of per-step transition seeds by step index. A transition seed only seeds the random draw "
     "among the candidate transitions of the selected action in the current state. Those candidate sets depend on "
     "the action and state, so equal seeds do not guarantee identical transition outcomes, and trajectories can "
-    "diverge once the strategies choose different actions. PPO is deterministic and ignores the policy seed; "
+    "diverge once the strategies choose different actions. PPO and DQN are deterministic and ignore the policy seed; "
     "the baseline uses it for tie-breaking among susceptible actions."
 )
 SINGLE_RUN_CAVEAT = (
-    "One paired trajectory is a single stochastic sample. It does not show that either strategy is better, "
+    "One matched comparison is a single stochastic sample. It does not establish a superior strategy, "
     "and it is not clinical evidence."
 )
 
 
 class FrozenEnginePolicy:
-    """Per-episode PPO policy: rebuilds the full InferenceContext from each observation, then asks the verified engine."""
+    """Rebuild the full context at each decision, then ask the verified learned policy."""
 
     def __init__(self, engine):
         self._engine = engine
@@ -159,7 +159,8 @@ def _strategy_result(
     return {
         "strategy": strategy,
         "display_label": STRATEGY_LABELS[strategy],
-        "implementation": _PPO_IMPLEMENTATION if strategy == "ppo" else episode.policy_name,
+        "implementation": _POLICY_IMPLEMENTATION if strategy != "greedy" else episode.policy_name,
+        "model": runtime.policy_model(strategy),
         "initial_profile": initial,
         "final_profile": list(episode.final_resistance_profile),
         "environment_seed": environment_seed,
@@ -190,9 +191,9 @@ def _evaluate(
     runtime: ModelRuntime, strategy: str, profile: tuple[int, ...], environment_seed: int, policy_seed: int
 ) -> tuple[MultiSeedResult, EpisodeResult, EpisodeMetrics]:
     """One episode through the existing runner; each call builds its own environment and policy instances."""
-    engine, config = runtime.engine, runtime.config
+    engine, config = runtime.engine_for(strategy), runtime.config
     policy_factory = (
-        (lambda action_space, seed: FrozenEnginePolicy(engine)) if strategy == "ppo" else GreedyPolicy
+        (lambda action_space, seed: FrozenEnginePolicy(engine)) if strategy != "greedy" else GreedyPolicy
     )
     result = run_multi_seed_evaluation(
         lambda: make_training_environment(config),
@@ -207,12 +208,11 @@ def _evaluate(
     return result, run.evaluation.episodes[0], run.metrics.episodes[0]
 
 
-def _provenance(runtime: ModelRuntime, configuration: dict[str, Any]) -> dict[str, Any]:
+def _provenance(runtime: ModelRuntime, configuration: dict[str, Any], strategy: str = "ppo") -> dict[str, Any]:
+    model = runtime.policy_model("ppo" if strategy == "greedy" else strategy)
     return {
         "service_version": __version__,
-        "model_id": runtime.engine.model_id,
-        "algorithm": runtime.manifest_document["algorithm"],
-        "checkpoint_sha256": runtime.engine.checkpoint_sha256,
+        **model,
         "interaction_data_sha256": configuration["interaction_data_sha256"],
         "scenario_id": configuration["scenario_id"],
         "horizon": configuration["horizon"],
@@ -246,9 +246,9 @@ def simulate(
 ) -> dict[str, Any]:
     profile = InferenceContext(tuple(resistance_profile), None, 0).resistance_profile
     env_seed, env_source = _seed(environment_seed)
-    if strategy == "ppo":
+    if strategy != "greedy":
         applied_policy_seed, policy_source, notes = None, "not_applicable", [
-            "PPO is deterministic; any supplied policy_seed is ignored."
+            f"{strategy.upper()} is deterministic; any supplied policy_seed is ignored."
         ]
         internal_policy_seed = _UNUSED_POLICY_SEED
     else:
@@ -259,7 +259,7 @@ def simulate(
     return {
         **_envelope(),
         "kind": "simulation",
-        "provenance": _provenance(runtime, result.environment_configuration),
+        "provenance": _provenance(runtime, result.environment_configuration, strategy),
         "seed_configuration": {
             "environment_seed": env_seed,
             "environment_seed_source": env_source,
@@ -287,45 +287,43 @@ def _comparison_contract(
     greedy_run: MultiSeedResult,
     ppo: dict[str, Any],
     greedy: dict[str, Any],
+    dqn_run: MultiSeedResult | None = None,
+    dqn: dict[str, Any] | None = None,
 ) -> dict[str, Any]:
     """Verify the matched design or raise; the result reports only what was checked or observed."""
     try:
-        match_run_pairs(ppo_run, greedy_run)  # identical environment/data configuration, profiles and seed design
+        match_run_pairs(ppo_run, greedy_run)
+        if dqn_run is not None:
+            match_run_pairs(ppo_run, dqn_run)
     except ValueError as error:
         raise ComparisonContractError("existing_matched_run_validation") from error
 
-    ppo_config, greedy_config = ppo_run.environment_configuration, greedy_run.environment_configuration
-    episodes = (ppo_run.runs[0].evaluation.episodes[0], greedy_run.runs[0].evaluation.episodes[0])
+    runs = [ppo_run, greedy_run, *([dqn_run] if dqn_run is not None else [])]
+    results = [ppo, greedy, *([dqn] if dqn is not None else [])]
+    ppo_config = ppo_run.environment_configuration
+    configs = [run.environment_configuration for run in runs]
+    episodes = [run.runs[0].evaluation.episodes[0] for run in runs]
     pinned = runtime.config
-    common = min(len(ppo["steps"]), len(greedy["steps"]))
+    common = min(len(result["steps"]) for result in results)
     checks = {
         "initial_profile": all(episode.initial_resistance_profile == profile for episode in episodes),
         "environment_seed": all(episode.environment_seed == environment_seed for episode in episodes),
-        "scenario_id": ppo_config["scenario_id"] == greedy_config["scenario_id"] == runtime.manifest.scenario_id,
-        "horizon": ppo_config["horizon"] == greedy_config["horizon"] == runtime.engine.horizon,
-        "interaction_data_sha256": (
-            ppo_config["interaction_data_sha256"]
-            == greedy_config["interaction_data_sha256"]
-            == runtime.manifest.interaction_data_sha256
-        ),
-        "reward_specification": (
-            ppo_config["reward_specification"] == greedy_config["reward_specification"] == pinned.reward_configuration
-        ),
-        "action_mask_configuration": (
-            ppo_config["action_mask_configuration"]
-            == greedy_config["action_mask_configuration"]
-            == pinned.action_mask_configuration
-        ),
+        "scenario_id": all(config["scenario_id"] == runtime.manifest.scenario_id for config in configs),
+        "horizon": all(config["horizon"] == runtime.engine.horizon for config in configs),
+        "interaction_data_sha256": all(config["interaction_data_sha256"] == runtime.manifest.interaction_data_sha256 for config in configs),
+        "reward_specification": all(config["reward_specification"] == pinned.reward_configuration for config in configs),
+        "action_mask_configuration": all(config["action_mask_configuration"] == pinned.action_mask_configuration for config in configs),
         "transition_seed_schedule": all(
-            ppo["steps"][index]["transition_seed"] == greedy["steps"][index]["transition_seed"]
-            for index in range(common)
+            result["steps"][index]["transition_seed"] == ppo["steps"][index]["transition_seed"]
+            for result in results for index in range(common)
         ),
     }
     for check, passed in checks.items():
         if not passed:
             raise ComparisonContractError(check)
 
-    first_divergence = _first_divergent_step(ppo, greedy)
+    differences = [_first_divergent_step(ppo, result) for result in results[1:]]
+    first_divergence = min((step for step in differences if step is not None), default=None)
     return {
         "verified": True,
         "checks_passed": list(checks),
@@ -348,7 +346,8 @@ def _comparison_contract(
         "observed": {
             "steps_compared": common,
             "steps_with_same_action": sum(
-                ppo["steps"][index]["action_id"] == greedy["steps"][index]["action_id"] for index in range(common)
+                all(result["steps"][index]["action_id"] == ppo["steps"][index]["action_id"] for result in results)
+                for index in range(common)
             ),
             "first_divergent_step": first_divergence,
             "trajectories_identical": first_divergence is None,
@@ -368,9 +367,11 @@ def compare(
     baseline_seed, policy_source = _seed(policy_seed)
     ppo_run, ppo_episode, ppo_metrics = _evaluate(runtime, "ppo", profile, env_seed, baseline_seed)
     greedy_run, greedy_episode, greedy_metrics = _evaluate(runtime, "greedy", profile, env_seed, baseline_seed)
+    dqn_run, dqn_episode, dqn_metrics = _evaluate(runtime, "dqn", profile, env_seed, baseline_seed)
     ppo = _strategy_result(runtime, "ppo", ppo_episode, ppo_metrics, env_seed, None)
     greedy = _strategy_result(runtime, "greedy", greedy_episode, greedy_metrics, env_seed, baseline_seed)
-    contract = _comparison_contract(runtime, profile, env_seed, ppo_run, greedy_run, ppo, greedy)
+    dqn = _strategy_result(runtime, "dqn", dqn_episode, dqn_metrics, env_seed, None)
+    contract = _comparison_contract(runtime, profile, env_seed, ppo_run, greedy_run, ppo, greedy, dqn_run, dqn)
     return {
         **_envelope(),
         "kind": "comparison",
@@ -380,11 +381,12 @@ def compare(
             "environment_seed_source": env_source,
             "policy_seed": baseline_seed,
             "policy_seed_source": policy_source,
-            "notes": ["policy_seed applies to the baseline only; PPO ignores it."],
+            "notes": ["policy_seed applies to the baseline only; PPO and DQN ignore it."],
         },
         "pairing_semantics": PAIRING_SEMANTICS,
         "comparison_contract": contract,
         "ppo": ppo,
+        "dqn": dqn,
         "greedy": greedy,
         "single_run_caveat": SINGLE_RUN_CAVEAT,
     }

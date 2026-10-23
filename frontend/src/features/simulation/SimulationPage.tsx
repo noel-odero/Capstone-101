@@ -4,6 +4,7 @@ import { isApiError } from '@/api/api-errors'
 import { ContentContainer } from '@/components/layout/ContentContainer'
 import { PageHeader } from '@/components/layout/PageHeader'
 import { ComparisonMetrics } from '@/components/scientific/ComparisonMetrics'
+import { ComparisonNotice } from '@/components/scientific/ComparisonNotice'
 import { ButtonLink } from '@/components/ui/Button'
 import { Card, CardHeader } from '@/components/ui/Card'
 import { EmptyState } from '@/components/ui/EmptyState'
@@ -11,6 +12,7 @@ import { ErrorState } from '@/components/ui/ErrorState'
 import { LoadingState } from '@/components/ui/LoadingState'
 import { StatusIndicator } from '@/components/ui/StatusIndicator'
 import { GLOSSARY } from '@/domain/terminology'
+import { strategyResults } from '@/domain/runs'
 import { useAntibiotics } from '@/hooks/useAntibiotics'
 import { useComparison } from '@/hooks/useComparison'
 import { useSample } from '@/features/samples/useSamples'
@@ -19,7 +21,7 @@ import { TrajectoryChart } from './TrajectoryChart'
 import { SimulationControls } from './SimulationControls'
 import styles from './simulation.module.css'
 
-/** A stored comparison: PPO and the Random Susceptible Baseline from the same profile across the fixed horizon. */
+/** A stored comparison from matched starting conditions. */
 export function SimulationPage() {
   const { comparisonId } = useParams()
   const comparison = useComparison(comparisonId)
@@ -68,7 +70,8 @@ export function SimulationPage() {
     )
   }
 
-  const noSteps = ppo.steps.length === 0 && baseline.steps.length === 0
+  const results = strategyResults(data)
+  const noSteps = results.every((result) => result.steps.length === 0)
 
   return (
     <ContentContainer>
@@ -84,6 +87,7 @@ export function SimulationPage() {
         }
       />
 
+      <ComparisonNotice comparison={data} />
       <SimulationControls
         key={data.id}
         initialProfile={ppo.initialProfile}
@@ -94,15 +98,14 @@ export function SimulationPage() {
         <Card as="div">
           <p role="note">
             <StatusIndicator kind="warning" label="No feasible actions remain" />{' '}
-            {GLOSSARY.noFeasibleActions} Neither strategy took a step.
+            {GLOSSARY.noFeasibleActions} No strategy took a step.
           </p>
           <ComparisonMetrics comparison={data} />
         </Card>
       ) : antibiotics.data ? (
         <div className={styles['grid']}>
           <StatePanel
-            ppo={ppo}
-            baseline={baseline}
+            results={results}
             selectedStep={selectedStep}
             onSelectStep={setSelectedStep}
           />
@@ -110,8 +113,7 @@ export function SimulationPage() {
             <Card aria-labelledby="chart-title">
               <CardHeader titleId="chart-title" title="Resistance trajectory" />
               <TrajectoryChart
-                ppo={ppo}
-                baseline={baseline}
+                results={results}
                 selectedStep={selectedStep}
                 onSelectStep={setSelectedStep}
               />

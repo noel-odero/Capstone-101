@@ -1,11 +1,23 @@
 ﻿import { PageHeader } from '@/components/layout/PageHeader'
 import { ButtonLink } from '@/components/ui/Button'
+import { ComparisonNotice } from '@/components/scientific/ComparisonNotice'
 import { Tooltip } from '@/components/ui/Tooltip'
 import { drugLabel, type AntibioticEntry } from '@/domain/antibiotics'
-import { buildTrajectorySeries, formatMetricValue, type MetricKey } from '@/domain/metrics'
+import {
+  buildTrajectorySeries,
+  comparePolicyTraces,
+  formatMetricValue,
+  type MetricKey,
+} from '@/domain/metrics'
 import { profileToCode } from '@/domain/profile'
-import { GLOSSARY, STRATEGY_NAMES, terminationLabel } from '@/domain/terminology'
-import type { Comparison, Simulation, StrategyResult } from '@/domain/types'
+import {
+  GLOSSARY,
+  STRATEGY_NAMES,
+  STRATEGY_COLORS,
+  strategyLabel,
+  terminationLabel,
+} from '@/domain/terminology'
+import type { Comparison, Simulation, StrategyId, StrategyResult } from '@/domain/types'
 import { useSample } from '@/features/samples/useSamples'
 import { useId, useState } from 'react'
 import { FiArrowRight, FiCheck, FiLayers } from 'react-icons/fi'
@@ -24,12 +36,8 @@ import {
 import styles from './results.module.css'
 import { useStepParam } from './useStepParam'
 
-const primaryMetrics = [
-  {
-    key: 'susceptibleActionRate',
-    label: 'Susceptible selections',
-    hint: 'Selections marked susceptible in the model',
-  },
+const comparisonMetrics = [
+  { key: 'cumulativeResistanceBurden', label: 'Cumulative resistance burden', hint: '' },
   {
     key: 'resistanceEmergenceEvents',
     label: 'Resistance emergence',
@@ -40,16 +48,19 @@ const primaryMetrics = [
     label: 'Remaining options',
     hint: 'Susceptible antibiotics at the end',
   },
+  { key: 'unsupportedStepCount', label: 'Steps without applicable transitions', hint: '' },
+] as const
+const validationMetrics = [
+  {
+    key: 'susceptibleActionRate',
+    label: 'Mask compliance',
+    hint: 'Selected drugs were susceptible; enforced by the action mask.',
+  },
   {
     key: 'cumulativeAntibioticExposure',
     label: 'Antibiotic exposure',
-    hint: 'Administrations in the simulation',
+    hint: 'Run length in actions; not dose or treatment duration.',
   },
-] as const
-const comparisonMetrics = [
-  ...primaryMetrics,
-  { key: 'cumulativeResistanceBurden', label: 'Cumulative resistance burden', hint: '' },
-  { key: 'unsupportedStepCount', label: 'Steps without transition data', hint: '' },
 ] as const
 const tabs = ['Overview', 'Trajectory', 'Compare'] as const
 
@@ -75,34 +86,74 @@ export function ResultsWorkbench({
   comparisonId: string | undefined
 }) {
   const [tab, setTab] = useState<(typeof tabs)[number]>('Overview')
-  const [strategy, setStrategy] = useState<'ppo' | 'baseline'>('ppo')
+  const [strategy, setStrategy] = useState<StrategyId>(ppo.strategy)
   const [step, setStep] = useStepParam()
   const sample = useSample('sampleId' in run ? run.sampleId : undefined)
   const id = useId()
-  const active = strategy === 'baseline' && baseline ? baseline : ppo
+  const dqn = 'dqn' in run ? run.dqn : null
+  const results = [ppo, ...(dqn ? [dqn] : []), ...(baseline ? [baseline] : [])]
+  const active = results.find((result) => result.strategy === strategy) ?? ppo
   const label = STRATEGY_NAMES[active.strategy]
   const trace = active.steps.find((item) => item.treatmentStepAfter === step)
   const initial = profileToCode(ppo.initialProfile)
-  const points = baseline
-    ? buildTrajectorySeries(ppo, baseline, 'resistantCount')
-    : ppo.states.map((state) => ({
-        step: state.stateIndex,
-        ppo: state.resistantCount,
-        baseline: null,
-      }))
+  const points = buildTrajectorySeries(results, 'resistantCount')
   const pairingVerified = 'contract' in run && run.contract?.verified
+  const agreement = dqn && ppo.steps.length ? comparePolicyTraces(ppo, dqn) : null
+  const fallbackOnly = results.filter(
+    (result) =>
+      result.steps.length > 0 && result.metrics.unsupportedStepCount === result.steps.length,
+  )
+
+  const metricTable = (
+    metrics: readonly { key: MetricKey; label: string; hint: string }[],
+    caption: string,
+  ) => (
+    <div className={styles.tableWrap}>
+      <table>
+        <caption className="visually-hidden">{caption}</caption>
+        <thead>
+          <tr>
+            <th scope="col">Metric</th>
+            {results.map((result) => (
+              <th scope="col" key={result.strategy}>
+                {strategyLabel(result.strategy)}
+              </th>
+            ))}
+          </tr>
+        </thead>
+        <tbody>
+          {metrics.map((metric) => (
+            <tr key={metric.key}>
+              <th scope="row">
+                {metric.label}{' '}
+                <Tooltip label={`Definition of ${metric.label}`}>
+                  {run.metricDefinitions[metric.key]?.definition ?? metric.hint}
+                </Tooltip>
+              </th>
+              {results.map((result) => (
+                <td key={result.strategy}>{value(result, metric.key)}</td>
+              ))}
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
+  )
 
   const sequences = (
     <div className={styles.sequences}>
-      {[ppo, ...(baseline ? [baseline] : [])].map((result) => (
+      {results.map((result) => (
         <section
           key={result.strategy}
           aria-label={`${STRATEGY_NAMES[result.strategy]} antibiotic order`}
         >
           <div className={styles.sequenceHeading}>
             <h3>
-              <i className={result.strategy === 'ppo' ? styles.ppoDot : styles.baselineDot} />
-              {result.strategy === 'ppo' ? 'PPO strategy' : 'Random baseline'}
+              <i
+                className={styles.strategyDot}
+                style={{ background: STRATEGY_COLORS[result.strategy] }}
+              />
+              {strategyLabel(result.strategy)}
             </h3>
             <span>{result.steps.length} steps</span>
           </div>
@@ -118,7 +169,7 @@ export function ResultsWorkbench({
                         active.strategy === result.strategy && step === item.treatmentStepAfter
                       }
                       onClick={() => {
-                        setStrategy(result.strategy === 'ppo' ? 'ppo' : 'baseline')
+                        setStrategy(result.strategy)
                         setStep(item.treatmentStepAfter)
                       }}
                     >
@@ -171,12 +222,25 @@ export function ResultsWorkbench({
         <span>
           Starting profile <code>{initial}</code>
         </span>
+        {agreement ? (
+          <span className={styles.agreement}>
+            PPO + DQN ·{' '}
+            {agreement.sameChoices
+              ? agreement.sameProfiles
+                ? 'same sequence'
+                : 'same choices, different outcomes'
+              : agreement.sameCounts
+                ? 'same counts, different choices'
+                : 'different trajectories'}
+          </span>
+        ) : null}
         {comparisonId ? (
           <Link to={`/app/simulation/${comparisonId}`}>
             <FiLayers aria-hidden="true" /> 3D simulation
           </Link>
         ) : null}
       </div>
+      {'baseline' in run ? <ComparisonNotice comparison={run} /> : null}
       <div className={styles.tabs} role="tablist" aria-label="Simulation results">
         {tabs.map((name, index) => (
           <button
@@ -249,11 +313,14 @@ export function ResultsWorkbench({
               <ResponsiveContainer width="100%" height="100%">
                 <LineChart data={points} margin={{ top: 15, right: 20, bottom: 10, left: -20 }}>
                   <CartesianGrid stroke="var(--color-border)" strokeDasharray="3 3" />
-                  <XAxis dataKey="step" tick={{ fill: 'var(--color-text-muted)', fontSize: 12 }} />
+                  <XAxis
+                    dataKey="step"
+                    tick={{ fill: 'var(--color-text-muted)', fontSize: '0.75rem' }}
+                  />
                   <YAxis
                     domain={[0, 7]}
                     allowDecimals={false}
-                    tick={{ fill: 'var(--color-text-muted)', fontSize: 12 }}
+                    tick={{ fill: 'var(--color-text-muted)', fontSize: '0.75rem' }}
                   />
                   <ChartTooltip
                     contentStyle={{
@@ -262,26 +329,21 @@ export function ResultsWorkbench({
                       color: 'var(--color-text)',
                     }}
                   />
-                  <Legend />
+                  <Legend wrapperStyle={{ fontSize: '0.75rem' }} />
                   <ReferenceLine x={step} stroke="var(--color-text-muted)" strokeDasharray="3 3" />
-                  <Line
-                    name="PPO"
-                    dataKey="ppo"
-                    stroke="var(--color-series-ppo)"
-                    strokeWidth={2}
-                    connectNulls={false}
-                    isAnimationActive={false}
-                  />
-                  {baseline ? (
+                  {results.map((result, index) => (
                     <Line
-                      name="Random baseline"
-                      dataKey="baseline"
-                      stroke="var(--color-series-baseline)"
+                      key={result.strategy}
+                      name={strategyLabel(result.strategy)}
+                      dataKey={result.strategy}
+                      stroke={STRATEGY_COLORS[result.strategy]}
+                      strokeDasharray={index === 0 ? undefined : index === 1 ? '3 3' : '6 3'}
+                      type="stepAfter"
                       strokeWidth={2}
                       connectNulls={false}
                       isAnimationActive={false}
                     />
-                  ) : null}
+                  ))}
                 </LineChart>
               </ResponsiveContainer>
             </div>
@@ -290,14 +352,14 @@ export function ResultsWorkbench({
             </p>
             <div className={styles.trajectoryControls}>
               <div className={styles.switcher} role="group" aria-label="Inspect strategy">
-                {[ppo, ...(baseline ? [baseline] : [])].map((result) => (
+                {results.map((result) => (
                   <button
                     key={result.strategy}
                     type="button"
                     aria-pressed={active.strategy === result.strategy}
-                    onClick={() => setStrategy(result.strategy === 'ppo' ? 'ppo' : 'baseline')}
+                    onClick={() => setStrategy(result.strategy)}
                   >
-                    {result.strategy === 'ppo' ? 'PPO' : 'Random baseline'}
+                    {strategyLabel(result.strategy)}
                   </button>
                 ))}
               </div>
@@ -320,39 +382,27 @@ export function ResultsWorkbench({
             <p className={styles.muted}>
               {baseline
                 ? pairingVerified
-                  ? 'Shared starting conditions verified for this paired run.'
-                  : 'Paired run. Inspect the recorded assumptions below.'
-                : 'This saved run contains PPO only. Run a new comparison to evaluate both strategies.'}
+                  ? 'Shared starting conditions verified. Lower burden and emergence; more remaining options.'
+                  : 'Inspect the recorded assumptions below.'
+                : `This saved run contains ${strategyLabel(ppo.strategy)} only. Run a new comparison to evaluate all three strategies.`}
             </p>
-            <div className={styles.tableWrap}>
-              <table>
-                <caption className="visually-hidden">
-                  Independent simulation outcome metrics
-                </caption>
-                <thead>
-                  <tr>
-                    <th scope="col">Metric</th>
-                    <th scope="col">PPO</th>
-                    {baseline ? <th scope="col">Random baseline</th> : null}
-                  </tr>
-                </thead>
-                <tbody>
-                  {comparisonMetrics.map((metric) => (
-                    <tr key={metric.key}>
-                      <th scope="row">
-                        {metric.label}{' '}
-                        <Tooltip label={`Definition of ${metric.label}`}>
-                          {run.metricDefinitions[metric.key]?.definition ?? metric.hint}
-                        </Tooltip>
-                      </th>
-                      <td>{value(ppo, metric.key)}</td>
-                      {baseline ? <td>{value(baseline, metric.key)}</td> : null}
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-            <p className={styles.note}>Greedy comparison is not available in the current model.</p>
+            {metricTable(comparisonMetrics, 'Independent simulation outcome metrics')}
+            {fallbackOnly.length ? (
+              <p className={styles.note} role="note">
+                {fallbackOnly.map((result) => strategyLabel(result.strategy)).join(' and ')} had no
+                applicable transition in any step. Unchanged resistance reflects the model’s
+                fallback rule.
+              </p>
+            ) : null}
+            <details className={styles.validation}>
+              <summary>Constraint checks and run length</summary>
+              <p className={styles.note}>
+                The action mask enforces susceptible selections. Without a recovery or stopping
+                model, nonterminal runs last the full horizon. These checks do not establish
+                treatment effectiveness.
+              </p>
+              {metricTable(validationMetrics, 'Simulation constraint checks')}
+            </details>
           </section>
         )}
       </div>
@@ -445,21 +495,26 @@ export function ResultsWorkbench({
                 </div>
               </dl>
               <p className={styles.note}>
-                Transition evidence describes the simulator’s outcome. It does not explain PPO’s
-                internal reasoning for selecting an action.
+                Transition evidence describes the simulator’s outcome. It does not explain a learned
+                policy’s internal reasoning for selecting an action.
               </p>
             </details>
           </>
         ) : (
           <p className={styles.muted}>
             {step === 0
-              ? 'Select an antibiotic in either sequence to inspect its simulated transition.'
+              ? 'Select any antibiotic step to inspect its simulated transition.'
               : 'This strategy has no recorded action at the selected step.'}
           </p>
         )}
       </section>
       <details className={styles.assumptions}>
         <summary>Run assumptions and limitations</summary>
+        <p className={styles.note}>
+          The current model does not include selected-drug self-resistance, bacterial clearance,
+          dosing or a stopping decision. Repeated selections and low simulated burden do not
+          establish clinical suitability.
+        </p>
         <dl className={styles.traceGrid}>
           <div>
             <dt>Run ID</dt>
@@ -467,12 +522,22 @@ export function ResultsWorkbench({
               <code>{run.id}</code>
             </dd>
           </div>
-          <div>
-            <dt>Model / algorithm</dt>
-            <dd>
-              {run.provenance.modelId} / {run.provenance.algorithm}
-            </dd>
-          </div>
+          {results
+            .filter((result) => result.strategy !== 'random_susceptible_baseline')
+            .map((result) => {
+              const model =
+                result.model ?? (result.strategy === ppo.strategy ? run.provenance : null)
+              return model ? (
+                <div key={result.strategy}>
+                  <dt>{strategyLabel(result.strategy)} model / checkpoint</dt>
+                  <dd>
+                    {model.modelId}
+                    <br />
+                    <code>{model.checkpointSha256}</code>
+                  </dd>
+                </div>
+              ) : null
+            })}
           <div>
             <dt>Scenario</dt>
             <dd>{run.provenance.scenarioId}</dd>
@@ -487,12 +552,6 @@ export function ResultsWorkbench({
           <div>
             <dt>Action mask</dt>
             <dd>{run.provenance.actionMaskRule}</dd>
-          </div>
-          <div>
-            <dt>Checkpoint SHA-256</dt>
-            <dd>
-              <code>{run.provenance.checkpointSha256}</code>
-            </dd>
           </div>
           <div>
             <dt>Interaction data SHA-256</dt>

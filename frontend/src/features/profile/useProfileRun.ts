@@ -9,6 +9,8 @@ export interface ProfileRun {
   ppo: StrategyResult
   /** Present when the run was a comparison. */
   baseline: StrategyResult | null
+  dqn: StrategyResult | null
+  sampleId?: string | null
 }
 
 export type ProfileRunState =
@@ -50,6 +52,8 @@ export function useProfileRun(): ProfileRunState {
         provenance: comparison.data.provenance,
         ppo: comparison.data.ppo,
         baseline: comparison.data.baseline,
+        dqn: comparison.data.dqn ?? null,
+        sampleId: comparison.data.sampleId ?? null,
       },
     }
   }
@@ -61,6 +65,7 @@ export function useProfileRun(): ProfileRunState {
         provenance: simulation.data.provenance,
         ppo: simulation.data.result,
         baseline: null,
+        dqn: null,
       },
     }
   }

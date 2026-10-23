@@ -1,12 +1,28 @@
+.publicLanding {
+  --landing-text: #f5f5f3;
+  --landing-muted: #b4b4bb;
+  --landing-line: #3c3c40;
+  --landing-accent: #a8d8cc;
+  --color-text: var(--landing-text);
+  background: #232325;
+  color: var(--landing-text);
+}
+.publicLanding[data-landing-theme='light'] {
+  --landing-text: #242427;
+  --landing-muted: #65656c;
+  --landing-line: #e3e3df;
+  --landing-accent: #276f62;
+  background: #f5f5f3;
+}
 .landingHeader {
   position: relative;
   z-index: 10;
 }
 .headerInner {
-  max-width: 1600px;
+  max-width: 100rem;
   margin: auto;
   padding: 0 3.8%;
-  min-height: 100px;
+  min-height: 6.25rem;
   display: flex;
   align-items: center;
   gap: 4rem;
@@ -76,7 +92,7 @@
   position: relative;
   isolation: isolate;
   overflow: hidden;
-  min-height: calc(100svh - 100px);
+  min-height: calc(100svh - 6.25rem);
   display: flex;
   flex-direction: column;
 }
@@ -95,7 +111,7 @@
   opacity: 0.23;
 }
 .heroGrid {
-  width: min(1280px, 88%);
+  width: min(80rem, 88%);
   margin: auto;
   display: grid;
   grid-template-columns: 1.08fr 1fr;
@@ -125,11 +141,11 @@
   font-weight: 500;
   line-height: 1.08;
   letter-spacing: -0.055em;
-  max-width: 700px;
+  max-width: 43.75rem;
   margin: 1.5rem 0 1.6rem;
 }
 .lede {
-  max-width: 560px;
+  max-width: 35rem;
   font-size: clamp(0.95rem, 1.3vw, 1.12rem);
   line-height: 1.7;
   color: #c0c8db;
@@ -298,7 +314,7 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
-  width: min(1280px, 88%);
+  width: min(80rem, 88%);
   margin: 0 auto;
   padding: 1.5rem 0;
   border-top: 1px solid var(--landing-line);
@@ -326,11 +342,20 @@
   }
 }
 @media (min-width: 1600px) {
+  .headerInner,
+  .heroGrid,
+  .heroBottom {
+    width: min(96rem, 92%);
+  }
+  .headerInner {
+    max-width: none;
+    padding-inline: 0;
+  }
   .heroGrid {
-    min-height: 760px;
+    gap: 3rem;
   }
   .heroVisual {
-    margin-right: -3rem;
+    margin-right: 0;
   }
 }
 @media (max-width: 1000px) {

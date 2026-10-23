@@ -1,6 +1,6 @@
 # StewardLab / AMR Decision Support
 
-A research workbench for exploring antibiotic resistance in a simulated E. coli environment. Save labeled starting profiles, compare a frozen PPO policy with a random susceptible-action baseline, inspect collateral sensitivity and cross-resistance transitions, and revisit saved results.
+A research workbench for exploring antibiotic resistance in a simulated E. coli environment. Save labeled starting profiles, compare frozen PPO and DQN policies with a random susceptible-action baseline, inspect collateral sensitivity and cross-resistance transitions, and revisit saved results.
 
 Research and simulation only. This platform is not validated for clinical prescribing or patient-specific treatment decisions. The 3D bacteria clearance animation is illustrative; the model tracks resistance, not bacterial load.
 
@@ -93,7 +93,7 @@ See [backend testing](backend/README.md#test) for PostgreSQL integration and liv
 
 Profiles contain seven binary resistance states, giving 128 possible profiles. Each action selects a currently susceptible antibiotic. Candidate transitions model cross-resistance, collateral sensitivity or neutral changes under `REF_UNIFORM_SUPPORTED`. An empty candidate set leaves the profile unchanged: this can mean absent directed evidence or a relationship that cannot change the current binary state. It is not evidence of treatment success. A comparison is one stochastic episode, not evidence that either strategy is generally superior.
 
-The service validates the checkpoint hash, transition-data hash and frozen manifest before serving runs. Every saved result records model identity, seeds and metric definitions. The active model is selected by [the frozen manifest](ml/frozen_ppo_manifest.json), which also pins the original interaction CSV for the existing checkpoint. Default training environments use the updated CSV in `data/processed/`. The other checkpoints support the multi-seed study and are intentionally retained.
+The service validates the checkpoint hash, transition-data hash and frozen manifest before serving runs. Every saved result records model identity, seeds and metric definitions. The active model is selected by [the frozen manifest](ml/frozen_ppo_manifest.json), which pins the selected PPO checkpoint and updated interaction CSV. DQN uses `artifacts/frozen/public-data-v2/dqn/manifest.json` with the same data. Default training environments use the CSV in `data/processed/`. The other checkpoints support the multi-seed study and are intentionally retained.
 
 Verify archived artifacts:
 
@@ -145,4 +145,33 @@ To reproduce selection after a completed study, use a new empty destination:
   --sums artifacts\frozen\public-data-v2\SHA256SUMS.txt
 ```
 
-Freezing does not activate a policy. The UI currently compares the original PPO and baseline; DQN is available in the offline comparison. Three-strategy UI/service integration and switching the active PPO manifest are separate changes. Each frozen policy remains paired with the data it was trained on.
+The workbench now serves the selected PPO and DQN alongside the random susceptible baseline. New comparisons run all three from the same starting profile, scenario and environment seed; saved historical two-strategy runs remain readable. Each strategy records its model identity and checkpoint hash. Apply the `AddDqnStrategy` database migration before starting the API.
+
+## Scientific review of the frozen policies
+
+The review enumerates the transition distributions and uses finite-horizon backward induction to compute the exact optimum. It evaluates the frozen policies with their full observations, including the previous action and step. This adds a model-based reference alongside the random baseline; neither the checkpoints nor the training objective change.
+
+| Reference scenario, 127 nonterminal profiles | Expected burden | Gap above exact optimum |
+| --- | ---: | ---: |
+| Exact planner | 2.8124 | 0 |
+| PPO | 2.8512 | 0.0388 |
+| DQN | 2.8392 | 0.0268 |
+| Random susceptible baseline | 3.7506 | 0.9382 |
+
+These are exact expectations conditional on the current simulator for two fixed checkpoints, not a new comparison across training replicates or clinical outcomes. Agreement can reflect successful optimization of the same objective. It does not validate that objective or its biological assumptions. An optimal-policy reference and sensitivity analysis also appear in [Weaver et al. (2024)](https://doi.org/10.1073/pnas.2303165121); [Patterson et al. (2024)](https://jmlr.org/papers/v25/23-0183.html) discuss fair comparisons and experimental bias in reinforcement learning.
+
+The audit identifies substantive limitations:
+
+- Of 448 feasible state/action pairs, 64 have no applicable transition and use the unchanged-state fallback; 114 force an unchanged state, including modeled neutral outcomes.
+- Selected-drug self-resistance is absent. The selected drug remains susceptible, so a nonterminal episode always reaches the full horizon. Mask compliance (100%) and exposure (eight actions) are constraint checks, not evidence of superior treatment performance.
+- From `0000000`, both frozen policies repeat fosfomycin: burden is zero, but all eight steps lack an applicable transition. This is an artifact of the modeled relationships, not established biological safety.
+- No recovery, bacterial-load, dose or stopping state exists. A constant exposure penalty would add the same cost to every equal-length run and would not correct this limitation. Repetition penalties or new evolution probabilities would define additional assumptions and require a separately specified, evaluated training protocol.
+
+Reproduce the review using an empty output directory:
+
+```powershell
+.\.venv\Scripts\python.exe -B -m experiments.review_frozen_policies `
+  --output-dir experiments\results\model-review
+```
+
+Outputs are `review.json`, all-profile `profiles.csv`, resistance-stratified `strata.csv` and `review.png`. The review includes the existing q=0.25, 0.50 and 0.75 occurrence scenarios with the policies fixed. These scenarios vary supported transitions; they do not resolve unknown evolution or add self-resistance. All 128 profiles remain in the CSV, including the terminal profile. No cases are removed to create a separation between algorithms.

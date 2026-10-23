@@ -4,11 +4,11 @@ import { formatDateTime, shortId } from '@/domain/formatters'
 import { profileToCode } from '@/domain/profile'
 import { runDetailPath } from '@/domain/runs'
 import { STRATEGY_NAMES } from '@/domain/terminology'
-import type { RecentRuns, RunSummary } from '@/domain/types'
+import type { RecentRuns, RunSummary, StrategyId } from '@/domain/types'
 import { formatMetricValue } from '@/domain/metrics'
 import styles from './runs-table.module.css'
 
-function burdenOf(run: RunSummary, strategy: 'ppo' | 'random_susceptible_baseline'): string {
+function burdenOf(run: RunSummary, strategy: StrategyId): string {
   const found = run.strategies.find((candidate) => candidate.strategy === strategy)
   return found
     ? formatMetricValue('cumulativeResistanceBurden', found.cumulativeResistanceBurden)
@@ -37,6 +37,10 @@ export function RunsTable({ runs, caption, sampleLabels }: RunsTableProps) {
               {STRATEGY_NAMES.ppo} burden
             </th>
             <th scope="col">
+              <span className={styles['dotDqn']} aria-hidden="true" />
+              DQN burden
+            </th>
+            <th scope="col">
               <span className={styles['dotBaseline']} aria-hidden="true" />
               Baseline burden
             </th>
@@ -58,6 +62,7 @@ export function RunsTable({ runs, caption, sampleLabels }: RunsTableProps) {
                 <td>{formatDateTime(run.createdAtUtc)}</td>
                 <td className={styles['code']}>{profileToCode(run.initialProfile)}</td>
                 <td className="tabular">{burdenOf(run, 'ppo')}</td>
+                <td className="tabular">{burdenOf(run, 'dqn')}</td>
                 <td className="tabular">{burdenOf(run, 'random_susceptible_baseline')}</td>
                 <td>
                   {path ? <Link to={path}>Open</Link> : <span className="muted">No view</span>}

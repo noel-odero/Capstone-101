@@ -183,7 +183,7 @@ public class RunCreationAndRetrievalTests(AmrApiFactory factory, PostgresDatabas
         var strategies = await context.StrategyRuns.Where(strategy => strategy.ExperimentRunId == id).Include(strategy => strategy.StepTraces).ToListAsync();
 
         Assert.Equal(
-            new[] { Domain.Enums.StrategyKind.Ppo, Domain.Enums.StrategyKind.RandomSusceptibleBaseline },
+            new[] { Domain.Enums.StrategyKind.Ppo, Domain.Enums.StrategyKind.RandomSusceptibleBaseline, Domain.Enums.StrategyKind.Dqn },
             strategies.Select(strategy => strategy.Strategy).Order());
         foreach (var strategy in strategies)
         {
@@ -211,7 +211,7 @@ public class RunCreationAndRetrievalTests(AmrApiFactory factory, PostgresDatabas
         var after = await CountsAsync();
         Assert.Equal(before.Runs + 16, after.Runs);
         Assert.InRange(after.Models, Math.Max(before.Models, 1), before.Models + 1);
-        Assert.Equal(before.Strategies + (8 * 1) + (8 * 2), after.Strategies);
+        Assert.Equal(before.Strategies + (8 * 1) + (8 * 3), after.Strategies);
     }
 
     [PostgresFact]

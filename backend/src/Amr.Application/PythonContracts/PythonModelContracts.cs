@@ -39,7 +39,10 @@ public sealed record PythonModelInfo(
     IReadOnlyDictionary<string, string> ProvenanceFiles,
     IReadOnlyDictionary<string, string> TransitionStatusDefinitions,
     string ServiceVersion,
-    string Disclaimer);
+    string Disclaimer)
+{
+    public IReadOnlyDictionary<string, PythonPolicyModel>? Policies { get; init; }
+}
 
 public sealed record PythonAntibiotic(int ActionId, string Name, string? DrugClass);
 

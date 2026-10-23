@@ -6,7 +6,7 @@ export function MethodologyPage() {
   return (
     <PublicPage
       title="Methodology"
-      lede="What the simulation models, how the two strategies act, and what each metric means."
+      lede="The simulation, its three strategies and the meaning of each metric."
     >
       <section>
         <h2>The simulation</h2>
@@ -33,6 +33,9 @@ export function MethodologyPage() {
         <h2>The strategies</h2>
         <p>
           <strong>{STRATEGY_NAMES.ppo}.</strong> {STRATEGY_DESCRIPTIONS.ppo}
+        </p>
+        <p>
+          <strong>{STRATEGY_NAMES.dqn}.</strong> {STRATEGY_DESCRIPTIONS.dqn}
         </p>
         <p>
           <strong>{STRATEGY_NAMES.random_susceptible_baseline}.</strong>{' '}
@@ -71,8 +74,8 @@ export function MethodologyPage() {
           </li>
           <li>
             <strong>Susceptible-action rate.</strong> The share of steps whose selected antibiotic
-            was susceptible. The action mask makes it 1.0 for both strategies, so it is not a
-            measure of effectiveness.
+            was susceptible. The action mask makes it 1.0 for all strategies, so it is not a measure
+            of effectiveness.
           </li>
         </ul>
         <p>Each result carries the simulator&apos;s own definition of every metric it reports.</p>

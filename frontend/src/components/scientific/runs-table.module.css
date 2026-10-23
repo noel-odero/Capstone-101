@@ -48,6 +48,7 @@
 }
 
 .dotPpo,
+.dotDqn,
 .dotBaseline {
   display: inline-block;
   width: 0.6rem;
@@ -58,6 +59,10 @@
 
 .dotPpo {
   background: var(--color-series-ppo);
+}
+
+.dotDqn {
+  background: var(--color-series-dqn);
 }
 
 .dotBaseline {

@@ -12,11 +12,13 @@ export const PROTOTYPE_STATEMENT =
 
 export const STRATEGY_NAMES: Readonly<Record<StrategyId, string>> = {
   ppo: 'PPO',
+  dqn: 'DQN',
   random_susceptible_baseline: 'Random Susceptible Baseline',
 }
 
 export const STRATEGY_DESCRIPTIONS: Readonly<Record<StrategyId, string>> = {
   ppo: 'A frozen Proximal Policy Optimization policy. It selects one antibiotic per step from those the simulator marks susceptible.',
+  dqn: 'A frozen Deep Q-Network policy. It selects one antibiotic per step from those the simulator marks susceptible.',
   random_susceptible_baseline:
     'The existing baseline (implemented by the Greedy policy in the scientific code). It samples uniformly at random among susceptible antibiotics and is not a search for the best sequence.',
 }
@@ -30,7 +32,7 @@ export const GLOSSARY = {
   transitionSupport:
     'Whether candidate transition data exist for the selected action in the current state. It is separate from susceptibility.',
   unsupported:
-    'The simulator has no candidate transition for this action in this state, so it leaves the profile unchanged. This is a data gap, not evidence that the antibiotic worked.',
+    'No modeled transition applies to this action in this state. The simulator keeps the profile unchanged; this does not establish biological stability or treatment effectiveness.',
   supported:
     'The simulator has at least one modeled transition outcome for this action in this state.',
   observedOutcome:
@@ -42,8 +44,18 @@ export const GLOSSARY = {
   singleRun:
     'One run is a single stochastic sample. It does not show that either strategy is better, and it is not clinical evidence.',
   sameSeed:
-    'Both strategies share the environment seed, but equal seeds do not guarantee identical random draws once their trajectories diverge.',
+    'Strategies share the environment seed. Different actions and states can produce different transition outcomes.',
 } as const
+
+export const STRATEGY_COLORS: Readonly<Record<StrategyId, string>> = {
+  ppo: 'var(--color-series-ppo)',
+  dqn: 'var(--color-series-dqn)',
+  random_susceptible_baseline: 'var(--color-series-baseline)',
+}
+
+export function strategyLabel(strategy: StrategyId): string {
+  return strategy === 'random_susceptible_baseline' ? 'Random baseline' : STRATEGY_NAMES[strategy]
+}
 
 export const TERMINATION_LABELS: Readonly<Record<string, string>> = {
   maximum_horizon: 'Reached the maximum horizon',

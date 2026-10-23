@@ -1,4 +1,4 @@
-import type { StateSnapshot, StrategyMetrics, StrategyResult } from './types'
+import type { StrategyMetrics, StrategyResult } from './types'
 
 export type MetricKey = keyof StrategyMetrics
 
@@ -20,7 +20,7 @@ export const METRIC_LABELS: Readonly<Record<MetricKey, string>> = {
   cumulativeAntibioticExposure: 'Antibiotic administrations',
 }
 
-/** Metrics shown side by side for the two strategies, in reading order. */
+/** Metrics shown side by side, in reading order. */
 export const COMPARISON_METRIC_KEYS = [
   'cumulativeResistanceBurden',
   'finalResistantCount',
@@ -53,32 +53,49 @@ export function formatMetricValue(key: MetricKey, value: number | null | undefin
 export interface MetricRow {
   key: MetricKey
   label: string
-  ppo: number | null
-  baseline: number | null
+  values: (number | null)[]
 }
 
-export function buildMetricRows(ppo: StrategyMetrics, baseline: StrategyMetrics): MetricRow[] {
+export function buildMetricRows(results: readonly StrategyResult[]): MetricRow[] {
   return COMPARISON_METRIC_KEYS.map((key) => ({
     key,
     label: METRIC_LABELS[key],
-    ppo: ppo[key],
-    baseline: baseline[key],
+    values: results.map((result) => result.metrics[key]),
   }))
 }
 
 export type TrajectoryField = 'resistantCount' | 'susceptibleCount'
 
-export interface TrajectoryPoint {
-  step: number
-  ppo: number | null
-  baseline: number | null
+export function comparePolicyTraces(left: StrategyResult, right: StrategyResult) {
+  const sameChoices =
+    left.steps.length === right.steps.length &&
+    left.steps.every(
+      (step, index) =>
+        step.actionId === right.steps[index]?.actionId &&
+        step.treatmentStepAfter === right.steps[index]?.treatmentStepAfter,
+    )
+  const sameCounts =
+    left.states.length === right.states.length &&
+    left.states.every(
+      (state, index) =>
+        state.stateIndex === right.states[index]?.stateIndex &&
+        state.resistantCount === right.states[index]?.resistantCount,
+    )
+  const sameProfiles =
+    left.states.length === right.states.length &&
+    left.states.every(
+      (state, index) =>
+        state.stateIndex === right.states[index]?.stateIndex &&
+        state.resistanceProfile.every(
+          (bit, drug) => bit === right.states[index]?.resistanceProfile[drug],
+        ),
+    )
+  return { sameChoices, sameCounts, sameProfiles }
 }
 
-function valueAt(result: StrategyResult, step: number, field: TrajectoryField): number | null {
-  const state: StateSnapshot | undefined = result.states.find(
-    (candidate) => candidate.stateIndex === step,
-  )
-  return state ? state[field] : null
+export interface TrajectoryPoint {
+  step: number
+  [strategy: string]: number | null
 }
 
 /**
@@ -86,18 +103,20 @@ function valueAt(result: StrategyResult, step: number, field: TrajectoryField): 
  * point for later steps (null), which the chart leaves as a gap rather than extending the last value.
  */
 export function buildTrajectorySeries(
-  ppo: StrategyResult,
-  baseline: StrategyResult,
+  results: readonly StrategyResult[],
   field: TrajectoryField,
 ): TrajectoryPoint[] {
   const lastStep = Math.max(
-    ...ppo.states.map((state) => state.stateIndex),
-    ...baseline.states.map((state) => state.stateIndex),
+    ...results.flatMap((result) => result.states.map((state) => state.stateIndex)),
     0,
   )
   return Array.from({ length: lastStep + 1 }, (_, step) => ({
     step,
-    ppo: valueAt(ppo, step, field),
-    baseline: valueAt(baseline, step, field),
+    ...Object.fromEntries(
+      results.map((result) => [
+        result.strategy,
+        result.states.find((state) => state.stateIndex === step)?.[field] ?? null,
+      ]),
+    ),
   }))
 }

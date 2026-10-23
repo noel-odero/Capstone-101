@@ -1,10 +1,10 @@
 {
   "manifest_version": 1,
-  "model_id": "ppo_seed_12000",
+  "model_id": "ppo_public_v2_seed_19000",
   "algorithm": "MaskablePPO",
-  "checkpoint_sha256": "d10c26185c9903d96d0f2003643b76be6df4f03c39e0d2e5f7945e763b7d9093",
-  "manifest_checkpoint_sha256": "d10c26185c9903d96d0f2003643b76be6df4f03c39e0d2e5f7945e763b7d9093",
-  "interaction_data_sha256": "7a5e3e1fe730676a0793674e4ff4aaf3c6ce1177ad5588eed4bb2e5d627edb44",
+  "checkpoint_sha256": "1747b68cb572cc320c7c53ae105dfa9dd6827f689839b35c4f2bcf9520384001",
+  "manifest_checkpoint_sha256": "1747b68cb572cc320c7c53ae105dfa9dd6827f689839b35c4f2bcf9520384001",
+  "interaction_data_sha256": "af62f389fe92b4ecddfbc1df6c967c5da9992ed928c09dd3a68673819f42591c",
   "scenario_id": "REF_UNIFORM_SUPPORTED",
   "horizon": 8,
   "antibiotic_order": [
@@ -52,10 +52,10 @@
     "device": "cpu"
   },
   "provenance_files": {
-    "config": "artifacts/ppo/ppo_seed_12000/config.json",
-    "environment_manifest": "artifacts/ppo/ppo_seed_12000/environment_manifest.json",
-    "training_summary": "artifacts/ppo/ppo_seed_12000/training_summary.json",
-    "checkpoint_manifest": "artifacts/ppo/checkpoint_manifest.json"
+    "config": "artifacts/frozen/public-data-v2/ppo/config.json",
+    "environment_manifest": "artifacts/frozen/public-data-v2/ppo/environment_manifest.json",
+    "training_summary": "artifacts/frozen/public-data-v2/ppo/training_summary.json",
+    "checkpoint_manifest": "artifacts/frozen/public-data-v2/selection.json"
   },
   "transition_status_definitions": {
     "unsupported_no_candidate": "The simulator has no candidate transition for this action in this state and leaves the resistance profile unchanged. This is a data gap, not evidence that the antibiotic is effective.",
@@ -65,5 +65,17 @@
     "neutral": "Sampled outcome: a modeled neutral interaction; the profile is unchanged."
   },
   "service_version": "0.1.0",
-  "disclaimer": "Simulation output only. It is not clinical advice, a validated treatment recommendation, or a statement about clinical efficacy."
+  "disclaimer": "Simulation output only. It is not clinical advice, a validated treatment recommendation, or a statement about clinical efficacy.",
+  "policies": {
+    "ppo": {
+      "model_id": "ppo_public_v2_seed_19000",
+      "algorithm": "MaskablePPO",
+      "checkpoint_sha256": "1747b68cb572cc320c7c53ae105dfa9dd6827f689839b35c4f2bcf9520384001"
+    },
+    "dqn": {
+      "model_id": "dqn_public_v2_seed_15000",
+      "algorithm": "MaskedDQN",
+      "checkpoint_sha256": "3afac9221dd29662708ba37f9a32326f389feb15efc31151706f738c0fd8c72d"
+    }
+  }
 }

@@ -10,7 +10,7 @@ namespace Amr.IntegrationTests;
 /// <summary>Exercises the real Python service through the real typed client. Skipped unless AMR_PYTHON_URL is set.</summary>
 public sealed class LivePythonServiceTests : IDisposable
 {
-    private const string FrozenCheckpointSha256 = "d10c26185c9903d96d0f2003643b76be6df4f03c39e0d2e5f7945e763b7d9093";
+    private const string FrozenCheckpointSha256 = "1747b68cb572cc320c7c53ae105dfa9dd6827f689839b35c4f2bcf9520384001";
     private readonly AmrApiFactory _factory;
     private readonly IPythonServiceClient _client;
 

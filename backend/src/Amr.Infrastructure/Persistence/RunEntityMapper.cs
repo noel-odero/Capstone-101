@@ -38,6 +38,7 @@ internal static class RunEntityMapper
         run.ComparisonContractJson = PersistenceJson.Serialize(contract);
         run.StrategyRuns.Add(ToEntity(ppo, run.Id));
         run.StrategyRuns.Add(ToEntity(baseline, run.Id));
+        if (comparison.Dqn is { } dqn) run.StrategyRuns.Add(ToEntity(dqn, run.Id));
         return run;
     }
 
@@ -67,7 +68,11 @@ internal static class RunEntityMapper
         Error: null,
         PersistenceJson.Deserialize<Dictionary<string, MetricDefinitionDto>>(run.MetricDefinitionsJson),
         run.SingleRunCaveat!,
-        run.Disclaimer) { SampleId = run.SampleId };
+        run.Disclaimer)
+        {
+            SampleId = run.SampleId,
+            Dqn = run.StrategyRuns.SingleOrDefault(strategy => strategy.Strategy == StrategyKind.Dqn) is { } dqn ? ToResult(dqn) : null,
+        };
 
     private static ExperimentRun NewRun(
         Guid id,
@@ -127,6 +132,7 @@ internal static class RunEntityMapper
             ExperimentRunId = experimentRunId,
             Strategy = result.Strategy,
             DisplayLabel = result.DisplayLabel,
+            ModelJson = result.Model is { } model ? PersistenceJson.Serialize(model) : null,
             InitialProfile = [.. result.InitialProfile],
             FinalProfile = [.. result.FinalProfile],
             EnvironmentSeed = result.EnvironmentSeed,
@@ -220,7 +226,10 @@ internal static class RunEntityMapper
             strategy.ResistanceEmergenceRate,
             strategy.SusceptibleActionRate,
             strategy.UnsupportedStepCount,
-            strategy.CumulativeAntibioticExposure));
+            strategy.CumulativeAntibioticExposure))
+        {
+            Model = strategy.ModelJson is { } model ? PersistenceJson.Deserialize<PolicyModelDto>(model) : null,
+        };
 
     private static StepTraceDto ToStepDto(StepTrace step) => new(
         step.StepIndex,

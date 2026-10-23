@@ -1,13 +1,13 @@
 {
-  "run_id": "2bcaf0bf-73bd-400b-bd10-f4c54ae09c65",
+  "run_id": "3d17bade-8c9d-422a-a0c1-6a1828fce6ee",
   "kind": "comparison",
-  "created_at_utc": "2026-10-15T13:37:17.977110+00:00",
+  "created_at_utc": "2026-10-23T12:35:32.358087+00:00",
   "provenance": {
     "service_version": "0.1.0",
-    "model_id": "ppo_seed_12000",
+    "model_id": "ppo_public_v2_seed_19000",
     "algorithm": "MaskablePPO",
-    "checkpoint_sha256": "d10c26185c9903d96d0f2003643b76be6df4f03c39e0d2e5f7945e763b7d9093",
-    "interaction_data_sha256": "7a5e3e1fe730676a0793674e4ff4aaf3c6ce1177ad5588eed4bb2e5d627edb44",
+    "checkpoint_sha256": "1747b68cb572cc320c7c53ae105dfa9dd6827f689839b35c4f2bcf9520384001",
+    "interaction_data_sha256": "af62f389fe92b4ecddfbc1df6c967c5da9992ed928c09dd3a68673819f42591c",
     "scenario_id": "REF_UNIFORM_SUPPORTED",
     "horizon": 8,
     "reward_specification": {
@@ -33,10 +33,10 @@
     "policy_seed": 900001,
     "policy_seed_source": "client",
     "notes": [
-      "policy_seed applies to the baseline only; PPO ignores it."
+      "policy_seed applies to the baseline only; PPO and DQN ignore it."
     ]
   },
-  "pairing_semantics": "Matched and verified before a result is returned: initial profile, environment seed, scenario, horizon, reward configuration and transition-data hash. Because the environment seed is shared, the simulator draws the same sequence of per-step transition seeds by step index. A transition seed only seeds the random draw among the candidate transitions of the selected action in the current state. Those candidate sets depend on the action and state, so equal seeds do not guarantee identical transition outcomes, and trajectories can diverge once the strategies choose different actions. PPO is deterministic and ignores the policy seed; the baseline uses it for tie-breaking among susceptible actions.",
+  "pairing_semantics": "Matched and verified before a result is returned: initial profile, environment seed, scenario, horizon, reward configuration and transition-data hash. Because the environment seed is shared, the simulator draws the same sequence of per-step transition seeds by step index. A transition seed only seeds the random draw among the candidate transitions of the selected action in the current state. Those candidate sets depend on the action and state, so equal seeds do not guarantee identical transition outcomes, and trajectories can diverge once the strategies choose different actions. PPO and DQN are deterministic and ignore the policy seed; the baseline uses it for tie-breaking among susceptible actions.",
   "comparison_contract": {
     "verified": true,
     "checks_passed": [
@@ -62,7 +62,7 @@
       "environment_seed": 100001,
       "scenario_id": "REF_UNIFORM_SUPPORTED",
       "horizon": 8,
-      "interaction_data_sha256": "7a5e3e1fe730676a0793674e4ff4aaf3c6ce1177ad5588eed4bb2e5d627edb44",
+      "interaction_data_sha256": "af62f389fe92b4ecddfbc1df6c967c5da9992ed928c09dd3a68673819f42591c",
       "reward_specification": {
         "objective": "normalized_resistance_burden",
         "normalization": 7,
@@ -81,15 +81,20 @@
     "transition_outcomes_guaranteed_identical": false,
     "observed": {
       "steps_compared": 8,
-      "steps_with_same_action": 2,
+      "steps_with_same_action": 1,
       "first_divergent_step": 0,
       "trajectories_identical": false
     }
   },
   "ppo": {
     "strategy": "ppo",
-    "display_label": "Frozen PPO Policy",
-    "implementation": "service.rollout.FrozenEnginePolicy (wraps ml.src.ppo_inference.FrozenPPOInferenceEngine)",
+    "model": {
+      "model_id": "ppo_public_v2_seed_19000",
+      "algorithm": "MaskablePPO",
+      "checkpoint_sha256": "1747b68cb572cc320c7c53ae105dfa9dd6827f689839b35c4f2bcf9520384001"
+    },
+    "display_label": "PPO",
+    "implementation": "service.rollout.FrozenEnginePolicy (wraps ml.src.ppo_inference.FrozenPolicyInferenceEngine)",
     "initial_profile": [
       0,
       1,
@@ -150,8 +155,8 @@
         ],
         "resistant_count": 1,
         "susceptible_count": 6,
-        "last_action_id": 4,
-        "last_action_antibiotic": "GENTAMICIN",
+        "last_action_id": 3,
+        "last_action_antibiotic": "TRIMETHOPRIM",
         "is_terminal": false
       },
       {
@@ -171,8 +176,8 @@
         ],
         "resistant_count": 1,
         "susceptible_count": 6,
-        "last_action_id": 4,
-        "last_action_antibiotic": "GENTAMICIN",
+        "last_action_id": 2,
+        "last_action_antibiotic": "FOSFOMYCIN",
         "is_terminal": false
       },
       {
@@ -192,8 +197,8 @@
         ],
         "resistant_count": 1,
         "susceptible_count": 6,
-        "last_action_id": 4,
-        "last_action_antibiotic": "GENTAMICIN",
+        "last_action_id": 2,
+        "last_action_antibiotic": "FOSFOMYCIN",
         "is_terminal": false
       },
       {
@@ -213,8 +218,8 @@
         ],
         "resistant_count": 1,
         "susceptible_count": 6,
-        "last_action_id": 4,
-        "last_action_antibiotic": "GENTAMICIN",
+        "last_action_id": 2,
+        "last_action_antibiotic": "FOSFOMYCIN",
         "is_terminal": false
       },
       {
@@ -234,8 +239,8 @@
         ],
         "resistant_count": 1,
         "susceptible_count": 6,
-        "last_action_id": 4,
-        "last_action_antibiotic": "GENTAMICIN",
+        "last_action_id": 2,
+        "last_action_antibiotic": "FOSFOMYCIN",
         "is_terminal": false
       },
       {
@@ -255,8 +260,8 @@
         ],
         "resistant_count": 1,
         "susceptible_count": 6,
-        "last_action_id": 4,
-        "last_action_antibiotic": "GENTAMICIN",
+        "last_action_id": 2,
+        "last_action_antibiotic": "FOSFOMYCIN",
         "is_terminal": false
       },
       {
@@ -276,8 +281,8 @@
         ],
         "resistant_count": 1,
         "susceptible_count": 6,
-        "last_action_id": 4,
-        "last_action_antibiotic": "GENTAMICIN",
+        "last_action_id": 2,
+        "last_action_antibiotic": "FOSFOMYCIN",
         "is_terminal": false
       },
       {
@@ -297,8 +302,8 @@
         ],
         "resistant_count": 1,
         "susceptible_count": 6,
-        "last_action_id": 4,
-        "last_action_antibiotic": "GENTAMICIN",
+        "last_action_id": 2,
+        "last_action_antibiotic": "FOSFOMYCIN",
         "is_terminal": true
       }
     ],
@@ -316,8 +321,8 @@
           0,
           0
         ],
-        "action_id": 4,
-        "antibiotic": "GENTAMICIN",
+        "action_id": 3,
+        "antibiotic": "TRIMETHOPRIM",
         "feasible_actions": [
           {
             "action_id": 0,
@@ -337,7 +342,7 @@
           {
             "action_id": 4,
             "antibiotic": "GENTAMICIN",
-            "has_candidate_transition": false
+            "has_candidate_transition": true
           },
           {
             "action_id": 5,
@@ -347,18 +352,37 @@
           {
             "action_id": 6,
             "antibiotic": "CEFTAZIDIME",
-            "has_candidate_transition": false
+            "has_candidate_transition": true
           }
         ],
         "selected_drug_susceptible": true,
-        "transition_status": "unsupported_no_candidate",
-        "has_candidate_transition": false,
-        "candidate_transitions": [],
-        "selected_outcome": null,
-        "selected_target_drug": null,
-        "source_ids": [],
-        "selected_candidate_probability": null,
-        "no_transition_probability": null,
+        "transition_status": "neutral",
+        "has_candidate_transition": true,
+        "candidate_transitions": [
+          {
+            "target_drug": "FOSFOMYCIN",
+            "outcome": "neutral",
+            "source_ids": [
+              "JAMES2024"
+            ],
+            "scenario_probability": 0.5
+          },
+          {
+            "target_drug": "MECILLINAM",
+            "outcome": "neutral",
+            "source_ids": [
+              "SAK2025_EXP"
+            ],
+            "scenario_probability": 0.5
+          }
+        ],
+        "selected_outcome": "neutral",
+        "selected_target_drug": "MECILLINAM",
+        "source_ids": [
+          "SAK2025_EXP"
+        ],
+        "selected_candidate_probability": 0.5,
+        "no_transition_probability": 0.0,
         "transition_seed": 1904622509,
         "reward": -0.14285714285714285,
         "resistance_profile_after": [
@@ -390,8 +414,8 @@
           0,
           0
         ],
-        "action_id": 4,
-        "antibiotic": "GENTAMICIN",
+        "action_id": 2,
+        "antibiotic": "FOSFOMYCIN",
         "feasible_actions": [
           {
             "action_id": 0,
@@ -411,7 +435,7 @@
           {
             "action_id": 4,
             "antibiotic": "GENTAMICIN",
-            "has_candidate_transition": false
+            "has_candidate_transition": true
           },
           {
             "action_id": 5,
@@ -421,7 +445,7 @@
           {
             "action_id": 6,
             "antibiotic": "CEFTAZIDIME",
-            "has_candidate_transition": false
+            "has_candidate_transition": true
           }
         ],
         "selected_drug_susceptible": true,
@@ -464,8 +488,8 @@
           0,
           0
         ],
-        "action_id": 4,
-        "antibiotic": "GENTAMICIN",
+        "action_id": 2,
+        "antibiotic": "FOSFOMYCIN",
         "feasible_actions": [
           {
             "action_id": 0,
@@ -485,7 +509,7 @@
           {
             "action_id": 4,
             "antibiotic": "GENTAMICIN",
-            "has_candidate_transition": false
+            "has_candidate_transition": true
           },
           {
             "action_id": 5,
@@ -495,7 +519,7 @@
           {
             "action_id": 6,
             "antibiotic": "CEFTAZIDIME",
-            "has_candidate_transition": false
+            "has_candidate_transition": true
           }
         ],
         "selected_drug_susceptible": true,
@@ -538,8 +562,8 @@
           0,
           0
         ],
-        "action_id": 4,
-        "antibiotic": "GENTAMICIN",
+        "action_id": 2,
+        "antibiotic": "FOSFOMYCIN",
         "feasible_actions": [
           {
             "action_id": 0,
@@ -559,7 +583,7 @@
           {
             "action_id": 4,
             "antibiotic": "GENTAMICIN",
-            "has_candidate_transition": false
+            "has_candidate_transition": true
           },
           {
             "action_id": 5,
@@ -569,7 +593,7 @@
           {
             "action_id": 6,
             "antibiotic": "CEFTAZIDIME",
-            "has_candidate_transition": false
+            "has_candidate_transition": true
           }
         ],
         "selected_drug_susceptible": true,
@@ -612,8 +636,8 @@
           0,
           0
         ],
-        "action_id": 4,
-        "antibiotic": "GENTAMICIN",
+        "action_id": 2,
+        "antibiotic": "FOSFOMYCIN",
         "feasible_actions": [
           {
             "action_id": 0,
@@ -633,7 +657,7 @@
           {
             "action_id": 4,
             "antibiotic": "GENTAMICIN",
-            "has_candidate_transition": false
+            "has_candidate_transition": true
           },
           {
             "action_id": 5,
@@ -643,7 +667,7 @@
           {
             "action_id": 6,
             "antibiotic": "CEFTAZIDIME",
-            "has_candidate_transition": false
+            "has_candidate_transition": true
           }
         ],
         "selected_drug_susceptible": true,
@@ -686,8 +710,8 @@
           0,
           0
         ],
-        "action_id": 4,
-        "antibiotic": "GENTAMICIN",
+        "action_id": 2,
+        "antibiotic": "FOSFOMYCIN",
         "feasible_actions": [
           {
             "action_id": 0,
@@ -707,7 +731,7 @@
           {
             "action_id": 4,
             "antibiotic": "GENTAMICIN",
-            "has_candidate_transition": false
+            "has_candidate_transition": true
           },
           {
             "action_id": 5,
@@ -717,7 +741,7 @@
           {
             "action_id": 6,
             "antibiotic": "CEFTAZIDIME",
-            "has_candidate_transition": false
+            "has_candidate_transition": true
           }
         ],
         "selected_drug_susceptible": true,
@@ -760,8 +784,8 @@
           0,
           0
         ],
-        "action_id": 4,
-        "antibiotic": "GENTAMICIN",
+        "action_id": 2,
+        "antibiotic": "FOSFOMYCIN",
         "feasible_actions": [
           {
             "action_id": 0,
@@ -781,7 +805,7 @@
           {
             "action_id": 4,
             "antibiotic": "GENTAMICIN",
-            "has_candidate_transition": false
+            "has_candidate_transition": true
           },
           {
             "action_id": 5,
@@ -791,7 +815,7 @@
           {
             "action_id": 6,
             "antibiotic": "CEFTAZIDIME",
-            "has_candidate_transition": false
+            "has_candidate_transition": true
           }
         ],
         "selected_drug_susceptible": true,
@@ -834,8 +858,8 @@
           0,
           0
         ],
-        "action_id": 4,
-        "antibiotic": "GENTAMICIN",
+        "action_id": 2,
+        "antibiotic": "FOSFOMYCIN",
         "feasible_actions": [
           {
             "action_id": 0,
@@ -855,7 +879,7 @@
           {
             "action_id": 4,
             "antibiotic": "GENTAMICIN",
-            "has_candidate_transition": false
+            "has_candidate_transition": true
           },
           {
             "action_id": 5,
@@ -865,7 +889,7 @@
           {
             "action_id": 6,
             "antibiotic": "CEFTAZIDIME",
-            "has_candidate_transition": false
+            "has_candidate_transition": true
           }
         ],
         "selected_drug_susceptible": true,
@@ -907,14 +931,19 @@
       "resistance_emergence_events": 0,
       "resistance_emergence_rate": 0.0,
       "susceptible_action_rate": 1.0,
-      "unsupported_step_count": 8,
+      "unsupported_step_count": 7,
       "cumulative_antibiotic_exposure": 8
     }
   },
-  "greedy": {
-    "strategy": "greedy",
-    "display_label": "Random Susceptible Baseline",
-    "implementation": "ml.src.greedy_policy.GreedyPolicy",
+  "dqn": {
+    "strategy": "dqn",
+    "model": {
+      "model_id": "dqn_public_v2_seed_15000",
+      "algorithm": "MaskedDQN",
+      "checkpoint_sha256": "3afac9221dd29662708ba37f9a32326f389feb15efc31151706f738c0fd8c72d"
+    },
+    "display_label": "DQN",
+    "implementation": "service.rollout.FrozenEnginePolicy (wraps ml.src.ppo_inference.FrozenPolicyInferenceEngine)",
     "initial_profile": [
       0,
       1,
@@ -926,15 +955,15 @@
     ],
     "final_profile": [
       0,
-      1,
-      0,
-      1,
       0,
       0,
-      1
+      0,
+      0,
+      0,
+      0
     ],
     "environment_seed": 100001,
-    "policy_seed": 900001,
+    "policy_seed": null,
     "termination_reason": "maximum_horizon",
     "states": [
       {
@@ -975,8 +1004,8 @@
         ],
         "resistant_count": 1,
         "susceptible_count": 6,
-        "last_action_id": 6,
-        "last_action_antibiotic": "CEFTAZIDIME",
+        "last_action_id": 2,
+        "last_action_antibiotic": "FOSFOMYCIN",
         "is_terminal": false
       },
       {
@@ -984,20 +1013,18 @@
         "treatment_step": 2,
         "resistance_profile": [
           0,
-          1,
+          0,
           0,
           0,
           0,
           0,
           0
         ],
-        "resistant_antibiotics": [
-          "NITROFURANTOIN"
-        ],
-        "resistant_count": 1,
-        "susceptible_count": 6,
-        "last_action_id": 3,
-        "last_action_antibiotic": "TRIMETHOPRIM",
+        "resistant_antibiotics": [],
+        "resistant_count": 0,
+        "susceptible_count": 7,
+        "last_action_id": 5,
+        "last_action_antibiotic": "MECILLINAM",
         "is_terminal": false
       },
       {
@@ -1005,20 +1032,18 @@
         "treatment_step": 3,
         "resistance_profile": [
           0,
-          1,
+          0,
           0,
           0,
           0,
           0,
           0
         ],
-        "resistant_antibiotics": [
-          "NITROFURANTOIN"
-        ],
-        "resistant_count": 1,
-        "susceptible_count": 6,
-        "last_action_id": 6,
-        "last_action_antibiotic": "CEFTAZIDIME",
+        "resistant_antibiotics": [],
+        "resistant_count": 0,
+        "susceptible_count": 7,
+        "last_action_id": 2,
+        "last_action_antibiotic": "FOSFOMYCIN",
         "is_terminal": false
       },
       {
@@ -1026,20 +1051,18 @@
         "treatment_step": 4,
         "resistance_profile": [
           0,
-          1,
+          0,
           0,
           0,
           0,
           0,
           0
         ],
-        "resistant_antibiotics": [
-          "NITROFURANTOIN"
-        ],
-        "resistant_count": 1,
-        "susceptible_count": 6,
-        "last_action_id": 4,
-        "last_action_antibiotic": "GENTAMICIN",
+        "resistant_antibiotics": [],
+        "resistant_count": 0,
+        "susceptible_count": 7,
+        "last_action_id": 2,
+        "last_action_antibiotic": "FOSFOMYCIN",
         "is_terminal": false
       },
       {
@@ -1047,21 +1070,18 @@
         "treatment_step": 5,
         "resistance_profile": [
           0,
-          1,
           0,
           0,
           0,
           0,
-          1
+          0,
+          0
         ],
-        "resistant_antibiotics": [
-          "NITROFURANTOIN",
-          "CEFTAZIDIME"
-        ],
-        "resistant_count": 2,
-        "susceptible_count": 5,
-        "last_action_id": 0,
-        "last_action_antibiotic": "CIPROFLOXACIN",
+        "resistant_antibiotics": [],
+        "resistant_count": 0,
+        "susceptible_count": 7,
+        "last_action_id": 2,
+        "last_action_antibiotic": "FOSFOMYCIN",
         "is_terminal": false
       },
       {
@@ -1069,19 +1089,16 @@
         "treatment_step": 6,
         "resistance_profile": [
           0,
-          1,
           0,
           0,
           0,
           0,
-          1
+          0,
+          0
         ],
-        "resistant_antibiotics": [
-          "NITROFURANTOIN",
-          "CEFTAZIDIME"
-        ],
-        "resistant_count": 2,
-        "susceptible_count": 5,
+        "resistant_antibiotics": [],
+        "resistant_count": 0,
+        "susceptible_count": 7,
         "last_action_id": 2,
         "last_action_antibiotic": "FOSFOMYCIN",
         "is_terminal": false
@@ -1091,21 +1108,18 @@
         "treatment_step": 7,
         "resistance_profile": [
           0,
-          1,
           0,
           0,
           0,
           0,
-          1
+          0,
+          0
         ],
-        "resistant_antibiotics": [
-          "NITROFURANTOIN",
-          "CEFTAZIDIME"
-        ],
-        "resistant_count": 2,
-        "susceptible_count": 5,
-        "last_action_id": 4,
-        "last_action_antibiotic": "GENTAMICIN",
+        "resistant_antibiotics": [],
+        "resistant_count": 0,
+        "susceptible_count": 7,
+        "last_action_id": 2,
+        "last_action_antibiotic": "FOSFOMYCIN",
         "is_terminal": false
       },
       {
@@ -1113,22 +1127,18 @@
         "treatment_step": 8,
         "resistance_profile": [
           0,
-          1,
-          0,
-          1,
           0,
           0,
-          1
+          0,
+          0,
+          0,
+          0
         ],
-        "resistant_antibiotics": [
-          "NITROFURANTOIN",
-          "TRIMETHOPRIM",
-          "CEFTAZIDIME"
-        ],
-        "resistant_count": 3,
-        "susceptible_count": 4,
-        "last_action_id": 5,
-        "last_action_antibiotic": "MECILLINAM",
+        "resistant_antibiotics": [],
+        "resistant_count": 0,
+        "susceptible_count": 7,
+        "last_action_id": 2,
+        "last_action_antibiotic": "FOSFOMYCIN",
         "is_terminal": true
       }
     ],
@@ -1146,8 +1156,8 @@
           0,
           0
         ],
-        "action_id": 6,
-        "antibiotic": "CEFTAZIDIME",
+        "action_id": 2,
+        "antibiotic": "FOSFOMYCIN",
         "feasible_actions": [
           {
             "action_id": 0,
@@ -1167,7 +1177,7 @@
           {
             "action_id": 4,
             "antibiotic": "GENTAMICIN",
-            "has_candidate_transition": false
+            "has_candidate_transition": true
           },
           {
             "action_id": 5,
@@ -1177,7 +1187,7 @@
           {
             "action_id": 6,
             "antibiotic": "CEFTAZIDIME",
-            "has_candidate_transition": false
+            "has_candidate_transition": true
           }
         ],
         "selected_drug_susceptible": true,
@@ -1220,8 +1230,8 @@
           0,
           0
         ],
-        "action_id": 3,
-        "antibiotic": "TRIMETHOPRIM",
+        "action_id": 5,
+        "antibiotic": "MECILLINAM",
         "feasible_actions": [
           {
             "action_id": 0,
@@ -1241,7 +1251,932 @@
           {
             "action_id": 4,
             "antibiotic": "GENTAMICIN",
+            "has_candidate_transition": true
+          },
+          {
+            "action_id": 5,
+            "antibiotic": "MECILLINAM",
+            "has_candidate_transition": true
+          },
+          {
+            "action_id": 6,
+            "antibiotic": "CEFTAZIDIME",
+            "has_candidate_transition": true
+          }
+        ],
+        "selected_drug_susceptible": true,
+        "transition_status": "collateral_sensitivity",
+        "has_candidate_transition": true,
+        "candidate_transitions": [
+          {
+            "target_drug": "TRIMETHOPRIM",
+            "outcome": "cross_resistance",
+            "source_ids": [
+              "POD2018",
+              "SAK2025_EXP"
+            ],
+            "scenario_probability": 0.16666666666666666
+          },
+          {
+            "target_drug": "NITROFURANTOIN",
+            "outcome": "neutral",
+            "source_ids": [
+              "SAK2025_EXP"
+            ],
+            "scenario_probability": 0.16666666666666666
+          },
+          {
+            "target_drug": "NITROFURANTOIN",
+            "outcome": "collateral_sensitivity",
+            "source_ids": [
+              "SAK2025_EXP"
+            ],
+            "scenario_probability": 0.16666666666666666
+          },
+          {
+            "target_drug": "CIPROFLOXACIN",
+            "outcome": "neutral",
+            "source_ids": [
+              "SAK2025_EXP"
+            ],
+            "scenario_probability": 0.16666666666666666
+          },
+          {
+            "target_drug": "CIPROFLOXACIN",
+            "outcome": "cross_resistance",
+            "source_ids": [
+              "SAK2025_EXP"
+            ],
+            "scenario_probability": 0.16666666666666666
+          },
+          {
+            "target_drug": "TRIMETHOPRIM",
+            "outcome": "neutral",
+            "source_ids": [
+              "SAK2025_EXP"
+            ],
+            "scenario_probability": 0.16666666666666666
+          }
+        ],
+        "selected_outcome": "collateral_sensitivity",
+        "selected_target_drug": "NITROFURANTOIN",
+        "source_ids": [
+          "SAK2025_EXP"
+        ],
+        "selected_candidate_probability": 0.16666666666666666,
+        "no_transition_probability": 0.0,
+        "transition_seed": 3658668939,
+        "reward": 0.0,
+        "resistance_profile_after": [
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        "newly_resistant_antibiotics": [],
+        "newly_susceptible_antibiotics": [
+          "NITROFURANTOIN"
+        ],
+        "resistant_count_after": 0,
+        "susceptible_count_after": 7,
+        "is_terminal_after": false,
+        "termination_reason": null
+      },
+      {
+        "step_index": 2,
+        "treatment_step_before": 2,
+        "treatment_step_after": 3,
+        "resistance_profile_before": [
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        "action_id": 2,
+        "antibiotic": "FOSFOMYCIN",
+        "feasible_actions": [
+          {
+            "action_id": 0,
+            "antibiotic": "CIPROFLOXACIN",
+            "has_candidate_transition": true
+          },
+          {
+            "action_id": 1,
+            "antibiotic": "NITROFURANTOIN",
+            "has_candidate_transition": true
+          },
+          {
+            "action_id": 2,
+            "antibiotic": "FOSFOMYCIN",
             "has_candidate_transition": false
+          },
+          {
+            "action_id": 3,
+            "antibiotic": "TRIMETHOPRIM",
+            "has_candidate_transition": true
+          },
+          {
+            "action_id": 4,
+            "antibiotic": "GENTAMICIN",
+            "has_candidate_transition": true
+          },
+          {
+            "action_id": 5,
+            "antibiotic": "MECILLINAM",
+            "has_candidate_transition": true
+          },
+          {
+            "action_id": 6,
+            "antibiotic": "CEFTAZIDIME",
+            "has_candidate_transition": true
+          }
+        ],
+        "selected_drug_susceptible": true,
+        "transition_status": "unsupported_no_candidate",
+        "has_candidate_transition": false,
+        "candidate_transitions": [],
+        "selected_outcome": null,
+        "selected_target_drug": null,
+        "source_ids": [],
+        "selected_candidate_probability": null,
+        "no_transition_probability": null,
+        "transition_seed": 1321998316,
+        "reward": 0.0,
+        "resistance_profile_after": [
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        "newly_resistant_antibiotics": [],
+        "newly_susceptible_antibiotics": [],
+        "resistant_count_after": 0,
+        "susceptible_count_after": 7,
+        "is_terminal_after": false,
+        "termination_reason": null
+      },
+      {
+        "step_index": 3,
+        "treatment_step_before": 3,
+        "treatment_step_after": 4,
+        "resistance_profile_before": [
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        "action_id": 2,
+        "antibiotic": "FOSFOMYCIN",
+        "feasible_actions": [
+          {
+            "action_id": 0,
+            "antibiotic": "CIPROFLOXACIN",
+            "has_candidate_transition": true
+          },
+          {
+            "action_id": 1,
+            "antibiotic": "NITROFURANTOIN",
+            "has_candidate_transition": true
+          },
+          {
+            "action_id": 2,
+            "antibiotic": "FOSFOMYCIN",
+            "has_candidate_transition": false
+          },
+          {
+            "action_id": 3,
+            "antibiotic": "TRIMETHOPRIM",
+            "has_candidate_transition": true
+          },
+          {
+            "action_id": 4,
+            "antibiotic": "GENTAMICIN",
+            "has_candidate_transition": true
+          },
+          {
+            "action_id": 5,
+            "antibiotic": "MECILLINAM",
+            "has_candidate_transition": true
+          },
+          {
+            "action_id": 6,
+            "antibiotic": "CEFTAZIDIME",
+            "has_candidate_transition": true
+          }
+        ],
+        "selected_drug_susceptible": true,
+        "transition_status": "unsupported_no_candidate",
+        "has_candidate_transition": false,
+        "candidate_transitions": [],
+        "selected_outcome": null,
+        "selected_target_drug": null,
+        "source_ids": [],
+        "selected_candidate_probability": null,
+        "no_transition_probability": null,
+        "transition_seed": 3768510196,
+        "reward": 0.0,
+        "resistance_profile_after": [
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        "newly_resistant_antibiotics": [],
+        "newly_susceptible_antibiotics": [],
+        "resistant_count_after": 0,
+        "susceptible_count_after": 7,
+        "is_terminal_after": false,
+        "termination_reason": null
+      },
+      {
+        "step_index": 4,
+        "treatment_step_before": 4,
+        "treatment_step_after": 5,
+        "resistance_profile_before": [
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        "action_id": 2,
+        "antibiotic": "FOSFOMYCIN",
+        "feasible_actions": [
+          {
+            "action_id": 0,
+            "antibiotic": "CIPROFLOXACIN",
+            "has_candidate_transition": true
+          },
+          {
+            "action_id": 1,
+            "antibiotic": "NITROFURANTOIN",
+            "has_candidate_transition": true
+          },
+          {
+            "action_id": 2,
+            "antibiotic": "FOSFOMYCIN",
+            "has_candidate_transition": false
+          },
+          {
+            "action_id": 3,
+            "antibiotic": "TRIMETHOPRIM",
+            "has_candidate_transition": true
+          },
+          {
+            "action_id": 4,
+            "antibiotic": "GENTAMICIN",
+            "has_candidate_transition": true
+          },
+          {
+            "action_id": 5,
+            "antibiotic": "MECILLINAM",
+            "has_candidate_transition": true
+          },
+          {
+            "action_id": 6,
+            "antibiotic": "CEFTAZIDIME",
+            "has_candidate_transition": true
+          }
+        ],
+        "selected_drug_susceptible": true,
+        "transition_status": "unsupported_no_candidate",
+        "has_candidate_transition": false,
+        "candidate_transitions": [],
+        "selected_outcome": null,
+        "selected_target_drug": null,
+        "source_ids": [],
+        "selected_candidate_probability": null,
+        "no_transition_probability": null,
+        "transition_seed": 4024271845,
+        "reward": 0.0,
+        "resistance_profile_after": [
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        "newly_resistant_antibiotics": [],
+        "newly_susceptible_antibiotics": [],
+        "resistant_count_after": 0,
+        "susceptible_count_after": 7,
+        "is_terminal_after": false,
+        "termination_reason": null
+      },
+      {
+        "step_index": 5,
+        "treatment_step_before": 5,
+        "treatment_step_after": 6,
+        "resistance_profile_before": [
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        "action_id": 2,
+        "antibiotic": "FOSFOMYCIN",
+        "feasible_actions": [
+          {
+            "action_id": 0,
+            "antibiotic": "CIPROFLOXACIN",
+            "has_candidate_transition": true
+          },
+          {
+            "action_id": 1,
+            "antibiotic": "NITROFURANTOIN",
+            "has_candidate_transition": true
+          },
+          {
+            "action_id": 2,
+            "antibiotic": "FOSFOMYCIN",
+            "has_candidate_transition": false
+          },
+          {
+            "action_id": 3,
+            "antibiotic": "TRIMETHOPRIM",
+            "has_candidate_transition": true
+          },
+          {
+            "action_id": 4,
+            "antibiotic": "GENTAMICIN",
+            "has_candidate_transition": true
+          },
+          {
+            "action_id": 5,
+            "antibiotic": "MECILLINAM",
+            "has_candidate_transition": true
+          },
+          {
+            "action_id": 6,
+            "antibiotic": "CEFTAZIDIME",
+            "has_candidate_transition": true
+          }
+        ],
+        "selected_drug_susceptible": true,
+        "transition_status": "unsupported_no_candidate",
+        "has_candidate_transition": false,
+        "candidate_transitions": [],
+        "selected_outcome": null,
+        "selected_target_drug": null,
+        "source_ids": [],
+        "selected_candidate_probability": null,
+        "no_transition_probability": null,
+        "transition_seed": 176743312,
+        "reward": 0.0,
+        "resistance_profile_after": [
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        "newly_resistant_antibiotics": [],
+        "newly_susceptible_antibiotics": [],
+        "resistant_count_after": 0,
+        "susceptible_count_after": 7,
+        "is_terminal_after": false,
+        "termination_reason": null
+      },
+      {
+        "step_index": 6,
+        "treatment_step_before": 6,
+        "treatment_step_after": 7,
+        "resistance_profile_before": [
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        "action_id": 2,
+        "antibiotic": "FOSFOMYCIN",
+        "feasible_actions": [
+          {
+            "action_id": 0,
+            "antibiotic": "CIPROFLOXACIN",
+            "has_candidate_transition": true
+          },
+          {
+            "action_id": 1,
+            "antibiotic": "NITROFURANTOIN",
+            "has_candidate_transition": true
+          },
+          {
+            "action_id": 2,
+            "antibiotic": "FOSFOMYCIN",
+            "has_candidate_transition": false
+          },
+          {
+            "action_id": 3,
+            "antibiotic": "TRIMETHOPRIM",
+            "has_candidate_transition": true
+          },
+          {
+            "action_id": 4,
+            "antibiotic": "GENTAMICIN",
+            "has_candidate_transition": true
+          },
+          {
+            "action_id": 5,
+            "antibiotic": "MECILLINAM",
+            "has_candidate_transition": true
+          },
+          {
+            "action_id": 6,
+            "antibiotic": "CEFTAZIDIME",
+            "has_candidate_transition": true
+          }
+        ],
+        "selected_drug_susceptible": true,
+        "transition_status": "unsupported_no_candidate",
+        "has_candidate_transition": false,
+        "candidate_transitions": [],
+        "selected_outcome": null,
+        "selected_target_drug": null,
+        "source_ids": [],
+        "selected_candidate_probability": null,
+        "no_transition_probability": null,
+        "transition_seed": 2225433942,
+        "reward": 0.0,
+        "resistance_profile_after": [
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        "newly_resistant_antibiotics": [],
+        "newly_susceptible_antibiotics": [],
+        "resistant_count_after": 0,
+        "susceptible_count_after": 7,
+        "is_terminal_after": false,
+        "termination_reason": null
+      },
+      {
+        "step_index": 7,
+        "treatment_step_before": 7,
+        "treatment_step_after": 8,
+        "resistance_profile_before": [
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        "action_id": 2,
+        "antibiotic": "FOSFOMYCIN",
+        "feasible_actions": [
+          {
+            "action_id": 0,
+            "antibiotic": "CIPROFLOXACIN",
+            "has_candidate_transition": true
+          },
+          {
+            "action_id": 1,
+            "antibiotic": "NITROFURANTOIN",
+            "has_candidate_transition": true
+          },
+          {
+            "action_id": 2,
+            "antibiotic": "FOSFOMYCIN",
+            "has_candidate_transition": false
+          },
+          {
+            "action_id": 3,
+            "antibiotic": "TRIMETHOPRIM",
+            "has_candidate_transition": true
+          },
+          {
+            "action_id": 4,
+            "antibiotic": "GENTAMICIN",
+            "has_candidate_transition": true
+          },
+          {
+            "action_id": 5,
+            "antibiotic": "MECILLINAM",
+            "has_candidate_transition": true
+          },
+          {
+            "action_id": 6,
+            "antibiotic": "CEFTAZIDIME",
+            "has_candidate_transition": true
+          }
+        ],
+        "selected_drug_susceptible": true,
+        "transition_status": "unsupported_no_candidate",
+        "has_candidate_transition": false,
+        "candidate_transitions": [],
+        "selected_outcome": null,
+        "selected_target_drug": null,
+        "source_ids": [],
+        "selected_candidate_probability": null,
+        "no_transition_probability": null,
+        "transition_seed": 801885339,
+        "reward": 0.0,
+        "resistance_profile_after": [
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        "newly_resistant_antibiotics": [],
+        "newly_susceptible_antibiotics": [],
+        "resistant_count_after": 0,
+        "susceptible_count_after": 7,
+        "is_terminal_after": true,
+        "termination_reason": "maximum_horizon"
+      }
+    ],
+    "metrics": {
+      "cumulative_resistance_burden": 0.14285714285714285,
+      "cumulative_reward": -0.14285714285714285,
+      "treatment_steps": 8,
+      "initial_resistant_count": 1,
+      "final_resistant_count": 0,
+      "final_susceptible_count": 7,
+      "change_in_susceptible_count": 1,
+      "resistance_emergence_events": 0,
+      "resistance_emergence_rate": 0.0,
+      "susceptible_action_rate": 1.0,
+      "unsupported_step_count": 7,
+      "cumulative_antibiotic_exposure": 8
+    }
+  },
+  "greedy": {
+    "strategy": "greedy",
+    "model": null,
+    "display_label": "Random Susceptible Baseline",
+    "implementation": "ml.src.greedy_policy.GreedyPolicy",
+    "initial_profile": [
+      0,
+      1,
+      0,
+      0,
+      0,
+      0,
+      0
+    ],
+    "final_profile": [
+      1,
+      1,
+      0,
+      0,
+      0,
+      0,
+      0
+    ],
+    "environment_seed": 100001,
+    "policy_seed": 900001,
+    "termination_reason": "maximum_horizon",
+    "states": [
+      {
+        "state_index": 0,
+        "treatment_step": 0,
+        "resistance_profile": [
+          0,
+          1,
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        "resistant_antibiotics": [
+          "NITROFURANTOIN"
+        ],
+        "resistant_count": 1,
+        "susceptible_count": 6,
+        "last_action_id": null,
+        "last_action_antibiotic": null,
+        "is_terminal": false
+      },
+      {
+        "state_index": 1,
+        "treatment_step": 1,
+        "resistance_profile": [
+          1,
+          1,
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        "resistant_antibiotics": [
+          "CIPROFLOXACIN",
+          "NITROFURANTOIN"
+        ],
+        "resistant_count": 2,
+        "susceptible_count": 5,
+        "last_action_id": 6,
+        "last_action_antibiotic": "CEFTAZIDIME",
+        "is_terminal": false
+      },
+      {
+        "state_index": 2,
+        "treatment_step": 2,
+        "resistance_profile": [
+          0,
+          1,
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        "resistant_antibiotics": [
+          "NITROFURANTOIN"
+        ],
+        "resistant_count": 1,
+        "susceptible_count": 6,
+        "last_action_id": 4,
+        "last_action_antibiotic": "GENTAMICIN",
+        "is_terminal": false
+      },
+      {
+        "state_index": 3,
+        "treatment_step": 3,
+        "resistance_profile": [
+          1,
+          1,
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        "resistant_antibiotics": [
+          "CIPROFLOXACIN",
+          "NITROFURANTOIN"
+        ],
+        "resistant_count": 2,
+        "susceptible_count": 5,
+        "last_action_id": 6,
+        "last_action_antibiotic": "CEFTAZIDIME",
+        "is_terminal": false
+      },
+      {
+        "state_index": 4,
+        "treatment_step": 4,
+        "resistance_profile": [
+          1,
+          1,
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        "resistant_antibiotics": [
+          "CIPROFLOXACIN",
+          "NITROFURANTOIN"
+        ],
+        "resistant_count": 2,
+        "susceptible_count": 5,
+        "last_action_id": 5,
+        "last_action_antibiotic": "MECILLINAM",
+        "is_terminal": false
+      },
+      {
+        "state_index": 5,
+        "treatment_step": 5,
+        "resistance_profile": [
+          1,
+          1,
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        "resistant_antibiotics": [
+          "CIPROFLOXACIN",
+          "NITROFURANTOIN"
+        ],
+        "resistant_count": 2,
+        "susceptible_count": 5,
+        "last_action_id": 2,
+        "last_action_antibiotic": "FOSFOMYCIN",
+        "is_terminal": false
+      },
+      {
+        "state_index": 6,
+        "treatment_step": 6,
+        "resistance_profile": [
+          1,
+          1,
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        "resistant_antibiotics": [
+          "CIPROFLOXACIN",
+          "NITROFURANTOIN"
+        ],
+        "resistant_count": 2,
+        "susceptible_count": 5,
+        "last_action_id": 3,
+        "last_action_antibiotic": "TRIMETHOPRIM",
+        "is_terminal": false
+      },
+      {
+        "state_index": 7,
+        "treatment_step": 7,
+        "resistance_profile": [
+          1,
+          1,
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        "resistant_antibiotics": [
+          "CIPROFLOXACIN",
+          "NITROFURANTOIN"
+        ],
+        "resistant_count": 2,
+        "susceptible_count": 5,
+        "last_action_id": 5,
+        "last_action_antibiotic": "MECILLINAM",
+        "is_terminal": false
+      },
+      {
+        "state_index": 8,
+        "treatment_step": 8,
+        "resistance_profile": [
+          1,
+          1,
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        "resistant_antibiotics": [
+          "CIPROFLOXACIN",
+          "NITROFURANTOIN"
+        ],
+        "resistant_count": 2,
+        "susceptible_count": 5,
+        "last_action_id": 6,
+        "last_action_antibiotic": "CEFTAZIDIME",
+        "is_terminal": true
+      }
+    ],
+    "steps": [
+      {
+        "step_index": 0,
+        "treatment_step_before": 0,
+        "treatment_step_after": 1,
+        "resistance_profile_before": [
+          0,
+          1,
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        "action_id": 6,
+        "antibiotic": "CEFTAZIDIME",
+        "feasible_actions": [
+          {
+            "action_id": 0,
+            "antibiotic": "CIPROFLOXACIN",
+            "has_candidate_transition": true
+          },
+          {
+            "action_id": 2,
+            "antibiotic": "FOSFOMYCIN",
+            "has_candidate_transition": false
+          },
+          {
+            "action_id": 3,
+            "antibiotic": "TRIMETHOPRIM",
+            "has_candidate_transition": true
+          },
+          {
+            "action_id": 4,
+            "antibiotic": "GENTAMICIN",
+            "has_candidate_transition": true
+          },
+          {
+            "action_id": 5,
+            "antibiotic": "MECILLINAM",
+            "has_candidate_transition": true
+          },
+          {
+            "action_id": 6,
+            "antibiotic": "CEFTAZIDIME",
+            "has_candidate_transition": true
+          }
+        ],
+        "selected_drug_susceptible": true,
+        "transition_status": "cross_resistance",
+        "has_candidate_transition": true,
+        "candidate_transitions": [
+          {
+            "target_drug": "CIPROFLOXACIN",
+            "outcome": "cross_resistance",
+            "source_ids": [
+              "PHILLIPS2026"
+            ],
+            "scenario_probability": 1.0
+          }
+        ],
+        "selected_outcome": "cross_resistance",
+        "selected_target_drug": "CIPROFLOXACIN",
+        "source_ids": [
+          "PHILLIPS2026"
+        ],
+        "selected_candidate_probability": 1.0,
+        "no_transition_probability": 0.0,
+        "transition_seed": 1904622509,
+        "reward": -0.2857142857142857,
+        "resistance_profile_after": [
+          1,
+          1,
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        "newly_resistant_antibiotics": [
+          "CIPROFLOXACIN"
+        ],
+        "newly_susceptible_antibiotics": [],
+        "resistant_count_after": 2,
+        "susceptible_count_after": 5,
+        "is_terminal_after": false,
+        "termination_reason": null
+      },
+      {
+        "step_index": 1,
+        "treatment_step_before": 1,
+        "treatment_step_after": 2,
+        "resistance_profile_before": [
+          1,
+          1,
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        "action_id": 4,
+        "antibiotic": "GENTAMICIN",
+        "feasible_actions": [
+          {
+            "action_id": 2,
+            "antibiotic": "FOSFOMYCIN",
+            "has_candidate_transition": false
+          },
+          {
+            "action_id": 3,
+            "antibiotic": "TRIMETHOPRIM",
+            "has_candidate_transition": true
+          },
+          {
+            "action_id": 4,
+            "antibiotic": "GENTAMICIN",
+            "has_candidate_transition": true
           },
           {
             "action_id": 5,
@@ -1255,24 +2190,40 @@
           }
         ],
         "selected_drug_susceptible": true,
-        "transition_status": "neutral",
+        "transition_status": "collateral_sensitivity",
         "has_candidate_transition": true,
         "candidate_transitions": [
           {
-            "target_drug": "FOSFOMYCIN",
+            "target_drug": "CIPROFLOXACIN",
             "outcome": "neutral",
             "source_ids": [
-              "JAMES2024"
+              "SAK2025_EXP"
             ],
-            "scenario_probability": 1.0
+            "scenario_probability": 0.3333333333333333
+          },
+          {
+            "target_drug": "CIPROFLOXACIN",
+            "outcome": "collateral_sensitivity",
+            "source_ids": [
+              "SAK2025_EXP"
+            ],
+            "scenario_probability": 0.3333333333333333
+          },
+          {
+            "target_drug": "FOSFOMYCIN",
+            "outcome": "cross_resistance",
+            "source_ids": [
+              "IBACACHE2018"
+            ],
+            "scenario_probability": 0.3333333333333333
           }
         ],
-        "selected_outcome": "neutral",
-        "selected_target_drug": "FOSFOMYCIN",
+        "selected_outcome": "collateral_sensitivity",
+        "selected_target_drug": "CIPROFLOXACIN",
         "source_ids": [
-          "JAMES2024"
+          "SAK2025_EXP"
         ],
-        "selected_candidate_probability": 1.0,
+        "selected_candidate_probability": 0.3333333333333333,
         "no_transition_probability": 0.0,
         "transition_seed": 3658668939,
         "reward": -0.14285714285714285,
@@ -1286,7 +2237,9 @@
           0
         ],
         "newly_resistant_antibiotics": [],
-        "newly_susceptible_antibiotics": [],
+        "newly_susceptible_antibiotics": [
+          "CIPROFLOXACIN"
+        ],
         "resistant_count_after": 1,
         "susceptible_count_after": 6,
         "is_terminal_after": false,
@@ -1326,7 +2279,7 @@
           {
             "action_id": 4,
             "antibiotic": "GENTAMICIN",
-            "has_candidate_transition": false
+            "has_candidate_transition": true
           },
           {
             "action_id": 5,
@@ -1336,22 +2289,33 @@
           {
             "action_id": 6,
             "antibiotic": "CEFTAZIDIME",
-            "has_candidate_transition": false
+            "has_candidate_transition": true
           }
         ],
         "selected_drug_susceptible": true,
-        "transition_status": "unsupported_no_candidate",
-        "has_candidate_transition": false,
-        "candidate_transitions": [],
-        "selected_outcome": null,
-        "selected_target_drug": null,
-        "source_ids": [],
-        "selected_candidate_probability": null,
-        "no_transition_probability": null,
+        "transition_status": "cross_resistance",
+        "has_candidate_transition": true,
+        "candidate_transitions": [
+          {
+            "target_drug": "CIPROFLOXACIN",
+            "outcome": "cross_resistance",
+            "source_ids": [
+              "PHILLIPS2026"
+            ],
+            "scenario_probability": 1.0
+          }
+        ],
+        "selected_outcome": "cross_resistance",
+        "selected_target_drug": "CIPROFLOXACIN",
+        "source_ids": [
+          "PHILLIPS2026"
+        ],
+        "selected_candidate_probability": 1.0,
+        "no_transition_probability": 0.0,
         "transition_seed": 1321998316,
-        "reward": -0.14285714285714285,
+        "reward": -0.2857142857142857,
         "resistance_profile_after": [
-          0,
+          1,
           1,
           0,
           0,
@@ -1359,10 +2323,12 @@
           0,
           0
         ],
-        "newly_resistant_antibiotics": [],
+        "newly_resistant_antibiotics": [
+          "CIPROFLOXACIN"
+        ],
         "newly_susceptible_antibiotics": [],
-        "resistant_count_after": 1,
-        "susceptible_count_after": 6,
+        "resistant_count_after": 2,
+        "susceptible_count_after": 5,
         "is_terminal_after": false,
         "termination_reason": null
       },
@@ -1371,7 +2337,7 @@
         "treatment_step_before": 3,
         "treatment_step_after": 4,
         "resistance_profile_before": [
-          0,
+          1,
           1,
           0,
           0,
@@ -1379,14 +2345,9 @@
           0,
           0
         ],
-        "action_id": 4,
-        "antibiotic": "GENTAMICIN",
+        "action_id": 5,
+        "antibiotic": "MECILLINAM",
         "feasible_actions": [
-          {
-            "action_id": 0,
-            "antibiotic": "CIPROFLOXACIN",
-            "has_candidate_transition": true
-          },
           {
             "action_id": 2,
             "antibiotic": "FOSFOMYCIN",
@@ -1400,7 +2361,120 @@
           {
             "action_id": 4,
             "antibiotic": "GENTAMICIN",
+            "has_candidate_transition": true
+          },
+          {
+            "action_id": 5,
+            "antibiotic": "MECILLINAM",
+            "has_candidate_transition": true
+          },
+          {
+            "action_id": 6,
+            "antibiotic": "CEFTAZIDIME",
             "has_candidate_transition": false
+          }
+        ],
+        "selected_drug_susceptible": true,
+        "transition_status": "neutral",
+        "has_candidate_transition": true,
+        "candidate_transitions": [
+          {
+            "target_drug": "TRIMETHOPRIM",
+            "outcome": "cross_resistance",
+            "source_ids": [
+              "POD2018",
+              "SAK2025_EXP"
+            ],
+            "scenario_probability": 0.2
+          },
+          {
+            "target_drug": "NITROFURANTOIN",
+            "outcome": "neutral",
+            "source_ids": [
+              "SAK2025_EXP"
+            ],
+            "scenario_probability": 0.2
+          },
+          {
+            "target_drug": "NITROFURANTOIN",
+            "outcome": "collateral_sensitivity",
+            "source_ids": [
+              "SAK2025_EXP"
+            ],
+            "scenario_probability": 0.2
+          },
+          {
+            "target_drug": "CIPROFLOXACIN",
+            "outcome": "neutral",
+            "source_ids": [
+              "SAK2025_EXP"
+            ],
+            "scenario_probability": 0.2
+          },
+          {
+            "target_drug": "TRIMETHOPRIM",
+            "outcome": "neutral",
+            "source_ids": [
+              "SAK2025_EXP"
+            ],
+            "scenario_probability": 0.2
+          }
+        ],
+        "selected_outcome": "neutral",
+        "selected_target_drug": "NITROFURANTOIN",
+        "source_ids": [
+          "SAK2025_EXP"
+        ],
+        "selected_candidate_probability": 0.2,
+        "no_transition_probability": 0.0,
+        "transition_seed": 3768510196,
+        "reward": -0.2857142857142857,
+        "resistance_profile_after": [
+          1,
+          1,
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        "newly_resistant_antibiotics": [],
+        "newly_susceptible_antibiotics": [],
+        "resistant_count_after": 2,
+        "susceptible_count_after": 5,
+        "is_terminal_after": false,
+        "termination_reason": null
+      },
+      {
+        "step_index": 4,
+        "treatment_step_before": 4,
+        "treatment_step_after": 5,
+        "resistance_profile_before": [
+          1,
+          1,
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        "action_id": 2,
+        "antibiotic": "FOSFOMYCIN",
+        "feasible_actions": [
+          {
+            "action_id": 2,
+            "antibiotic": "FOSFOMYCIN",
+            "has_candidate_transition": false
+          },
+          {
+            "action_id": 3,
+            "antibiotic": "TRIMETHOPRIM",
+            "has_candidate_transition": true
+          },
+          {
+            "action_id": 4,
+            "antibiotic": "GENTAMICIN",
+            "has_candidate_transition": true
           },
           {
             "action_id": 5,
@@ -1422,10 +2496,10 @@
         "source_ids": [],
         "selected_candidate_probability": null,
         "no_transition_probability": null,
-        "transition_seed": 3768510196,
-        "reward": -0.14285714285714285,
+        "transition_seed": 4024271845,
+        "reward": -0.2857142857142857,
         "resistance_profile_after": [
-          0,
+          1,
           1,
           0,
           0,
@@ -1434,109 +2508,6 @@
           0
         ],
         "newly_resistant_antibiotics": [],
-        "newly_susceptible_antibiotics": [],
-        "resistant_count_after": 1,
-        "susceptible_count_after": 6,
-        "is_terminal_after": false,
-        "termination_reason": null
-      },
-      {
-        "step_index": 4,
-        "treatment_step_before": 4,
-        "treatment_step_after": 5,
-        "resistance_profile_before": [
-          0,
-          1,
-          0,
-          0,
-          0,
-          0,
-          0
-        ],
-        "action_id": 0,
-        "antibiotic": "CIPROFLOXACIN",
-        "feasible_actions": [
-          {
-            "action_id": 0,
-            "antibiotic": "CIPROFLOXACIN",
-            "has_candidate_transition": true
-          },
-          {
-            "action_id": 2,
-            "antibiotic": "FOSFOMYCIN",
-            "has_candidate_transition": false
-          },
-          {
-            "action_id": 3,
-            "antibiotic": "TRIMETHOPRIM",
-            "has_candidate_transition": true
-          },
-          {
-            "action_id": 4,
-            "antibiotic": "GENTAMICIN",
-            "has_candidate_transition": false
-          },
-          {
-            "action_id": 5,
-            "antibiotic": "MECILLINAM",
-            "has_candidate_transition": true
-          },
-          {
-            "action_id": 6,
-            "antibiotic": "CEFTAZIDIME",
-            "has_candidate_transition": false
-          }
-        ],
-        "selected_drug_susceptible": true,
-        "transition_status": "cross_resistance",
-        "has_candidate_transition": true,
-        "candidate_transitions": [
-          {
-            "target_drug": "CEFTAZIDIME",
-            "outcome": "cross_resistance",
-            "source_ids": [
-              "POD2018"
-            ],
-            "scenario_probability": 0.3333333333333333
-          },
-          {
-            "target_drug": "TRIMETHOPRIM",
-            "outcome": "cross_resistance",
-            "source_ids": [
-              "POD2018"
-            ],
-            "scenario_probability": 0.3333333333333333
-          },
-          {
-            "target_drug": "MECILLINAM",
-            "outcome": "cross_resistance",
-            "source_ids": [
-              "POD2018"
-            ],
-            "scenario_probability": 0.3333333333333333
-          }
-        ],
-        "selected_outcome": "cross_resistance",
-        "selected_target_drug": "CEFTAZIDIME",
-        "source_ids": [
-          "POD2018"
-        ],
-        "selected_candidate_probability": 0.3333333333333333,
-        "no_transition_probability": 0.0,
-        "transition_seed": 4024271845,
-        "reward": -0.2857142857142857,
-        "resistance_profile_after": [
-          0,
-          1,
-          0,
-          0,
-          0,
-          0,
-          1
-        ],
-        "newly_resistant_antibiotics": [
-          "CEFTAZIDIME"
-        ],
         "newly_susceptible_antibiotics": [],
         "resistant_count_after": 2,
         "susceptible_count_after": 5,
@@ -1548,22 +2519,17 @@
         "treatment_step_before": 5,
         "treatment_step_after": 6,
         "resistance_profile_before": [
-          0,
+          1,
           1,
           0,
           0,
           0,
           0,
-          1
+          0
         ],
-        "action_id": 2,
-        "antibiotic": "FOSFOMYCIN",
+        "action_id": 3,
+        "antibiotic": "TRIMETHOPRIM",
         "feasible_actions": [
-          {
-            "action_id": 0,
-            "antibiotic": "CIPROFLOXACIN",
-            "has_candidate_transition": true
-          },
           {
             "action_id": 2,
             "antibiotic": "FOSFOMYCIN",
@@ -1577,33 +2543,57 @@
           {
             "action_id": 4,
             "antibiotic": "GENTAMICIN",
-            "has_candidate_transition": false
+            "has_candidate_transition": true
           },
           {
             "action_id": 5,
             "antibiotic": "MECILLINAM",
             "has_candidate_transition": true
+          },
+          {
+            "action_id": 6,
+            "antibiotic": "CEFTAZIDIME",
+            "has_candidate_transition": false
           }
         ],
         "selected_drug_susceptible": true,
-        "transition_status": "unsupported_no_candidate",
-        "has_candidate_transition": false,
-        "candidate_transitions": [],
-        "selected_outcome": null,
-        "selected_target_drug": null,
-        "source_ids": [],
-        "selected_candidate_probability": null,
-        "no_transition_probability": null,
+        "transition_status": "neutral",
+        "has_candidate_transition": true,
+        "candidate_transitions": [
+          {
+            "target_drug": "FOSFOMYCIN",
+            "outcome": "neutral",
+            "source_ids": [
+              "JAMES2024"
+            ],
+            "scenario_probability": 0.5
+          },
+          {
+            "target_drug": "MECILLINAM",
+            "outcome": "neutral",
+            "source_ids": [
+              "SAK2025_EXP"
+            ],
+            "scenario_probability": 0.5
+          }
+        ],
+        "selected_outcome": "neutral",
+        "selected_target_drug": "FOSFOMYCIN",
+        "source_ids": [
+          "JAMES2024"
+        ],
+        "selected_candidate_probability": 0.5,
+        "no_transition_probability": 0.0,
         "transition_seed": 176743312,
         "reward": -0.2857142857142857,
         "resistance_profile_after": [
-          0,
+          1,
           1,
           0,
           0,
           0,
           0,
-          1
+          0
         ],
         "newly_resistant_antibiotics": [],
         "newly_susceptible_antibiotics": [],
@@ -1617,22 +2607,17 @@
         "treatment_step_before": 6,
         "treatment_step_after": 7,
         "resistance_profile_before": [
-          0,
+          1,
           1,
           0,
           0,
           0,
           0,
-          1
+          0
         ],
-        "action_id": 4,
-        "antibiotic": "GENTAMICIN",
+        "action_id": 5,
+        "antibiotic": "MECILLINAM",
         "feasible_actions": [
-          {
-            "action_id": 0,
-            "antibiotic": "CIPROFLOXACIN",
-            "has_candidate_transition": true
-          },
           {
             "action_id": 2,
             "antibiotic": "FOSFOMYCIN",
@@ -1646,33 +2631,82 @@
           {
             "action_id": 4,
             "antibiotic": "GENTAMICIN",
-            "has_candidate_transition": false
+            "has_candidate_transition": true
           },
           {
             "action_id": 5,
             "antibiotic": "MECILLINAM",
             "has_candidate_transition": true
+          },
+          {
+            "action_id": 6,
+            "antibiotic": "CEFTAZIDIME",
+            "has_candidate_transition": false
           }
         ],
         "selected_drug_susceptible": true,
-        "transition_status": "unsupported_no_candidate",
-        "has_candidate_transition": false,
-        "candidate_transitions": [],
-        "selected_outcome": null,
-        "selected_target_drug": null,
-        "source_ids": [],
-        "selected_candidate_probability": null,
-        "no_transition_probability": null,
+        "transition_status": "neutral",
+        "has_candidate_transition": true,
+        "candidate_transitions": [
+          {
+            "target_drug": "TRIMETHOPRIM",
+            "outcome": "cross_resistance",
+            "source_ids": [
+              "POD2018",
+              "SAK2025_EXP"
+            ],
+            "scenario_probability": 0.2
+          },
+          {
+            "target_drug": "NITROFURANTOIN",
+            "outcome": "neutral",
+            "source_ids": [
+              "SAK2025_EXP"
+            ],
+            "scenario_probability": 0.2
+          },
+          {
+            "target_drug": "NITROFURANTOIN",
+            "outcome": "collateral_sensitivity",
+            "source_ids": [
+              "SAK2025_EXP"
+            ],
+            "scenario_probability": 0.2
+          },
+          {
+            "target_drug": "CIPROFLOXACIN",
+            "outcome": "neutral",
+            "source_ids": [
+              "SAK2025_EXP"
+            ],
+            "scenario_probability": 0.2
+          },
+          {
+            "target_drug": "TRIMETHOPRIM",
+            "outcome": "neutral",
+            "source_ids": [
+              "SAK2025_EXP"
+            ],
+            "scenario_probability": 0.2
+          }
+        ],
+        "selected_outcome": "neutral",
+        "selected_target_drug": "NITROFURANTOIN",
+        "source_ids": [
+          "SAK2025_EXP"
+        ],
+        "selected_candidate_probability": 0.2,
+        "no_transition_probability": 0.0,
         "transition_seed": 2225433942,
         "reward": -0.2857142857142857,
         "resistance_profile_after": [
-          0,
+          1,
           1,
           0,
           0,
           0,
           0,
-          1
+          0
         ],
         "newly_resistant_antibiotics": [],
         "newly_susceptible_antibiotics": [],
@@ -1686,22 +2720,17 @@
         "treatment_step_before": 7,
         "treatment_step_after": 8,
         "resistance_profile_before": [
-          0,
+          1,
           1,
           0,
           0,
           0,
           0,
-          1
+          0
         ],
-        "action_id": 5,
-        "antibiotic": "MECILLINAM",
+        "action_id": 6,
+        "antibiotic": "CEFTAZIDIME",
         "feasible_actions": [
-          {
-            "action_id": 0,
-            "antibiotic": "CIPROFLOXACIN",
-            "has_candidate_transition": true
-          },
           {
             "action_id": 2,
             "antibiotic": "FOSFOMYCIN",
@@ -1715,67 +2744,59 @@
           {
             "action_id": 4,
             "antibiotic": "GENTAMICIN",
-            "has_candidate_transition": false
+            "has_candidate_transition": true
           },
           {
             "action_id": 5,
             "antibiotic": "MECILLINAM",
             "has_candidate_transition": true
+          },
+          {
+            "action_id": 6,
+            "antibiotic": "CEFTAZIDIME",
+            "has_candidate_transition": false
           }
         ],
         "selected_drug_susceptible": true,
-        "transition_status": "cross_resistance",
-        "has_candidate_transition": true,
-        "candidate_transitions": [
-          {
-            "target_drug": "TRIMETHOPRIM",
-            "outcome": "cross_resistance",
-            "source_ids": [
-              "POD2018"
-            ],
-            "scenario_probability": 1.0
-          }
-        ],
-        "selected_outcome": "cross_resistance",
-        "selected_target_drug": "TRIMETHOPRIM",
-        "source_ids": [
-          "POD2018"
-        ],
-        "selected_candidate_probability": 1.0,
-        "no_transition_probability": 0.0,
+        "transition_status": "unsupported_no_candidate",
+        "has_candidate_transition": false,
+        "candidate_transitions": [],
+        "selected_outcome": null,
+        "selected_target_drug": null,
+        "source_ids": [],
+        "selected_candidate_probability": null,
+        "no_transition_probability": null,
         "transition_seed": 801885339,
-        "reward": -0.42857142857142855,
+        "reward": -0.2857142857142857,
         "resistance_profile_after": [
-          0,
+          1,
           1,
           0,
-          1,
           0,
           0,
-          1
+          0,
+          0
         ],
-        "newly_resistant_antibiotics": [
-          "TRIMETHOPRIM"
-        ],
+        "newly_resistant_antibiotics": [],
         "newly_susceptible_antibiotics": [],
-        "resistant_count_after": 3,
-        "susceptible_count_after": 4,
+        "resistant_count_after": 2,
+        "susceptible_count_after": 5,
         "is_terminal_after": true,
         "termination_reason": "maximum_horizon"
       }
     ],
     "metrics": {
-      "cumulative_resistance_burden": 1.857142857142857,
-      "cumulative_reward": -1.857142857142857,
+      "cumulative_resistance_burden": 2.1428571428571423,
+      "cumulative_reward": -2.1428571428571423,
       "treatment_steps": 8,
       "initial_resistant_count": 1,
-      "final_resistant_count": 3,
-      "final_susceptible_count": 4,
-      "change_in_susceptible_count": -2,
+      "final_resistant_count": 2,
+      "final_susceptible_count": 5,
+      "change_in_susceptible_count": -1,
       "resistance_emergence_events": 2,
       "resistance_emergence_rate": 0.25,
       "susceptible_action_rate": 1.0,
-      "unsupported_step_count": 5,
+      "unsupported_step_count": 2,
       "cumulative_antibiotic_exposure": 8
     }
   },
@@ -1789,10 +2810,10 @@
     "change_in_susceptible_count": "final_susceptible_count minus the initial susceptible count.",
     "resistance_emergence_events": "Steps after which the resistant count increased (ml.src.metrics).",
     "resistance_emergence_rate": "resistance_emergence_events / treatment_steps; null when there are no steps.",
-    "susceptible_action_rate": "Fraction of steps whose selected drug was susceptible in the simulator (ml.src.metrics treatment_effectiveness_rate). The susceptible-only mask makes this 1.0 for both strategies, and it is not clinical efficacy; null when there are no steps.",
+    "susceptible_action_rate": "Fraction of steps whose selected drug was susceptible in the simulator (ml.src.metrics treatment_effectiveness_rate). The susceptible-only mask makes this 1.0 for all strategies, and it is not clinical efficacy; null when there are no steps.",
     "unsupported_step_count": "Steps with transition_status unsupported_no_candidate: the simulator had no candidate transition and left the profile unchanged.",
     "cumulative_antibiotic_exposure": "Number of antibiotic administrations (one per step)."
   },
-  "single_run_caveat": "One paired trajectory is a single stochastic sample. It does not show that either strategy is better, and it is not clinical evidence.",
+  "single_run_caveat": "One matched comparison is a single stochastic sample. It does not establish a superior strategy, and it is not clinical evidence.",
   "disclaimer": "Simulation output only. It is not clinical advice, a validated treatment recommendation, or a statement about clinical efficacy."
 }

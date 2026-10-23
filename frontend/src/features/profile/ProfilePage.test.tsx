@@ -16,17 +16,26 @@ if (!run) {
 }
 const runId = run.id
 
-function routes(runs: unknown = { ...rawFixtures.recentRuns, items: [run], totalCount: 1 }) {
+function routes(
+  runs: unknown = { ...rawFixtures.recentRuns, items: [run], totalCount: 1 },
+  includeDqn = false,
+) {
   return baseRoutes({
     'GET /api/v1/auth/session': { body: session },
     'GET /api/v1/simulations/recent': { body: runs },
-    [`GET /api/v1/comparisons/${runId}`]: { body: { ...rawFixtures.comparison, id: runId } },
+    [`GET /api/v1/comparisons/${runId}`]: {
+      body: {
+        ...rawFixtures.comparison,
+        id: runId,
+        ...(includeDqn ? { dqn: { ...rawFixtures.comparison.ppo, strategy: 'dqn' } } : {}),
+      },
+    },
   })
 }
 
 describe('E. coli Profile page', () => {
   it('shows the starting profile of the latest run, its resistance level, and the PPO sequence', async () => {
-    mockFetch(routes())
+    mockFetch(routes(undefined, true))
     renderApp('/app/profile')
 
     const initial = fixtures.comparison.ppo?.initialProfile ?? []
@@ -38,6 +47,8 @@ describe('E. coli Profile page', () => {
       ),
     ).toBeInTheDocument()
     expect(screen.getByLabelText(`Profile ${profileToCode(initial)}`)).toBeInTheDocument()
+    expect(screen.getByText('PPO + DQN')).toBeInTheDocument()
+    expect(screen.queryByRole('link', { name: 'Run with DQN' })).not.toBeInTheDocument()
 
     const drugs = within(
       screen.getByRole('list', { name: 'Resistance of each antibiotic' }),

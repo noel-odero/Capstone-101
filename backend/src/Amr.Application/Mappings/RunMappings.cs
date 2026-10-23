@@ -52,7 +52,10 @@ public static class RunMappings
         result.TerminationReason,
         result.States.Select(state => state.ToDto()).ToList(),
         result.Steps.Select(step => step.ToDto()).ToList(),
-        result.Metrics.ToDto());
+        result.Metrics.ToDto())
+    {
+        Model = result.Model is { } model ? new PolicyModelDto(model.ModelId, model.Algorithm, model.CheckpointSha256) : null,
+    };
 
     public static Guid ParseRunId(string runId) =>
         Guid.TryParse(runId, out var id) ? id : throw UpstreamErrors.InvalidResponse();

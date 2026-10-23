@@ -57,4 +57,5 @@ public sealed record ComparisonDto(
     string Disclaimer)
 {
     public Guid? SampleId { get; init; }
+    public StrategyResultDto? Dqn { get; init; }
 }

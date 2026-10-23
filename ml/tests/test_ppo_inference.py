@@ -13,7 +13,7 @@ from ml.src.ppo_inference import (
     CheckpointIntegrityError,
     ContractMismatchError,
     EmptyActionMaskError,
-    FrozenPPOInferenceEngine,
+    FrozenPolicyInferenceEngine,
     InferenceContext,
     InfeasibleActionError,
     InvalidContextError,
@@ -27,7 +27,7 @@ from simulation.environment import AntibioticEnvironment
 from simulation.resistance_state import ANTIBIOTICS
 from simulation.transition_generator import CandidateTransitionGenerator
 
-EXPECTED_SHA256 = "D10C26185C9903D96D0F2003643B76BE6DF4F03C39E0D2E5F7945E763B7D9093"
+EXPECTED_SHA256 = "1747b68cb572cc320c7c53ae105dfa9dd6827f689839b35c4f2bcf9520384001"
 ALL_PROFILES = tuple(product((0, 1), repeat=len(ANTIBIOTICS)))
 GENTAMICIN, CIPROFLOXACIN = ANTIBIOTICS.index("GENTAMICIN"), ANTIBIOTICS.index("CIPROFLOXACIN")
 
@@ -70,7 +70,7 @@ def generator():
 
 
 def make_engine(policy, generator, horizon=8):
-    return FrozenPPOInferenceEngine(
+    return FrozenPolicyInferenceEngine(
         policy=policy,
         candidate_generator=generator,
         horizon=horizon,
@@ -368,12 +368,12 @@ def write_manifest(tmp_path, **overrides):
     return path
 
 
-def test_committed_manifest_pins_seed_12000_contract():
+def test_committed_manifest_pins_selected_public_data_ppo_contract():
     manifest = load_manifest()
 
-    assert manifest.model_id == "ppo_seed_12000"
+    assert manifest.model_id == "ppo_public_v2_seed_19000"
     assert manifest.checkpoint_sha256 == EXPECTED_SHA256.lower()
-    assert manifest.checkpoint_path.as_posix().endswith("artifacts/ppo/ppo_seed_12000/final_model.zip")
+    assert manifest.checkpoint_path.as_posix().endswith("artifacts/frozen/public-data-v2/ppo/final_model.zip")
     assert (manifest.horizon, manifest.scenario_id) == (8, "REF_UNIFORM_SUPPORTED")
 
 
@@ -396,7 +396,7 @@ def test_manifest_with_tampered_observation_layout_is_rejected(tmp_path):
         {"simulator.interaction_data_sha256": "0" * 64},
         {"simulator.scenario_id": "SENSITIVITY_Q_050"},
         {"simulator.horizon": 9},
-        {"simulator.interaction_data_path": None},
+        {"simulator.interaction_data_path": "data/versions/interactions-v1/empirical_interactions.csv"},
     ],
 )
 def test_loader_rejects_manifest_that_disagrees_with_live_simulator_or_training_config(tmp_path, override):
@@ -502,8 +502,7 @@ def test_real_checkpoint_matches_pinned_hash_and_audited_first_action(real_engin
     result = real_engine.recommend(initial_context())
 
     assert real_engine.checkpoint_sha256 == EXPECTED_SHA256.lower()
-    # Audited trajectory seed_100001_profile_000 selected GENTAMICIN at step 0 from SSSSSSS.
-    assert (result.action_id, result.antibiotic) == (GENTAMICIN, "GENTAMICIN")
+    assert (result.action_id, result.antibiotic) == (2, "FOSFOMYCIN")
     assert result.transition_status == NO_CANDIDATE_STATUS
 
 

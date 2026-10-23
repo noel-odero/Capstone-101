@@ -27,7 +27,7 @@ import type { SavedSample } from '@/features/samples/sample-api'
 import styles from './simulation.module.css'
 import setup from './setup.module.css'
 
-/** The input form behind "Run Simulation": a starting profile and optional seeds, then both strategies run for the fixed horizon. */
+/** Configure a shared starting profile and optional seeds for all three strategies. */
 function SimulationForm({ sample }: { sample?: SavedSample }) {
   const [params] = useSearchParams()
   const navigate = useNavigate()
@@ -86,7 +86,7 @@ function SimulationForm({ sample }: { sample?: SavedSample }) {
             title={reviewing ? 'Review your simulation' : 'Configure your simulation'}
             subtitle={
               reviewing
-                ? 'Check your starting conditions before running both strategies.'
+                ? 'Check your starting conditions before comparing all three strategies.'
                 : 'Set a starting profile. Explore what happens next.'
             }
           />
@@ -180,10 +180,17 @@ function SimulationForm({ sample }: { sample?: SavedSample }) {
                 <h2 className={styles['fieldTitle']}>02 — Comparison strategies</h2>
                 <div className={setup.policy}>
                   <span>
-                    <strong>PPO · Reinforcement learning</strong>
-                    <small>Learned antibiotic-selection policy</small>
+                    <strong>PPO</strong>
+                    <small>Proximal Policy Optimization</small>
                   </span>
-                  <span className={setup.available}>Available</span>
+                  <span className={setup.available}>Frozen model</span>
+                </div>
+                <div className={setup.policy}>
+                  <span>
+                    <strong>DQN</strong>
+                    <small>Deep Q-Network</small>
+                  </span>
+                  <span className={setup.available}>Frozen model</span>
                 </div>
                 <div className={setup.policy}>
                   <span>
@@ -265,7 +272,7 @@ function SimulationForm({ sample }: { sample?: SavedSample }) {
             </div>
             {create.isPending ? (
               <LoadingState
-                label="Running both strategies. This can take up to a minute."
+                label="Comparing PPO, DQN and baseline. This can take up to a minute."
                 lines={1}
               />
             ) : null}

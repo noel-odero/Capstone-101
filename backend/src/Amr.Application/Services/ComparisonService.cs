@@ -26,13 +26,15 @@ public sealed class ComparisonService(IPythonServiceClient python, IRunRepositor
 
         var comparison = run.ToComparisonDto() with { SampleId = request.SampleId };
         var (ppo, baseline) = (comparison.Ppo!, comparison.Baseline!);
-        if (ppo.Strategy != StrategyKind.Ppo || baseline.Strategy != StrategyKind.RandomSusceptibleBaseline)
+        if (ppo.Strategy != StrategyKind.Ppo || baseline.Strategy != StrategyKind.RandomSusceptibleBaseline
+            || comparison.Dqn is not { Strategy: StrategyKind.Dqn, Model: not null })
         {
             throw UpstreamErrors.InvalidResponse();
         }
 
         if (!RunResponseChecks.Answers(request, ppo.InitialProfile, ppo.EnvironmentSeed)
-            || !RunResponseChecks.Answers(request, baseline.InitialProfile, baseline.EnvironmentSeed))
+            || !RunResponseChecks.Answers(request, baseline.InitialProfile, baseline.EnvironmentSeed)
+            || comparison.Dqn is { } dqn && !RunResponseChecks.Answers(request, dqn.InitialProfile, dqn.EnvironmentSeed))
         {
             throw ComparisonErrors.ContractViolation();
         }

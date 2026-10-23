@@ -1,4 +1,6 @@
 import { buildMetricRows, formatMetricValue } from '@/domain/metrics'
+import { strategyResults } from '@/domain/runs'
+import { strategyLabel } from '@/domain/terminology'
 import type { Comparison } from '@/domain/types'
 import { Tooltip } from '@/components/ui/Tooltip'
 import styles from './scientific.module.css'
@@ -10,8 +12,8 @@ export function ComparisonMetrics({
   comparison: Comparison
   compact?: boolean
 }) {
-  const { ppo, baseline } = comparison
-  if (!ppo || !baseline) return null
+  const results = strategyResults(comparison)
+  if (!results.length) return null
   return (
     <div className="stack">
       <div className={styles['tableWrap']}>
@@ -20,12 +22,15 @@ export function ComparisonMetrics({
           <thead>
             <tr>
               <th scope="col">Metric</th>
-              <th scope="col">PPO</th>
-              <th scope="col">Random baseline</th>
+              {results.map((result) => (
+                <th scope="col" key={result.strategy}>
+                  {strategyLabel(result.strategy)}
+                </th>
+              ))}
             </tr>
           </thead>
           <tbody>
-            {buildMetricRows(ppo.metrics, baseline.metrics)
+            {buildMetricRows(results)
               .filter(
                 (row) =>
                   !compact ||
@@ -44,18 +49,18 @@ export function ComparisonMetrics({
                         'Definition not provided.'}
                     </Tooltip>
                   </th>
-                  <td>{formatMetricValue(row.key, row.ppo)}</td>
-                  <td>{formatMetricValue(row.key, row.baseline)}</td>
+                  {row.values.map((value, index) => (
+                    <td key={results[index]?.strategy}>{formatMetricValue(row.key, value)}</td>
+                  ))}
                 </tr>
               ))}
           </tbody>
         </table>
       </div>
-      {!compact && ppo.metrics.unsupportedStepCount + baseline.metrics.unsupportedStepCount > 0 ? (
+      {!compact && results.some((result) => result.metrics.unsupportedStepCount > 0) ? (
         <p className={styles['coverageSummary']} role="note">
-          No candidate transition data for {ppo.metrics.unsupportedStepCount} of {ppo.steps.length}{' '}
-          PPO steps and {baseline.metrics.unsupportedStepCount} of {baseline.steps.length} baseline
-          steps. Unchanged profiles on these steps are a data gap, not evidence of effectiveness.
+          Steps without applicable transitions leave the profile unchanged. They do not demonstrate
+          effectiveness.
         </p>
       ) : null}
       {!compact ? (

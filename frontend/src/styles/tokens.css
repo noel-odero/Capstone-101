@@ -63,6 +63,7 @@
 
   /* Chart series, shared by every page */
   --color-series-ppo: #1d4ed8;
+  --color-series-dqn: #0f766e;
   --color-series-baseline: #c2410c;
 
   /* Type scale */
@@ -164,6 +165,7 @@
   --color-neutral-bg: #171717;
   --color-neutral-border: #404040;
   --color-series-ppo: #60a5fa;
+  --color-series-dqn: #5eead4;
   --color-series-baseline: #fb923c;
   --shadow-md: none;
 }
@@ -190,6 +192,7 @@
   --color-nav-active-bg: #dadad4;
   --color-nav-muted: #65656c;
   --color-series-ppo: #347cff;
+  --color-series-dqn: #0f766e;
   --color-series-baseline: #f6a313;
   --radius-md: 0.55rem;
   --radius-lg: 0.7rem;

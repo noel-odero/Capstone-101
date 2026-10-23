@@ -1,4 +1,4 @@
-"""Frozen PPO inference contract: one validated state context in, one feasible action out.
+"""Frozen policy inference contract: one validated state context in, one feasible action out.
 
 The context carries the full observation state (resistance profile, last action, treatment step), so
 callers cannot rebuild an observation with a zeroed previous action or a reset step. Simulator,
@@ -19,6 +19,7 @@ import numpy as np
 from sb3_contrib import MaskablePPO
 
 from ml.src.matched_policy_evaluation import MaskablePPOObservationPolicy
+from ml.src.masked_dqn import DQNObservationPolicy, MaskedDQN
 from ml.src.ppo_training import PPOConfig, environment_manifest, make_training_environment
 from simulation.episode import EpisodeState
 from simulation.episode_termination import EpisodeTermination
@@ -176,7 +177,7 @@ def _feasibility_mask(state: ResistanceState) -> np.ndarray:
     return np.asarray([state.is_susceptible(antibiotic) for antibiotic in ANTIBIOTICS], dtype=bool)
 
 
-class FrozenPPOInferenceEngine:
+class FrozenPolicyInferenceEngine:
     """Deterministic, mask-enforcing recommendation from a loaded policy.
 
     ``policy`` must provide ``select_action(observation)``, as ``MaskablePPOObservationPolicy`` does.
@@ -261,6 +262,7 @@ class FrozenCheckpointManifest:
     training_config_path: Path
     interaction_data_sha256: str
     interaction_data_path: str | None = None
+    algorithm: str = "MaskablePPO"
 
 
 def load_manifest(manifest_path: str | Path = DEFAULT_MANIFEST_PATH) -> FrozenCheckpointManifest:
@@ -274,7 +276,7 @@ def load_manifest(manifest_path: str | Path = DEFAULT_MANIFEST_PATH) -> FrozenCh
 
     try:
         require(manifest["manifest_version"] == 1, "unsupported manifest_version")
-        require(manifest["algorithm"] == "MaskablePPO", "algorithm must be MaskablePPO")
+        require(manifest["algorithm"] in ("MaskablePPO", "MaskedDQN"), "algorithm must be MaskablePPO or MaskedDQN")
         require(
             tuple(manifest["simulator"]["action_names"]) == ANTIBIOTICS,
             "action_names must equal the simulator's ANTIBIOTICS order",
@@ -319,6 +321,7 @@ def load_manifest(manifest_path: str | Path = DEFAULT_MANIFEST_PATH) -> FrozenCh
             training_config_path=REPO_ROOT / manifest["provenance"]["config"],
             interaction_data_sha256=str(manifest["simulator"]["interaction_data_sha256"]).lower(),
             interaction_data_path=manifest["simulator"].get("interaction_data_path"),
+            algorithm=manifest["algorithm"],
         )
     except (KeyError, TypeError) as error:
         raise ContractMismatchError(f"Frozen manifest is missing or malformed: {error!r}") from error
@@ -357,7 +360,9 @@ def _check_live_contract(manifest: FrozenCheckpointManifest, live_manifest: dict
     try:
         with manifest.training_config_path.open(encoding="utf-8") as config_file:
             training_config = json.load(config_file)
-    except (OSError, ValueError) as error:
+        if manifest.algorithm == "MaskedDQN":
+            training_config = training_config["shared"]
+    except (OSError, ValueError, KeyError) as error:
         raise ContractMismatchError(f"Training config is unreadable: {manifest.training_config_path}") from error
     expected = {
         "scenario_id": manifest.scenario_id,
@@ -368,11 +373,13 @@ def _check_live_contract(manifest: FrozenCheckpointManifest, live_manifest: dict
             raise ContractMismatchError(f"Manifest {key} differs from the checkpoint's training config.")
     if training_config.get("action_mask_configuration", {}).get("rule") != "susceptible_actions_only":
         raise ContractMismatchError("Checkpoint was not trained with susceptible_actions_only masking.")
+    if training_config.get("reward_configuration") != live_manifest["reward_specification"]:
+        raise ContractMismatchError("Checkpoint reward specification differs from the simulator.")
 
 
 def load_frozen_engine(
     manifest_path: str | Path = DEFAULT_MANIFEST_PATH,
-) -> FrozenPPOInferenceEngine:
+) -> FrozenPolicyInferenceEngine:
     """Verify the hash, then load those same bytes and check them against the live simulator."""
     manifest = load_manifest(manifest_path)
     checkpoint_bytes, digest = read_verified_checkpoint(
@@ -386,7 +393,8 @@ def load_frozen_engine(
     _check_live_contract(manifest, environment_manifest(config))
     environment = make_training_environment(config)
     try:
-        model = _load_model_from_bytes(checkpoint_bytes, manifest.device)
+        model = (_load_model_from_bytes(checkpoint_bytes, manifest.device) if manifest.algorithm == "MaskablePPO"
+                 else MaskedDQN.load(io.BytesIO(checkpoint_bytes), device=manifest.device))
         if model.action_space != environment.action_space:
             raise ContractMismatchError("Checkpoint action space does not match the simulator.")
         if model.observation_space != environment.observation_space:
@@ -394,11 +402,12 @@ def load_frozen_engine(
         candidate_generator = (
             environment.episode_progression.episode_step.transition_model.candidate_generator
         )
-        policy = MaskablePPOObservationPolicy(environment.action_space, model)
+        adapter = MaskablePPOObservationPolicy if manifest.algorithm == "MaskablePPO" else DQNObservationPolicy
+        policy = adapter(environment.action_space, model)
     finally:
         environment.close()
 
-    return FrozenPPOInferenceEngine(
+    return FrozenPolicyInferenceEngine(
         policy=policy,
         candidate_generator=candidate_generator,
         horizon=manifest.horizon,
@@ -408,12 +417,12 @@ def load_frozen_engine(
 
 
 @functools.lru_cache(maxsize=None)
-def _load_cached(manifest_path: str) -> FrozenPPOInferenceEngine:
+def _load_cached(manifest_path: str) -> FrozenPolicyInferenceEngine:
     return load_frozen_engine(manifest_path)
 
 
 def get_frozen_engine(
     manifest_path: str | Path = DEFAULT_MANIFEST_PATH,
-) -> FrozenPPOInferenceEngine:
+) -> FrozenPolicyInferenceEngine:
     """Process-wide engine: the checkpoint is verified and loaded once, not per request."""
     return _load_cached(str(Path(manifest_path).resolve()))

@@ -18,7 +18,7 @@ public class PythonServiceClientSuccessTests
 
         Assert.True(health.ModelReady);
         Assert.Equal("ok", health.Status);
-        Assert.Equal("ppo_seed_12000", health.ModelId);
+        Assert.Equal("ppo_public_v2_seed_19000", health.ModelId);
         Assert.Equal(new Uri("http://python.test/internal/health"), handler.Requests.Single().Uri);
         Assert.Equal(HttpMethod.Get, handler.Requests.Single().Method);
     }
@@ -39,9 +39,9 @@ public class PythonServiceClientSuccessTests
     {
         var model = await ClientFactory.Create(Serving("model_200")).GetModelAsync(CancellationToken.None);
 
-        Assert.Equal("ppo_seed_12000", model.ModelId);
-        Assert.Equal("d10c26185c9903d96d0f2003643b76be6df4f03c39e0d2e5f7945e763b7d9093", model.CheckpointSha256);
-        Assert.Equal("7a5e3e1fe730676a0793674e4ff4aaf3c6ce1177ad5588eed4bb2e5d627edb44", model.InteractionDataSha256);
+        Assert.Equal("ppo_public_v2_seed_19000", model.ModelId);
+        Assert.Equal("1747b68cb572cc320c7c53ae105dfa9dd6827f689839b35c4f2bcf9520384001", model.CheckpointSha256);
+        Assert.Equal("af62f389fe92b4ecddfbc1df6c967c5da9992ed928c09dd3a68673819f42591c", model.InteractionDataSha256);
         Assert.Equal(("REF_UNIFORM_SUPPORTED", 8), (model.ScenarioId, model.Horizon));
         Assert.Equal(7, model.AntibioticOrder.Count);
         Assert.Equal("susceptible_actions_only", model.ActionMasking.Rule);
@@ -75,7 +75,7 @@ public class PythonServiceClientSuccessTests
         Assert.True(result.Valid);
         Assert.False(result.IsTerminal);
         Assert.Equal(new[] { 1, 2, 4, 5, 6 }, result.FeasibleActionIds);
-        Assert.Contains(result.FeasibleActions, action => action is { Antibiotic: "GENTAMICIN", HasCandidateTransition: false });
+        Assert.Contains(result.FeasibleActions, action => action is { Antibiotic: "GENTAMICIN", HasCandidateTransition: true });
     }
 
     [Fact]
@@ -98,14 +98,14 @@ public class PythonServiceClientSuccessTests
 
         Assert.Equal("""{"resistance_profile":[0,1,0,0,0,0,0],"strategy":"ppo","environment_seed":100001,"policy_seed":null}""", handler.Requests.Single().Body);
         Assert.Equal("simulation", run.Kind);
-        Assert.Equal("d10c26185c9903d96d0f2003643b76be6df4f03c39e0d2e5f7945e763b7d9093", run.Provenance.CheckpointSha256);
+        Assert.Equal("1747b68cb572cc320c7c53ae105dfa9dd6827f689839b35c4f2bcf9520384001", run.Provenance.CheckpointSha256);
         Assert.Equal("normalized_resistance_burden", run.Provenance.RewardSpecification["objective"].GetString());
         Assert.Equal(7, run.Provenance.RewardSpecification["normalization"].GetInt32());
         Assert.Equal("not_applicable", run.SeedConfiguration.PolicySeedSource);
         Assert.Null(run.SeedConfiguration.PolicySeed);
 
         var result = run.Result;
-        Assert.Equal((PythonStrategyIds.Ppo, "Frozen PPO Policy"), (result.Strategy, result.DisplayLabel));
+        Assert.Equal((PythonStrategyIds.Ppo, "PPO"), (result.Strategy, result.DisplayLabel));
         Assert.Equal((8, 9), (result.Steps.Count, result.States.Count));
         Assert.Equal("maximum_horizon", result.TerminationReason);
         var unsupported = result.Steps.Where(step => step.TransitionStatus == "unsupported_no_candidate").ToList();
@@ -158,6 +158,8 @@ public class PythonServiceClientSuccessTests
         Assert.Equal("""{"resistance_profile":[0,1,0,0,0,0,0],"environment_seed":100001,"policy_seed":900001}""", handler.Requests.Single().Body);
         Assert.Equal(new Uri("http://python.test/internal/compare"), handler.Requests.Single().Uri);
         Assert.Equal(PythonStrategyIds.Ppo, comparison.Ppo.Strategy);
+        Assert.Equal(PythonStrategyIds.Dqn, comparison.Dqn!.Strategy);
+        Assert.Equal("dqn_public_v2_seed_15000", comparison.Dqn.Model!.ModelId);
         Assert.Equal(PythonStrategyIds.Greedy, comparison.Greedy.Strategy);
         Assert.Equal((8, 8), (comparison.Ppo.Steps.Count, comparison.Greedy.Steps.Count));
         var contract = comparison.ComparisonContract;
@@ -181,7 +183,7 @@ public class PythonServiceClientSuccessTests
 
         var model = await ClientFactory.Create(handler).GetModelAsync(CancellationToken.None);
 
-        Assert.Equal("ppo_seed_12000", model.ModelId);
+        Assert.Equal("ppo_public_v2_seed_19000", model.ModelId);
     }
 
     [Fact]
