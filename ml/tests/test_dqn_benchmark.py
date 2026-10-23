@@ -1,0 +1,193 @@
+from dataclasses import replace
+import json
+from pathlib import Path
+import shutil
+
+import numpy as np
+import pytest
+import torch
+
+from ml.src.dqn_benchmark import (
+    BenchmarkProtocol, DQNSettings, REPO_ROOT, archive_inputs, run_benchmark, train_dqn,
+)
+from ml.src.masked_dqn import MaskedDQN, masked_bootstrap
+from ml.src.ppo_training import PPOConfig, make_training_environment
+from ml.src.ppo_training import environment_manifest
+
+
+def observation(profile=(0, 1, 1, 1, 1, 1, 1), step=0):
+    return np.asarray([*profile, *([0] * 7), step], dtype=np.float32)
+
+
+def test_selection_exploration_and_warmup_never_choose_resistant_actions():
+    environment = make_training_environment(PPOConfig())
+    model = MaskedDQN("MlpPolicy", environment, gamma=1.0, seed=12)
+    try:
+        with torch.no_grad():
+            for parameter in model.q_net.parameters():
+                parameter.zero_()
+            model.q_net.q_net[-1].bias.copy_(torch.tensor([-10., 500., 400., 300., 200., 100., 50.]))
+        # The only feasible action deliberately has the lowest Q-value.
+        assert int(model.predict(observation(), deterministic=True)[0]) == 0
+        model.exploration_rate = 1.0
+        for _ in range(30):
+            assert int(model.predict(observation(), deterministic=False)[0]) == 0
+        batch = np.stack([observation(), observation((1, 1, 1, 1, 1, 1, 0))])
+        model._last_obs = batch
+        for _ in range(30):
+            actions, replay_actions = model._sample_action(learning_starts=100, n_envs=2)
+            np.testing.assert_array_equal(actions, [0, 6])
+            np.testing.assert_array_equal(actions, replay_actions)
+        with pytest.raises(ValueError, match="no susceptible action"):
+            model.predict(observation((1,) * 7), deterministic=True)
+    finally:
+        environment.close()
+
+
+def test_bellman_target_masks_invalid_actions_and_terminal_bootstrap():
+    states = torch.tensor(np.stack([
+        observation(), observation((1,) * 7), observation(),
+    ]))
+    q_values = torch.tensor([[-4., 100., 90., 80., 70., 60., 50.]] * 3)
+    dones = torch.tensor([[0.], [1.], [1.]])
+    actual = masked_bootstrap(q_values, states, dones)
+    torch.testing.assert_close(actual, torch.tensor([[-4.], [0.], [0.]]))
+    assert torch.isfinite(actual).all()
+    with pytest.raises(ValueError, match="nonterminal replay state"):
+        masked_bootstrap(q_values[1:2], states[1:2], torch.zeros((1, 1)))
+
+
+@pytest.mark.parametrize("values", [
+    {"training_seeds": [1, 2]},
+    {"training_seeds": [1, 1]},
+    {"evaluation_seed_bases": [100001, 100002]},
+    {"evaluation_seed_bases": [61000]},
+    {"baseline_policy_seed_start": 710001},
+    {"training_timesteps": 256},
+])
+def test_protocol_rejects_overlapping_seed_streams_and_invalid_budgets(values):
+    data = json.loads(Path("experiments/dqn_pilot_config.json").read_text())
+    with pytest.raises(ValueError):
+        BenchmarkProtocol.from_dict({**data, **values})
+
+
+def test_protocol_refuses_budget_that_would_overshoot_ppo_rollouts():
+    data = json.loads(Path("experiments/dqn_pilot_config.json").read_text())
+    protocol = BenchmarkProtocol.from_dict({**data, "training_timesteps": 4100})
+    with pytest.raises(ValueError, match="PPO rollout length"):
+        protocol.shared_config(61000)
+
+
+def test_public_data_retraining_pins_new_data_and_refuses_another_dataset(tmp_path):
+    protocol = BenchmarkProtocol.from_dict(json.loads(Path("experiments/dqn_public_data_v2_config.json").read_text()))
+    assert protocol.ppo_checkpoint_root is None
+    assert len(protocol.training_seeds) == 20
+    assert protocol.expected_interaction_data_sha256 == environment_manifest(protocol.shared_config(12000))["interaction_data_sha256"]
+    with pytest.raises(ValueError, match="dataset pinned"):
+        run_benchmark(replace(protocol, expected_interaction_data_sha256="0" * 64), tmp_path / "wrong-data")
+    assert not (tmp_path / "wrong-data").exists()
+
+
+def test_short_training_changes_weights_and_roundtrips_checkpoint(tmp_path):
+    config = PPOConfig(
+        ppo_seed=61, environment_seed=62, evaluation_seed=63, total_timesteps=32,
+        n_steps=16, batch_size=8, evaluation_frequency=16, evaluation_episodes=2,
+        policy_architecture=(16,),
+    )
+    settings = DQNSettings(learning_starts=4, batch_size=4, buffer_size=64, target_update_interval=8)
+    summary = train_dqn(config, settings, tmp_path / "first")
+    assert summary["total_timesteps"] == 32
+    assert summary["gradient_updates"] > 0
+    model = MaskedDQN.load(tmp_path / "first" / "final_model.zip", device="cpu")
+    environment = make_training_environment(config)
+    initial = MaskedDQN(
+        "MlpPolicy", environment, **settings.__dict__, gamma=1.,
+        policy_kwargs={"net_arch": [16]}, seed=61, device="cpu",
+    )
+    try:
+        assert any(not torch.equal(a, b) for a, b in zip(model.q_net.parameters(), initial.q_net.parameters()))
+        assert int(model.predict(observation(), deterministic=True)[0]) == 0
+        # Same seed/config retrains to the same learned weights, not just feasible predictions.
+        train_dqn(config, settings, tmp_path / "second")
+        repeated = MaskedDQN.load(tmp_path / "second" / "final_model.zip", device="cpu")
+        for first, second in zip(model.q_net.parameters(), repeated.q_net.parameters()):
+            torch.testing.assert_close(first, second, rtol=0, atol=0)
+        with pytest.raises(FileExistsError):
+            train_dqn(config, settings, tmp_path / "first")
+    finally:
+        environment.close()
+
+
+def test_three_strategy_benchmark_preserves_paired_cases_and_saved_traces(tmp_path, monkeypatch):
+    protocol = BenchmarkProtocol(
+        study_id="test", stage="pilot", training_timesteps=256, training_seeds=(61000,),
+        evaluation_seed_bases=(710001,), baseline_policy_seed_start=810001,
+        ppo_config="experiments/ppo_baseline_config.json",
+        dqn=DQNSettings(learning_starts=8, buffer_size=512),
+    )
+    output = tmp_path / "benchmark"
+    report = run_benchmark(protocol, output)
+    assert report["evaluation_profile_count"] == 128
+    assert report["replicates"][0]["actual_timesteps_per_model"] == 256
+    assert set(report["summary"]) == {"dqn", "ppo", "random_susceptible_baseline"}
+    for strategy in ("dqn", "ppo"):
+        evaluation = json.loads((output / "seed_61000" / strategy / "evaluation.json").read_text())
+        episodes = evaluation["runs"][0]["evaluation"]["episodes"]
+        assert len(episodes) == 128
+        assert episodes[-1]["steps"] == []
+        assert episodes[-1]["terminal_reward_adjustment"] == -8
+        assert report["summary"][strategy]["susceptible_action_rate"] == 1.0
+    assert json.loads((output / "status.json").read_text())["status"] == "completed"
+    assert (output / "report.md").exists()
+    with pytest.raises(FileExistsError):
+        run_benchmark(protocol, output)
+    checkpoint = output / "seed_61000" / "dqn" / "final_model.zip"
+    modified = checkpoint.stat().st_mtime_ns
+
+    def unexpected_training(*args, **kwargs):
+        raise AssertionError("A completed replicate must not be retrained on resume.")
+
+    monkeypatch.setattr("ml.src.dqn_benchmark.train_dqn", unexpected_training)
+    resumed = run_benchmark(protocol, output, resume=True)
+    assert resumed["summary"] == report["summary"]
+    assert checkpoint.stat().st_mtime_ns == modified
+    with monkeypatch.context() as changed:
+        changed.setattr("ml.src.dqn_benchmark.environment_manifest", lambda config: {
+            **environment_manifest(config), "interaction_data_sha256": "0" * 64,
+        })
+        with pytest.raises(ValueError, match="Cannot resume: dataset"):
+            run_benchmark(protocol, output, resume=True)
+    snapshot = output / "empirical_interactions.csv"
+    original_csv = snapshot.read_bytes()
+    snapshot.write_bytes(original_csv + b"changed")
+    with pytest.raises(ValueError, match="archived training interactions changed"):
+        run_benchmark(protocol, output, resume=True)
+    snapshot.write_bytes(original_csv)
+    with pytest.raises(ValueError, match="Cannot resume"):
+        run_benchmark(replace(protocol, study_id="different"), output, resume=True)
+    checkpoint.write_bytes(checkpoint.read_bytes() + b"tampered")
+    with pytest.raises(ValueError, match="checkpoint changed"):
+        run_benchmark(protocol, output, resume=True)
+
+
+def test_archived_ppo_must_match_budget_and_checksums(tmp_path, monkeypatch):
+    protocol = BenchmarkProtocol.from_dict(json.loads(Path("experiments/dqn_full_config.json").read_text()))
+    config = protocol.shared_config(1000)
+    root = REPO_ROOT / protocol.ppo_checkpoint_root
+    with pytest.raises(ValueError, match="simulator or transition-data manifest differs"):
+        archive_inputs(config, root)
+    monkeypatch.setattr("ml.src.dqn_benchmark.environment_manifest", lambda current: environment_manifest(
+        replace(current, interaction_data_path="data/versions/interactions-v1/empirical_interactions.csv")
+    ))
+    inputs = archive_inputs(config, root)
+    assert len(inputs) == 4
+    with pytest.raises(ValueError, match="actual training budget"):
+        archive_inputs(replace(config, total_timesteps=512), root)
+    target = tmp_path / "ppo_seed_1000"
+    target.mkdir()
+    for name, data in inputs.items():
+        (target / name).write_bytes(data)
+    shutil.copyfile(root / "SHA256SUMS.txt", tmp_path / "SHA256SUMS.txt")
+    (target / "final_model.zip").write_bytes(inputs["final_model.zip"] + b"tampered")
+    with pytest.raises(ValueError, match="checksum mismatch"):
+        archive_inputs(config, tmp_path)

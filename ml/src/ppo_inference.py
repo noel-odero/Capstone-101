@@ -260,6 +260,7 @@ class FrozenCheckpointManifest:
     device: str
     training_config_path: Path
     interaction_data_sha256: str
+    interaction_data_path: str | None = None
 
 
 def load_manifest(manifest_path: str | Path = DEFAULT_MANIFEST_PATH) -> FrozenCheckpointManifest:
@@ -317,6 +318,7 @@ def load_manifest(manifest_path: str | Path = DEFAULT_MANIFEST_PATH) -> FrozenCh
             device=manifest["inference"]["device"],
             training_config_path=REPO_ROOT / manifest["provenance"]["config"],
             interaction_data_sha256=str(manifest["simulator"]["interaction_data_sha256"]).lower(),
+            interaction_data_path=manifest["simulator"].get("interaction_data_path"),
         )
     except (KeyError, TypeError) as error:
         raise ContractMismatchError(f"Frozen manifest is missing or malformed: {error!r}") from error
@@ -378,7 +380,8 @@ def load_frozen_engine(
     )
 
     config = PPOConfig(
-        scenario_id=manifest.scenario_id, horizon=manifest.horizon, device=manifest.device
+        scenario_id=manifest.scenario_id, horizon=manifest.horizon, device=manifest.device,
+        interaction_data_path=manifest.interaction_data_path,
     )
     _check_live_contract(manifest, environment_manifest(config))
     environment = make_training_environment(config)

@@ -36,8 +36,8 @@ class FixedCandidateGenerator:
 @pytest.mark.parametrize(
     ("initial_state", "action", "status", "resistance_change"),
     [
-        ((0, 0, 0, 0, 0, 0, 0), 1, "cross_resistance", 1),
-        ((0, 0, 1, 1, 1, 1, 1), 0, "collateral_sensitivity", -1),
+        ((0, 0, 0, 0, 0, 0, 0), 6, "cross_resistance", 1),
+        ((0, 0, 0, 1, 0, 0, 0), 2, "collateral_sensitivity", -1),
         ((0, 1, 0, 0, 0, 0, 0), 3, "neutral", 0),
         ((0, 0, 0, 0, 0, 0, 0), 2, "unsupported_no_candidate", 0),
     ],

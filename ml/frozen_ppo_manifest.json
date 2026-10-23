@@ -14,6 +14,7 @@
   },
   "simulator": {
     "scenario_id": "REF_UNIFORM_SUPPORTED",
+    "interaction_data_path": "data/versions/interactions-v1/empirical_interactions.csv",
     "horizon": 8,
     "interaction_data_sha256": "7a5e3e1fe730676a0793674e4ff4aaf3c6ce1177ad5588eed4bb2e5d627edb44",
     "action_names": [

@@ -160,6 +160,7 @@ def test_empirical_relationships_are_preserved():
             row["source_id"],
             normalize_drug(row["from_drug"]),
             normalize_drug(row["to_drug"]),
+            row["relationship"],
         ): row["relationship"]
         for row in empirical
     }
@@ -169,6 +170,7 @@ def test_empirical_relationships_are_preserved():
             row["source_id"],
             normalize_drug(row["from_drug"]),
             normalize_drug(row["to_drug"]),
+            row["relationship"],
         )
 
         assert row["relationship"] == empirical_relationships[key]

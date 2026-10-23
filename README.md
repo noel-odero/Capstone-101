@@ -91,9 +91,9 @@ See [backend testing](backend/README.md#test) for PostgreSQL integration and liv
 
 ## Scientific contract and reproducibility
 
-Profiles contain seven binary resistance states, giving 128 possible profiles. Each action selects a currently susceptible antibiotic. Candidate transitions model cross-resistance, collateral sensitivity or neutral changes under `REF_UNIFORM_SUPPORTED`. Missing candidate data leave the profile unchanged; that is a data gap, not treatment success. A comparison is one stochastic episode, not evidence that either strategy is generally superior.
+Profiles contain seven binary resistance states, giving 128 possible profiles. Each action selects a currently susceptible antibiotic. Candidate transitions model cross-resistance, collateral sensitivity or neutral changes under `REF_UNIFORM_SUPPORTED`. An empty candidate set leaves the profile unchanged: this can mean absent directed evidence or a relationship that cannot change the current binary state. It is not evidence of treatment success. A comparison is one stochastic episode, not evidence that either strategy is generally superior.
 
-The service validates the checkpoint hash, transition-data hash and frozen manifest before serving runs. Every saved result records model identity, seeds and metric definitions. The active model is selected by [the frozen manifest](ml/frozen_ppo_manifest.json). The other checkpoints support the multi-seed study and are intentionally retained.
+The service validates the checkpoint hash, transition-data hash and frozen manifest before serving runs. Every saved result records model identity, seeds and metric definitions. The active model is selected by [the frozen manifest](ml/frozen_ppo_manifest.json), which also pins the original interaction CSV for the existing checkpoint. Default training environments use the updated CSV in `data/processed/`. The other checkpoints support the multi-seed study and are intentionally retained.
 
 Verify archived artifacts:
 
@@ -104,3 +104,9 @@ Verify archived artifacts:
 `artifacts/ppo/SHA256SUMS.txt` hashes binaries as raw bytes and text after CRLF-to-LF normalization. Research commands and provenance are documented in the [study runbook](docs/scientific-specification/ppo-seed-study-runbook.md). Figure regeneration requires the canonical study outputs, which are not distributed in this repo.
 
 Further documentation: [scientific specification](docs/scientific-specification), [API contract](backend/docs/api-contract.md), [Python service](service/README.md), and [sample workflow](docs/ui/samples-workflow.md).
+
+An [offline DQN/PPO/baseline benchmark](docs/scientific-specification/dqn-benchmark.md) is available for research. Its pilot and full-study configurations are separate from the model served by the application.
+
+The [transition-data research audit](docs/scientific-specification/transition-data-research-2026-10-23.md) identifies additional public measurements, extraction gaps and the limits of using those measurements as simulation probabilities.
+
+The [public-data integration and retraining instructions](docs/scientific-specification/public-data-integration.md) describe the 45-record training CSV and the fresh 20-seed PPO/DQN/baseline command. Existing models remain paired with their original data until a retrained model is activated.

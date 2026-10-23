@@ -18,12 +18,14 @@ class CandidateTransitionGenerator:
     def __init__(
         self,
         action_space: ActionSpace | None = None,
+        interactions_file: Path | None = None,
     ):
         self.action_space = action_space or ActionSpace()
+        self.interactions_file = interactions_file or EMPIRICAL_INTERACTIONS_FILE
         self.interactions = self._load_interactions()
 
     def _load_interactions(self) -> tuple[dict[str, str], ...]:
-        with EMPIRICAL_INTERACTIONS_FILE.open(
+        with self.interactions_file.open(
             newline="",
             encoding="utf-8-sig",
         ) as file:

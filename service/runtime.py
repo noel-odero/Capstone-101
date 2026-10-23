@@ -186,7 +186,8 @@ def load_runtime(manifest_path: str | Path = DEFAULT_MANIFEST_PATH) -> ModelRunt
         manifest=manifest,
         manifest_document=document,
         config=PPOConfig(
-            scenario_id=manifest.scenario_id, horizon=manifest.horizon, device=manifest.device
+            scenario_id=manifest.scenario_id, horizon=manifest.horizon, device=manifest.device,
+            interaction_data_path=manifest.interaction_data_path,
         ),
         antibiotics=_load_antibiotics(),
     )

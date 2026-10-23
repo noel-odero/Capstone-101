@@ -315,17 +315,20 @@ def test_step_beyond_horizon_and_non_context_are_invalid(generator):
 
 
 @pytest.mark.parametrize("drug", ["GENTAMICIN", "FOSFOMYCIN", "CEFTAZIDIME"])
-def test_unsupported_drugs_never_have_candidate_transitions(generator, drug):
+def test_public_data_provides_candidates_for_previously_unsupported_drugs(generator, drug):
     engine = make_engine(FixedActionPolicy(0), generator)
     action = ANTIBIOTICS.index(drug)
 
-    assert not any(engine.has_candidate_transition(initial_context(p), action) for p in ALL_PROFILES)
+    assert any(
+        engine.has_candidate_transition(initial_context(p), action)
+        for p in ALL_PROFILES if p[action] == 0
+    )
 
 
 def test_result_reports_transition_status_for_selected_action(generator):
     context = initial_context()
 
-    unsupported = make_engine(FixedActionPolicy(GENTAMICIN), generator).recommend(context)
+    unsupported = make_engine(FixedActionPolicy(ANTIBIOTICS.index("FOSFOMYCIN")), generator).recommend(context)
     supported = make_engine(FixedActionPolicy(CIPROFLOXACIN), generator).recommend(context)
 
     assert (unsupported.transition_status, unsupported.has_candidate_transition) == (NO_CANDIDATE_STATUS, False)
@@ -393,6 +396,7 @@ def test_manifest_with_tampered_observation_layout_is_rejected(tmp_path):
         {"simulator.interaction_data_sha256": "0" * 64},
         {"simulator.scenario_id": "SENSITIVITY_Q_050"},
         {"simulator.horizon": 9},
+        {"simulator.interaction_data_path": None},
     ],
 )
 def test_loader_rejects_manifest_that_disagrees_with_live_simulator_or_training_config(tmp_path, override):
@@ -521,7 +525,7 @@ def test_byte_loaded_checkpoint_matches_path_loaded_checkpoint(real_engine):
 
 @pytest.mark.parametrize("profile", [(0,) * 7, (1, 0, 0, 1, 0, 0, 1)])
 def test_real_checkpoint_is_deterministic_feasible_and_context_preserving(real_engine, profile):
-    environment = make_training_environment(PPOConfig())
+    environment = make_training_environment(PPOConfig(interaction_data_path=load_manifest().interaction_data_path))
     observation, _ = environment.reset(seed=100001, options={"initial_resistance_state": profile})
     terminated, steps = False, 0
     while not terminated:

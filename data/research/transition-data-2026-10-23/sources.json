@@ -1,0 +1,123 @@
+{
+  "audit_date": "2026-10-23",
+  "purpose": "Research screening and source inspection, not production transition parameters",
+  "active_interactions_sha256_raw": "eddeeb03365e0c17ff37909e585284ea1210a75541b1a73327343cccb7fa5814",
+  "assets": [
+    {
+      "source_id": "SAK2025",
+      "local_download": "experiments/results/transition-data-audit-2026-10-23/sakenova-fig3.xlsx",
+      "url": "https://media.springernature.com/original/springer-static/esm/art%3A10.1038%2Fs41564-024-01857-w/MediaObjects/41564_2024_1857_MOESM7_ESM.xlsx",
+      "bytes": 27167,
+      "sha256": "ddb2f5461f8115daf56adc0a2c557201b98736b7cb4cad2bfa1b5e8a9a011aac",
+      "inspection": "Fig.3bcd; seven-drug subset extracted in transition-data-sakenova-audit.csv"
+    },
+    {
+      "source_id": "SAK2025",
+      "local_download": "experiments/results/transition-data-audit-2026-10-23/sakenova-drugs.xlsx",
+      "url": "https://media.springernature.com/original/springer-static/esm/art%3A10.1038%2Fs41564-024-01857-w/MediaObjects/41564_2024_1857_MOESM5_ESM.xlsx",
+      "bytes": 10344,
+      "sha256": "abb4f61d5700a5b9fb82a0dc297b247ceafb3b09b2dc4e9d3f0e431f67123295",
+      "inspection": "SuppTable3_Drugs_used; drug vocabulary and ancestor MICs"
+    },
+    {
+      "source_id": "SAK2025",
+      "local_download": "experiments/results/transition-data-audit-2026-10-23/sakenova-extended2.xlsx",
+      "url": "https://media.springernature.com/original/springer-static/esm/art%3A10.1038%2Fs41564-024-01857-w/MediaObjects/41564_2024_1857_MOESM12_ESM.xlsx",
+      "bytes": 22513,
+      "sha256": "3285471d2966ff73237e569642c80e326bea9115c2fefd0bb84c73cb553cce38",
+      "inspection": "ED Fig.2e; follow-up endpoint groups, not independent first-endpoint samples"
+    },
+    {
+      "source_id": "SAK2025",
+      "local_download": "experiments/results/transition-data-audit-2026-10-23/sakenova-fig6.xlsx",
+      "url": "https://media.springernature.com/original/springer-static/esm/art%3A10.1038%2Fs41564-024-01857-w/MediaObjects/41564_2024_1857_MOESM10_ESM.xlsx",
+      "bytes": 15273,
+      "sha256": "cd9bf79cd93faaf314d4d3e01cd3a7713df62b27572827f2b5229304d64d9e9a",
+      "inspection": "Fig.6b; combination selection and matched self-drug controls, not a single-drug cross-susceptibility matrix"
+    },
+    {
+      "source_id": "JAMES2024",
+      "local_download": "experiments/results/transition-data-audit-2026-10-23/james-figure-data.zip",
+      "url": "https://raw.githubusercontent.com/Alhubb/Collateral-Effects-of-AMR/main/Commands_and_Figure_Data_GitHub.zip",
+      "bytes": 2091486,
+      "sha256": "fd1f8a4a7429e26d26ace6a20eb1ea4c9cfa9061f556e0e8950f46aca533b5cf",
+      "inspection": "Data/MIC_all_tidy.csv; 117 MIC rows, 13 strain labels, 3 assayed drugs; duplicate copy under Commands_and_Figure_Data",
+      "github_blob_sha": "a69f39642c8133a485bb51af722dcce59a152415",
+      "inspected_archive_members": [
+        {
+          "path": "Data/MIC_all_tidy.csv",
+          "sha256": "3e8941ac0c069921d37f734840525dd55bf85959b5e15ece6262ebc2c1fec4ff"
+        }
+      ]
+    },
+    {
+      "source_id": "IBACACHE2018",
+      "local_download": "experiments/results/transition-data-audit-2026-10-23/gentamicin-supplementary.zip",
+      "url": "https://www.ebi.ac.uk/europepmc/webservices/rest/PMC5867336/supplementaryFiles",
+      "bytes": 387966,
+      "sha256": "e0476511c40f660d51ab6a67bc83b11d72bf61ca605c10718c4df0c5bf344a92",
+      "inspection": "DataSheet1.docx, Supplementary Tables S5 and S6; 22 and 38 clones nested within evolution populations",
+      "inspected_archive_members": [
+        {
+          "path": "DataSheet1.docx",
+          "sha256": "c8ea5bcd3139ccffab9a8522f47db73e727f2b3ac5ffc404a8442501a18a51e7"
+        }
+      ]
+    },
+    {
+      "source_id": "PHILLIPS2026",
+      "local_download": "experiments/results/transition-data-audit-2026-10-23/phillips-figshare-metadata.json",
+      "url": "https://api.figshare.com/v2/articles/29630732",
+      "bytes": 7536,
+      "sha256": "81b13ecbed2297091af86b59f7aa16183272800df1d5be576aba4fb5c8c27783",
+      "inspection": "Dataset 29630732, CC BY 4.0 metadata and download locations"
+    },
+    {
+      "source_id": "PHILLIPS2026",
+      "local_download": "experiments/results/transition-data-audit-2026-10-23/phillips-mic.xlsx",
+      "url": "https://ndownloader.figshare.com/files/56497361",
+      "bytes": 28142,
+      "sha256": "9e473967251589d9bac3efb68b82991827f90faf584c5279667ad99f469f63fd",
+      "inspection": "raw_MIC and MIC_compiled; use CEF-only arm for ceftazidime-origin evidence; missing CEF 1C"
+    }
+  ],
+  "scope": "Public data only; no author requests; research staging, not production parameters",
+  "retained_public_extracts": [
+    {
+      "path": "ibacache-gen-mic.csv",
+      "source_id": "IBACACHE2018",
+      "rows": 62,
+      "sha256": "3d4e5d676626bc858420dc4df061b6988486ad595ec9eec132c1631113899ebb"
+    },
+    {
+      "path": "james-mic.csv",
+      "source_id": "JAMES2024",
+      "rows": 117,
+      "sha256": "3e8941ac0c069921d37f734840525dd55bf85959b5e15ece6262ebc2c1fec4ff"
+    },
+    {
+      "path": "phillips-caz-cip-mic.csv",
+      "source_id": "PHILLIPS2026",
+      "rows": 10,
+      "sha256": "0a2c8dc01c959bad67b02d07c90b1ab66f388b74310238be2211563911dee57f"
+    },
+    {
+      "path": "sakenova-directed-outcomes.csv",
+      "source_id": "SAK2025_FIG3",
+      "rows": 18,
+      "sha256": "ab6547c00d2cbc4bb66b0ece21d85d02491499ab6c9bba18b353e10cf105c0eb"
+    }
+  ],
+  "verified_phillips_cef_to_cip": {
+    "population_mean_fold_changes": [
+      4.0,
+      6.666666666666667,
+      2.0
+    ],
+    "mean_across_populations": 4.222222222222222,
+    "matches_compiled_value": true,
+    "valid_clones": 8,
+    "missing_clone": "1C",
+    "missing_marker": "no o/n"
+  }
+}

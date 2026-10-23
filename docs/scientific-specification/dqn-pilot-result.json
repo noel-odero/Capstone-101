@@ -1,0 +1,373 @@
+{
+  "protocol": {
+    "study_id": "dqn_ppo_baseline_pilot_v1",
+    "stage": "pilot",
+    "training_timesteps": 4096,
+    "training_seeds": [
+      61000,
+      62000,
+      63000
+    ],
+    "evaluation_seed_bases": [
+      710001,
+      720001
+    ],
+    "baseline_policy_seed_start": 810001,
+    "ppo_config": "experiments/ppo_baseline_config.json",
+    "dqn": {
+      "learning_rate": 0.001,
+      "buffer_size": 8192,
+      "learning_starts": 256,
+      "batch_size": 64,
+      "train_freq": 4,
+      "gradient_steps": 1,
+      "target_update_interval": 256,
+      "exploration_fraction": 0.3,
+      "exploration_initial_eps": 1.0,
+      "exploration_final_eps": 0.05,
+      "max_grad_norm": 10.0
+    }
+  },
+  "environment": {
+    "scenario_id": "REF_UNIFORM_SUPPORTED",
+    "horizon": 8,
+    "action_names": [
+      "CIPROFLOXACIN",
+      "NITROFURANTOIN",
+      "FOSFOMYCIN",
+      "TRIMETHOPRIM",
+      "GENTAMICIN",
+      "MECILLINAM",
+      "CEFTAZIDIME"
+    ],
+    "action_count": 7,
+    "observation_shape": [
+      15
+    ],
+    "observation_low": [
+      -1.0,
+      -1.0,
+      -1.0,
+      -1.0,
+      -1.0,
+      -1.0,
+      -1.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0
+    ],
+    "observation_high": [
+      1.0,
+      1.0,
+      1.0,
+      1.0,
+      1.0,
+      1.0,
+      1.0,
+      1.0,
+      1.0,
+      1.0,
+      1.0,
+      1.0,
+      1.0,
+      1.0,
+      8.0
+    ],
+    "observation_dtype": "float32",
+    "interaction_data_sha256": "7a5e3e1fe730676a0793674e4ff4aaf3c6ce1177ad5588eed4bb2e5d627edb44",
+    "reward_specification": {
+      "objective": "normalized_resistance_burden",
+      "normalization": 7,
+      "terminal_convention": "all_resistant_state_persists_to_horizon"
+    },
+    "action_masking": true,
+    "training_profile_design": "cycle_all_nonterminal_profiles",
+    "training_profile_count": 127,
+    "validation_initial_profiles": [
+      "SSSSSSS",
+      "SSSSSSR",
+      "RSSSSSS",
+      "SSSSSRR",
+      "RRSSSSS",
+      "SSSSRRR",
+      "SRSSRSR",
+      "RSSSRRS",
+      "RRRSSSS",
+      "SSSRRRR",
+      "RSSRRSR",
+      "RRRRSSS",
+      "SSRRRRR",
+      "RRRRRSS",
+      "SRRRRRR",
+      "RRRRRRS"
+    ]
+  },
+  "ppo_base_config_sha256": "bc2e49957fbae440aab256d62843e7b3aa375b08a5c04bbc3057285c26de0f85",
+  "checkpoint_selection": "final checkpoint, not best validation checkpoint",
+  "evaluation_seed_pairs": [
+    [
+      710001,
+      810001
+    ],
+    [
+      720001,
+      810129
+    ]
+  ],
+  "evaluation_profile_count": 128,
+  "torch_threads": 1,
+  "python_version": "3.11.9",
+  "packages": {
+    "torch": "2.14.0",
+    "numpy": "2.4.6",
+    "stable-baselines3": "2.9.0",
+    "sb3-contrib": "2.9.0",
+    "gymnasium": "1.3.0"
+  },
+  "source_sha256": {
+    "ml\\src\\artifact_checksums.py": "7f05e1bced2e4a2cea07d2f3cd0c46bf8dc922f72f452f0cdd325b901befe998",
+    "ml\\src\\confidence_intervals.py": "487bd7f1c1cbdfa9f60f63629d6466e0a47bfe83cf463d3d6bc8f87c870b0b54",
+    "ml\\src\\dqn_benchmark.py": "02a0e17bfa7daa7c0a05396ed3aa7cac4ae3f08748913fedf6105e23f36a1804",
+    "ml\\src\\evaluation_runner.py": "a1e47a663ed7a311e03c65fe90b98339215705c12982dc86f3c2f315719eb9dd",
+    "ml\\src\\greedy_policy.py": "b24e7b681ecb43172491424ac008e237b9c4f38d74b1b21cbf8444007234d184",
+    "ml\\src\\masked_dqn.py": "a26bb6fbadf9db047a1691f42b8addea546c8421e69c1389fff5ea2cdbca88fd",
+    "ml\\src\\matched_policy_evaluation.py": "5684af7111ec64cbbec3f3de9bd3c63c1c80fa3a829c5ecfc96f46b507e02312",
+    "ml\\src\\metrics.py": "f63233f63f1489dd628c2d36afee029561c456296ab48f2ce4037f97badd542b",
+    "ml\\src\\multi_seed_evaluation.py": "03ef64606b473bd64819c0fc1e5dc12d1c6b2459d1784b0b7ef6b71a391a7417",
+    "ml\\src\\ppo_evaluation.py": "7b51d99cc8ca143cd19eae0e1b99c527a9cf55c98dd65bcfc3b74c7a77432d41",
+    "ml\\src\\ppo_inference.py": "b40e953cc8fe4dc83432eb0c8819eec0a187fad5f47fae9f16c957e6d2a5d9a5",
+    "ml\\src\\ppo_seed_study.py": "10c7be1e0862b2a46a68527192dcfd1bb8c4e645d6f73c992efead403c4b4009",
+    "ml\\src\\ppo_training.py": "91a99ccc0a87577a83f386116966c4c619ed1ca3ba1f2da63f4b92693e3b8ad3",
+    "ml\\src\\ppo_visualizations.py": "4f1457248a033db6081e6c2ad56dacad475dd301b5f731fef719973f2256e1ce",
+    "ml\\src\\statistical_comparison.py": "5d45f1f848fc76f2211f066faa944b92c7ee68a1ab30b8f6c84ae6911a88356c",
+    "ml\\src\\study_figures.py": "3a5568487bb0dd7280a2975dcf71274edc3661484498c2e1cd83ba998b30fa36",
+    "simulation\\__init__.py": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "simulation\\action_space.py": "366518e902275215ca17284d4d11bb9fdd0cbcc8011a6a7824c51ea79c826bc9",
+    "simulation\\candidate_transition.py": "9d5f5005e9e146ef48c00c88959af7df1dbf7877f7288987f195fcda20b85cfa",
+    "simulation\\environment.py": "93f5ffd470b61441043acabe8bc815c559a2ec6be63faac369737cb95ffa714b",
+    "simulation\\episode.py": "df0b90f89101ea65a9505d216f45571f7cf3ff85a77b994db9e952ffaea6cec1",
+    "simulation\\episode_progression.py": "8b781f975d410ffa4af32d0e6524331c7b63866fcdb393464d0682d143ee54f6",
+    "simulation\\episode_step.py": "e564c69c24e1abfd7ff4de4cc464ec9a141ac88d35b025e0d49c07a936dd9796",
+    "simulation\\episode_termination.py": "662f316dc3365f4c6429e3415b7422c70a3008d58d491f87bc9ce4540f8709d0",
+    "simulation\\observation.py": "90374d06e071f5039aa963aa50ea0ba76821f942b9bbdfcd4f0e082bd58dffb8",
+    "simulation\\resistance_state.py": "b4ed57b8354ac958fded20caf544deb898c9163058556c0e3a1619175299e8ff",
+    "simulation\\reward.py": "94897088c6dd99ce14981da16523038702ae25fda4458a32b52eda1688e09a69",
+    "simulation\\stochastic_transition_model.py": "15c146ebb02771e900de8b68c767711663d486edfe04645477e0173630f8f3df",
+    "simulation\\transition_function.py": "a0710f7a9020bfdd0017429d6684bc7009b5386847bfceb31f8ca46772c337c4",
+    "simulation\\transition_generator.py": "2deac9f65dd227be6ec7e80e21fdc7a09c7be038a7d84499210edc7eb65645f2",
+    "simulation\\transition_sampler.py": "e9118bb4afa4a9bd831dba9741001c0914bee9a2d3d2d7467e49f844c956f6e2",
+    "simulation\\treatment_action.py": "cf83fecd5e35bfc766953556dd70146e33e2abd2d466f84ca6e752125103105b",
+    "simulation\\treatment_action_executor.py": "7d7a809ab53c3fdad84a0b3fc1841e00679fb9d135571db0a924dd97bee88b01",
+    "simulation\\treatment_effectiveness.py": "9c7c5c0cdc3aefcb7ad1fa918d36ca2040db6f6967818693c24ae263a17f8280"
+  },
+  "replicates": [
+    {
+      "training_seed": 61000,
+      "actual_timesteps_per_model": 4096,
+      "checkpoints": {
+        "ppo": "126159fc2a5cd7de18cf3484647a7c84656a78fe951e88fae7f40e6183bf7475",
+        "dqn": "b2742d92466f46978044f16a4b6a7b473df9fbd0439b9b52ce5f2e1b2cfd346f"
+      },
+      "metadata_sha256": {
+        "dqn\\config.json": "0d972e34774e6dd9cb34cb823437fe0b718c65e31d3e18c35e6b81813ecde9bd",
+        "dqn\\environment_manifest.json": "1d72f49d1058d2f2d1de5cd687be8d3998802d91b6420367e658152e983730b6",
+        "dqn\\training_episodes.json": "c866d77361f7c46d723505fd0c300f11a283aea9d33c334e2ffda3093387b507",
+        "dqn\\training_summary.json": "d055bff4dee64ebdaa4c2b131e05134eb5af8b0103b9dd80dd37cc4682969072",
+        "ppo\\config.json": "7ace54498e9ee5bc5e4b162f6d6eb6b43e05b9dbc8c199a0ee4c141a4386edda",
+        "ppo\\environment_manifest.json": "0fbf74ff4bfb32fa034df4fb96c7803c1330f222de0602703764e609477f8c0d",
+        "ppo\\training_episodes.json": "82fc4c4d206f4ded41a86c2537e5f5e00e384b2309f0c665c3528fdb35a708cb",
+        "ppo\\training_summary.json": "4e1ac0f9ca2bc036e34de6c6913b31b2a6f7aca6a3f01c0788d839fbe0206854"
+      },
+      "training_times": {
+        "ppo_seconds": 7.212861300009536,
+        "dqn_seconds": 4.178678600001149
+      },
+      "metrics": {
+        "random_susceptible_baseline": {
+          "episodes": 256,
+          "resistance_burden": 4.260044642857142,
+          "resistance_emergence_events": 0.8359375,
+          "remaining_susceptible_options": 3.13671875,
+          "antibiotic_exposure": 7.9375,
+          "unsupported_steps": 5.84375,
+          "susceptible_action_rate": 1.0
+        },
+        "ppo": {
+          "episodes": 256,
+          "resistance_burden": 3.8889508928571423,
+          "resistance_emergence_events": 0.1796875,
+          "remaining_susceptible_options": 3.6015625,
+          "antibiotic_exposure": 7.9375,
+          "unsupported_steps": 7.4140625,
+          "susceptible_action_rate": 1.0
+        },
+        "dqn": {
+          "episodes": 256,
+          "resistance_burden": 3.6573660714285707,
+          "resistance_emergence_events": 0.1015625,
+          "remaining_susceptible_options": 3.828125,
+          "antibiotic_exposure": 7.9375,
+          "unsupported_steps": 6.35546875,
+          "susceptible_action_rate": 1.0
+        }
+      },
+      "dqn_minus_ppo": {
+        "resistance_burden": -0.23158482142857162,
+        "resistance_emergence_events": -0.078125,
+        "remaining_susceptible_options": 0.2265625,
+        "antibiotic_exposure": 0.0,
+        "unsupported_steps": -1.05859375,
+        "susceptible_action_rate": 0.0
+      }
+    },
+    {
+      "training_seed": 62000,
+      "actual_timesteps_per_model": 4096,
+      "checkpoints": {
+        "ppo": "b72ae7675faa6cab2723b7a1761f73a0fdb52a30eb212daee9a722d0994363e2",
+        "dqn": "0e8e6c30f0c8d73e0dc5f21053938dcfcddc824fc60f62c9d258f56a7bccdf03"
+      },
+      "metadata_sha256": {
+        "dqn\\config.json": "ac8d1cbc01fff5ee90f746fe8cc076e259c25db710d3aad24e0c138038f12861",
+        "dqn\\environment_manifest.json": "1d72f49d1058d2f2d1de5cd687be8d3998802d91b6420367e658152e983730b6",
+        "dqn\\training_episodes.json": "08db1d5917033e3ecb9ccc1aa193f5386ba0b9e4beed5588ad2fa88e030dca37",
+        "dqn\\training_summary.json": "e4571183a473b394b504aa98793f7d7662ca48c15d21440276aa19b9d8c2b9fb",
+        "ppo\\config.json": "595e1dabf40d182899a74612907522fcc7ad254c35374ffe18dea31a523d2a4d",
+        "ppo\\environment_manifest.json": "0fbf74ff4bfb32fa034df4fb96c7803c1330f222de0602703764e609477f8c0d",
+        "ppo\\training_episodes.json": "1c63555dddf662e702df1fc9cde0cc5b61bfcd929da53d1cf585302e838c7fea",
+        "ppo\\training_summary.json": "548e7b73ac4e29aba9da4b295f30e3afeefb051554eff845fa179563ea6d5e79"
+      },
+      "training_times": {
+        "ppo_seconds": 7.278973900014535,
+        "dqn_seconds": 7.160126700007822
+      },
+      "metrics": {
+        "random_susceptible_baseline": {
+          "episodes": 256,
+          "resistance_burden": 4.260044642857142,
+          "resistance_emergence_events": 0.8359375,
+          "remaining_susceptible_options": 3.13671875,
+          "antibiotic_exposure": 7.9375,
+          "unsupported_steps": 5.84375,
+          "susceptible_action_rate": 1.0
+        },
+        "ppo": {
+          "episodes": 256,
+          "resistance_burden": 3.7226562499999996,
+          "resistance_emergence_events": 0.11328125,
+          "remaining_susceptible_options": 3.75390625,
+          "antibiotic_exposure": 7.9375,
+          "unsupported_steps": 7.33984375,
+          "susceptible_action_rate": 1.0
+        },
+        "dqn": {
+          "episodes": 256,
+          "resistance_burden": 3.631696428571428,
+          "resistance_emergence_events": 0.19140625,
+          "remaining_susceptible_options": 3.8125,
+          "antibiotic_exposure": 7.9375,
+          "unsupported_steps": 6.890625,
+          "susceptible_action_rate": 1.0
+        }
+      },
+      "dqn_minus_ppo": {
+        "resistance_burden": -0.09095982142857162,
+        "resistance_emergence_events": 0.078125,
+        "remaining_susceptible_options": 0.05859375,
+        "antibiotic_exposure": 0.0,
+        "unsupported_steps": -0.44921875,
+        "susceptible_action_rate": 0.0
+      }
+    },
+    {
+      "training_seed": 63000,
+      "actual_timesteps_per_model": 4096,
+      "checkpoints": {
+        "ppo": "9b3b0c0f03f7e96d48b0cd54d37c1eefdceb2d78946d50ef5eece3e4ee6a24f9",
+        "dqn": "d7fe527f10728389b0d42193969f16969a3b249821ebc78cb41f265b3579cc4e"
+      },
+      "metadata_sha256": {
+        "dqn\\config.json": "dd6f15d108ee1e495d2e7a8a2e32aad8c8096ab67a06f248b440eaf9d647aeb8",
+        "dqn\\environment_manifest.json": "1d72f49d1058d2f2d1de5cd687be8d3998802d91b6420367e658152e983730b6",
+        "dqn\\training_episodes.json": "35cd59f15ea073a3932493679d577285f7fe42347874a99d8cfa952dccfde4e8",
+        "dqn\\training_summary.json": "43dad6794358b556c67420d27a07ba855d85f848d21e6899a5af755bd8ea6d63",
+        "ppo\\config.json": "f4c2b5099b408475d13d86d7d9931f4b02d911f4a660403d485153096bc074f1",
+        "ppo\\environment_manifest.json": "0fbf74ff4bfb32fa034df4fb96c7803c1330f222de0602703764e609477f8c0d",
+        "ppo\\training_episodes.json": "2150019c8cbb19ec1d24f70e315e14a5c9034883b88ec060b5b8c246400634fd",
+        "ppo\\training_summary.json": "0906765135c75c032e444c95b6d41c793d2c46a629581c0480814f878f9e7407"
+      },
+      "training_times": {
+        "ppo_seconds": 9.015079000004334,
+        "dqn_seconds": 5.162409000011394
+      },
+      "metrics": {
+        "random_susceptible_baseline": {
+          "episodes": 256,
+          "resistance_burden": 4.260044642857142,
+          "resistance_emergence_events": 0.8359375,
+          "remaining_susceptible_options": 3.13671875,
+          "antibiotic_exposure": 7.9375,
+          "unsupported_steps": 5.84375,
+          "susceptible_action_rate": 1.0
+        },
+        "ppo": {
+          "episodes": 256,
+          "resistance_burden": 3.7187499999999996,
+          "resistance_emergence_events": 0.31640625,
+          "remaining_susceptible_options": 3.7734375,
+          "antibiotic_exposure": 7.9375,
+          "unsupported_steps": 6.8203125,
+          "susceptible_action_rate": 1.0
+        },
+        "dqn": {
+          "episodes": 256,
+          "resistance_burden": 3.6428571428571423,
+          "resistance_emergence_events": 0.13671875,
+          "remaining_susceptible_options": 3.85546875,
+          "antibiotic_exposure": 7.9375,
+          "unsupported_steps": 6.55078125,
+          "susceptible_action_rate": 1.0
+        }
+      },
+      "dqn_minus_ppo": {
+        "resistance_burden": -0.0758928571428572,
+        "resistance_emergence_events": -0.1796875,
+        "remaining_susceptible_options": 0.08203125,
+        "antibiotic_exposure": 0.0,
+        "unsupported_steps": -0.26953125,
+        "susceptible_action_rate": 0.0
+      }
+    }
+  ],
+  "summary": {
+    "dqn": {
+      "resistance_burden": 3.6439732142857135,
+      "resistance_emergence_events": 0.14322916666666666,
+      "remaining_susceptible_options": 3.83203125,
+      "antibiotic_exposure": 7.9375,
+      "unsupported_steps": 6.598958333333333,
+      "susceptible_action_rate": 1.0
+    },
+    "ppo": {
+      "resistance_burden": 3.776785714285714,
+      "resistance_emergence_events": 0.203125,
+      "remaining_susceptible_options": 3.7096354166666665,
+      "antibiotic_exposure": 7.9375,
+      "unsupported_steps": 7.19140625,
+      "susceptible_action_rate": 1.0
+    },
+    "random_susceptible_baseline": {
+      "resistance_burden": 4.260044642857142,
+      "resistance_emergence_events": 0.8359375,
+      "remaining_susceptible_options": 3.13671875,
+      "antibiotic_exposure": 7.9375,
+      "unsupported_steps": 5.84375,
+      "susceptible_action_rate": 1.0
+    }
+  }
+}

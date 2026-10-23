@@ -1,0 +1,14 @@
+{
+  "study_id": "dqn_ppo_baseline_full_v1",
+  "stage": "full",
+  "training_timesteps": 100096,
+  "training_seeds": [
+    1000, 2000, 3000, 4000, 5000, 6000, 7000, 8000, 9000, 10000,
+    11000, 12000, 13000, 14000, 15000, 16000, 17000, 18000, 19000, 20000
+  ],
+  "evaluation_seed_bases": [100001, 200001, 300001, 400001, 500001],
+  "baseline_policy_seed_start": 900001,
+  "ppo_config": "experiments/ppo_baseline_config.json",
+  "ppo_checkpoint_root": "artifacts/ppo",
+  "dqn": {}
+}
