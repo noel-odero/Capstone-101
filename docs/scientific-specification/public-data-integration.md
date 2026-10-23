@@ -1,6 +1,6 @@
 # Public evidence integration and retraining
 
-The active training input is `data/processed/empirical_interactions.csv`. It now contains **45 records: 30 directed records across 18 distinct directed drug pairs, plus 15 predictions with unknown direction that remain excluded from sampling**. Every modeled antibiotic has measured outgoing evidence. These counts describe the curated research model, not clinical coverage.
+The active training input is `data/processed/empirical_interactions.csv`. It contains **30 directed records across 18 distinct directed drug pairs**. The 15 predictions with unknown direction are retained in `evidence_registry.csv` and excluded from the training CSV, transition-parameter table and training uncertainty table. Every modeled antibiotic has measured outgoing evidence. These counts describe the curated research model, not clinical coverage.
 
 ## Integrated measurements
 
@@ -27,7 +27,7 @@ The app's existing frozen PPO remains explicitly pinned to the archived v1 inter
 The new retraining configuration pins the updated table's canonical interaction hash:
 
 ```text
-b82e2a1bf2c4d04f38d025cfcbd1d76831c495d0ef57bcd40ed9c2df018bea80
+af62f389fe92b4ecddfbc1df6c967c5da9992ed928c09dd3a68673819f42591c
 ```
 
 The benchmark archives the exact CSV in its output directory, rejects a mismatched dataset and checks it again on resume and completion. Old PPO checkpoints fail the new environment contract and are not reused.
@@ -56,4 +56,4 @@ No full retraining was started during this integration; the user will run it.
 .\.venv\Scripts\python.exe -B experiments\integrate_public_evidence.py --check
 ```
 
-The script rebuilds all four tables deterministically from the archived v1 tables and retained public extracts. Without `--check`, it writes those outputs only if the current tables match either v1 or the expected integrated version; it refuses to overwrite independently edited tables.
+The script rebuilds all four tables deterministically from the archived v1 tables and retained public extracts. It preserves all evidence in the registry and includes only `A_to_B` records in the three training tables. Without `--check`, it writes those outputs only if the current tables match v1, the previous 45-record import, or the cleaned integrated version; it refuses to overwrite independently edited tables.

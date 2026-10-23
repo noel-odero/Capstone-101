@@ -109,4 +109,4 @@ An [offline DQN/PPO/baseline benchmark](docs/scientific-specification/dqn-benchm
 
 The [transition-data research audit](docs/scientific-specification/transition-data-research-2026-10-23.md) identifies additional public measurements, extraction gaps and the limits of using those measurements as simulation probabilities.
 
-The [public-data integration and retraining instructions](docs/scientific-specification/public-data-integration.md) describe the 45-record training CSV and the fresh 20-seed PPO/DQN/baseline command. Existing models remain paired with their original data until a retrained model is activated.
+The [public-data integration and retraining instructions](docs/scientific-specification/public-data-integration.md) describe the 30-record directed training CSV and the fresh 20-seed PPO/DQN/baseline command. Unknown-direction evidence remains in the evidence registry. Existing models remain paired with their original data until a retrained model is activated.
