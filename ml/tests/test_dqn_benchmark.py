@@ -1,4 +1,5 @@
 from dataclasses import replace
+import csv
 import json
 from pathlib import Path
 import shutil
@@ -17,6 +18,15 @@ from ml.src.ppo_training import environment_manifest
 
 def observation(profile=(0, 1, 1, 1, 1, 1, 1), step=0):
     return np.asarray([*profile, *([0] * 7), step], dtype=np.float32)
+
+
+def pilot_protocol_values():
+    return {
+        "study_id": "test", "stage": "pilot", "training_timesteps": 4096,
+        "training_seeds": [61000, 62000, 63000],
+        "evaluation_seed_bases": [710001, 720001], "baseline_policy_seed_start": 810001,
+        "ppo_config": "experiments/ppo_baseline_config.json", "dqn": {},
+    }
 
 
 def test_selection_exploration_and_warmup_never_choose_resistant_actions():
@@ -66,13 +76,13 @@ def test_bellman_target_masks_invalid_actions_and_terminal_bootstrap():
     {"training_timesteps": 256},
 ])
 def test_protocol_rejects_overlapping_seed_streams_and_invalid_budgets(values):
-    data = json.loads(Path("experiments/dqn_pilot_config.json").read_text())
+    data = pilot_protocol_values()
     with pytest.raises(ValueError):
         BenchmarkProtocol.from_dict({**data, **values})
 
 
 def test_protocol_refuses_budget_that_would_overshoot_ppo_rollouts():
-    data = json.loads(Path("experiments/dqn_pilot_config.json").read_text())
+    data = pilot_protocol_values()
     protocol = BenchmarkProtocol.from_dict({**data, "training_timesteps": 4100})
     with pytest.raises(ValueError, match="PPO rollout length"):
         protocol.shared_config(61000)
@@ -171,7 +181,8 @@ def test_three_strategy_benchmark_preserves_paired_cases_and_saved_traces(tmp_pa
 
 
 def test_archived_ppo_must_match_budget_and_checksums(tmp_path, monkeypatch):
-    protocol = BenchmarkProtocol.from_dict(json.loads(Path("experiments/dqn_full_config.json").read_text()))
+    values = json.loads(Path("experiments/dqn_public_data_v2_config.json").read_text())
+    protocol = BenchmarkProtocol.from_dict({**values, "ppo_checkpoint_root": "artifacts/ppo"})
     config = protocol.shared_config(1000)
     root = REPO_ROOT / protocol.ppo_checkpoint_root
     with pytest.raises(ValueError, match="simulator or transition-data manifest differs"):
@@ -191,3 +202,40 @@ def test_archived_ppo_must_match_budget_and_checksums(tmp_path, monkeypatch):
     (target / "final_model.zip").write_bytes(inputs["final_model.zip"] + b"tampered")
     with pytest.raises(ValueError, match="checksum mismatch"):
         archive_inputs(config, tmp_path)
+
+
+def test_frozen_policies_match_best_validation_candidates_and_remain_feasible():
+    from experiments.freeze_models import verify_frozen
+    from ml.src.artifact_checksums import verify_checksums
+
+    folder = REPO_ROOT / "artifacts/frozen/public-data-v2"
+    selection = json.loads((folder / "selection.json").read_text())
+    with (folder / "selection.csv").open(newline="") as stream:
+        candidates = list(csv.DictReader(stream))
+    for strategy in ("ppo", "dqn"):
+        rows = [row for row in candidates if row["strategy"] == strategy]
+        assert len(rows) == len({row["training_seed"] for row in rows}) == 20
+        best = min(rows, key=lambda row: (
+            float(row["resistance_burden"]), float(row["resistance_emergence_events"]),
+            -float(row["remaining_susceptible_options"]), int(row["training_seed"]),
+        ))
+        assert int(best["training_seed"]) == selection["selected"][strategy]["training_seed"]
+        assert best["checkpoint_sha256"] == selection["selected"][strategy]["checkpoint_sha256"]
+    schedules = [set(range(base, base + 128)) for base in (
+        *selection["validation_seed_bases"], *selection["confirmation_seed_bases"],
+    )]
+    assert sum(map(len, schedules)) == len(set().union(*schedules))
+    assert all(result.status == "ok" for result in verify_checksums(folder / "SHA256SUMS.txt"))
+    assert verify_frozen(folder) == 254
+
+
+def test_freeze_verification_rejects_a_changed_selected_checkpoint(tmp_path):
+    from experiments.freeze_models import verify_frozen
+
+    source = REPO_ROOT / "artifacts/frozen/public-data-v2"
+    (tmp_path / "ppo").mkdir()
+    shutil.copyfile(source / "selection.json", tmp_path / "selection.json")
+    shutil.copyfile(source / "ppo/manifest.json", tmp_path / "ppo/manifest.json")
+    (tmp_path / "ppo/final_model.zip").write_bytes(b"changed")
+    with pytest.raises(ValueError, match="checkpoint differs"):
+        verify_frozen(tmp_path)

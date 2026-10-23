@@ -1,0 +1,86 @@
+{
+  "study_id": "dqn_ppo_baseline_public_data_v2",
+  "study_report_sha256": "a0b1c83777e86177017eaad584c600c011f86e4684dec8abd223562abb375457",
+  "selection_rule": "Lowest validation mean cumulative resistance burden; exact ties: fewer emergence events, more susceptible options, lower training seed.",
+  "checkpoint_set": "final fully trained checkpoint from every training replicate",
+  "validation_seed_bases": [
+    1100001,
+    1200001,
+    1300001,
+    1400001,
+    1500001
+  ],
+  "validation_policy_seed_start": 1900001,
+  "confirmation_seed_bases": [
+    2100001,
+    2200001,
+    2300001,
+    2400001,
+    2500001
+  ],
+  "confirmation_policy_seed_start": 2900001,
+  "interaction_data_sha256": "af62f389fe92b4ecddfbc1df6c967c5da9992ed928c09dd3a68673819f42591c",
+  "training_steps": 100096,
+  "selected": {
+    "ppo": {
+      "strategy": "ppo",
+      "training_seed": 19000,
+      "checkpoint_sha256": "1747b68cb572cc320c7c53ae105dfa9dd6827f689839b35c4f2bcf9520384001",
+      "validation": {
+        "episodes": 640,
+        "resistance_burden": 2.902008928571428,
+        "resistance_emergence_events": 0.6125,
+        "remaining_susceptible_options": 4.8953125,
+        "antibiotic_exposure": 7.9375,
+        "unsupported_steps": 2.9453125,
+        "susceptible_action_rate": 1.0
+      }
+    },
+    "dqn": {
+      "strategy": "dqn",
+      "training_seed": 15000,
+      "checkpoint_sha256": "3afac9221dd29662708ba37f9a32326f389feb15efc31151706f738c0fd8c72d",
+      "validation": {
+        "episodes": 640,
+        "resistance_burden": 2.888616071428571,
+        "resistance_emergence_events": 0.5796875,
+        "remaining_susceptible_options": 4.9109375,
+        "antibiotic_exposure": 7.9375,
+        "unsupported_steps": 2.54375,
+        "susceptible_action_rate": 1.0
+      }
+    }
+  },
+  "confirmation": {
+    "ppo": {
+      "episodes": 640,
+      "resistance_burden": 2.876116071428571,
+      "resistance_emergence_events": 0.584375,
+      "remaining_susceptible_options": 4.9109375,
+      "antibiotic_exposure": 7.9375,
+      "unsupported_steps": 3,
+      "susceptible_action_rate": 1.0
+    },
+    "dqn": {
+      "episodes": 640,
+      "resistance_burden": 2.8734374999999996,
+      "resistance_emergence_events": 0.540625,
+      "remaining_susceptible_options": 4.9296875,
+      "antibiotic_exposure": 7.9375,
+      "unsupported_steps": 2.5421875,
+      "susceptible_action_rate": 1.0
+    },
+    "random_susceptible_baseline": {
+      "episodes": 640,
+      "resistance_burden": 3.7991071428571423,
+      "resistance_emergence_events": 1.1328125,
+      "remaining_susceptible_options": 3.74375,
+      "antibiotic_exposure": 7.9375,
+      "unsupported_steps": 1.759375,
+      "susceptible_action_rate": 1.0
+    }
+  },
+  "audited_actions": 208280,
+  "scope": "Best measured validation score among available final checkpoints; confirmation is not used for reselection. Profiles are known; stochastic draws are held out. No clinical or general superiority claim.",
+  "baseline": "Random susceptible-action code and recorded RNG seeds; no learned checkpoint."
+}

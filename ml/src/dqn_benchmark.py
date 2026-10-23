@@ -270,7 +270,7 @@ def render_report(report: dict) -> str:
     lines += [
         "", "Means average profiles and evaluation seed blocks within each training replicate, then training replicates.",
         "Exposure is contextual; fewer actions can reflect loss of all susceptible options.",
-        "Unsupported steps indicate missing transition data, not successful treatment.",
+        "Unsupported steps have no applicable candidate: evidence may be absent or state-inapplicable; they do not demonstrate treatment success.",
         "", "## Paired differences (DQN minus PPO)", "",
     ]
     for run in report["replicates"]:
@@ -535,7 +535,7 @@ def run_benchmark(protocol: BenchmarkProtocol, output: Path, *, workers: int = 1
 
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--config", default="experiments/dqn_pilot_config.json")
+    parser.add_argument("--config", default="experiments/dqn_public_data_v2_config.json")
     parser.add_argument("--output-dir", required=True)
     parser.add_argument("--workers", type=int, default=1)
     parser.add_argument("--resume", action="store_true")

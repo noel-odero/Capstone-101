@@ -12,10 +12,10 @@ Research and simulation only. This platform is not validated for clinical prescr
 | `backend/` | ASP.NET Core API, account ownership and PostgreSQL persistence |
 | `service/` | Internal Python inference service and frozen-model validation |
 | `simulation/` | Resistance state, actions, transitions and reward |
-| `ml/` | PPO training, evaluation, model manifest and reproducibility tools |
+| `ml/` | PPO/DQN training, evaluation and inference contracts |
 | `data/processed/` | Scientific inputs and evidence registry |
-| `artifacts/ppo/` | Frozen checkpoints and their provenance |
-| `experiments/` | Research configuration |
+| `artifacts/` | Frozen policies, data snapshots and checksums |
+| `experiments/` | Study configuration, data integration and model selection |
 | `docs/` | Scientific specifications, study figures and sample workflow |
 
 The browser calls the .NET API through Vite. The API calls the Python service for scientific computation and stores account-owned samples and completed runs in PostgreSQL.
@@ -105,8 +105,44 @@ Verify archived artifacts:
 
 Further documentation: [scientific specification](docs/scientific-specification), [API contract](backend/docs/api-contract.md), [Python service](service/README.md), and [sample workflow](docs/ui/samples-workflow.md).
 
-An [offline DQN/PPO/baseline benchmark](docs/scientific-specification/dqn-benchmark.md) is available for research. Its pilot and full-study configurations are separate from the model served by the application.
+## Updated data and PPO/DQN comparison
 
-The [transition-data research audit](docs/scientific-specification/transition-data-research-2026-10-23.md) identifies additional public measurements, extraction gaps and the limits of using those measurements as simulation probabilities.
+The training CSV contains 30 directed records across 18 antibiotic pairs. The 15 records with unknown direction remain in the evidence registry and are excluded from training. Public measurements and their source URLs and hashes are retained in [data/research](data/research/transition-data-2026-10-23/sources.json). MIC changes inform modeled relationships; transition probabilities remain scenario assumptions, not measured clinical probabilities.
 
-The [public-data integration and retraining instructions](docs/scientific-specification/public-data-integration.md) describe the 30-record directed training CSV and the fresh 20-seed PPO/DQN/baseline command. Unknown-direction evidence remains in the evidence registry. Existing models remain paired with their original data until a retrained model is activated.
+Run from the repository root. The full study trains 20 PPO and 20 DQN replicates with equal interaction budgets and evaluates both against the random susceptible baseline. Existing completed runs can be resumed with `--resume`; new output directories must be empty.
+
+```powershell
+# Check the processed tables against the public source extracts.
+.\.venv\Scripts\python.exe -B -m experiments.integrate_public_evidence --check
+
+# Train and evaluate; omit this command if the study is already completed.
+.\.venv\Scripts\python.exe -B -m ml.src.dqn_benchmark `
+  --config experiments\dqn_public_data_v2_config.json `
+  --output-dir experiments\runs\public-data-v2
+
+# Audit the completed study and generate the comparison analysis.
+.\.venv\Scripts\python.exe -B -m experiments.analyze_dqn_study `
+  --study-dir experiments\runs\public-data-v2 `
+  --output-dir experiments\results\public-data-v2-review
+```
+
+Use module commands (`-m`) so imports resolve from the repository root. Generated run logs and analysis outputs are ignored by Git.
+
+## Frozen updated policies
+
+[artifacts/frozen/public-data-v2](artifacts/frozen/public-data-v2/selection.json) contains **PPO seed 19000** and **DQN seed 15000**, their shared training data, manifests and checksums. These are the lowest-burden final checkpoints for each algorithm on fresh validation draws: 128 profiles × 5 seed blocks per candidate. Exact ties use fewer emergence events, more remaining options, then lower training seed. Separate confirmation draws are recorded without reselecting models. The random baseline has no trained checkpoint; its code and RNG schedule define it.
+
+The original 20-seed comparison did not establish a clear DQN/PPO winner. Selecting deployment checkpoints does not change that finding or establish performance on unseen profiles.
+
+To reproduce selection after a completed study, use a new empty destination:
+
+```powershell
+.\.venv\Scripts\python.exe -B -m experiments.freeze_models `
+  --study-dir experiments\runs\public-data-v2 `
+  --output-dir artifacts\frozen\public-data-v2-reselection
+
+.\.venv\Scripts\python.exe -B -m ml.src.artifact_checksums `
+  --sums artifacts\frozen\public-data-v2\SHA256SUMS.txt
+```
+
+Freezing does not activate a policy. The UI currently compares the original PPO and baseline; DQN is available in the offline comparison. Three-strategy UI/service integration and switching the active PPO manifest are separate changes. Each frozen policy remains paired with the data it was trained on.

@@ -1,0 +1,65 @@
+{
+  "manifest_version": 1,
+  "model_id": "ppo_public_v2_seed_19000",
+  "algorithm": "MaskablePPO",
+  "checkpoint": {
+    "path": "artifacts/frozen/public-data-v2/ppo/final_model.zip",
+    "sha256": "1747b68cb572cc320c7c53ae105dfa9dd6827f689839b35c4f2bcf9520384001"
+  },
+  "provenance": {
+    "config": "artifacts/frozen/public-data-v2/ppo/config.json",
+    "environment_manifest": "artifacts/frozen/public-data-v2/ppo/environment_manifest.json",
+    "training_summary": "artifacts/frozen/public-data-v2/ppo/training_summary.json",
+    "checkpoint_manifest": "artifacts/frozen/public-data-v2/selection.json"
+  },
+  "simulator": {
+    "scenario_id": "REF_UNIFORM_SUPPORTED",
+    "interaction_data_path": "artifacts/frozen/public-data-v2/empirical_interactions.csv",
+    "horizon": 8,
+    "interaction_data_sha256": "af62f389fe92b4ecddfbc1df6c967c5da9992ed928c09dd3a68673819f42591c",
+    "action_names": [
+      "CIPROFLOXACIN",
+      "NITROFURANTOIN",
+      "FOSFOMYCIN",
+      "TRIMETHOPRIM",
+      "GENTAMICIN",
+      "MECILLINAM",
+      "CEFTAZIDIME"
+    ]
+  },
+  "observation": {
+    "shape": [
+      15
+    ],
+    "dtype": "float32",
+    "layout": {
+      "resistance_indicators": [
+        0,
+        7
+      ],
+      "last_action_one_hot": [
+        7,
+        14
+      ],
+      "treatment_step": [
+        14,
+        15
+      ]
+    },
+    "resistance_encoding": {
+      "susceptible": 0,
+      "resistant": 1
+    }
+  },
+  "action_space": {
+    "type": "Discrete",
+    "n": 7
+  },
+  "action_masking": {
+    "rule": "susceptible_actions_only"
+  },
+  "inference": {
+    "deterministic": true,
+    "device": "cpu"
+  }
+}

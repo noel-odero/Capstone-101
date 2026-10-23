@@ -49,7 +49,7 @@
     8.0
   ],
   "observation_dtype": "float32",
-  "interaction_data_sha256": "7a5e3e1fe730676a0793674e4ff4aaf3c6ce1177ad5588eed4bb2e5d627edb44",
+  "interaction_data_sha256": "af62f389fe92b4ecddfbc1df6c967c5da9992ed928c09dd3a68673819f42591c",
   "reward_specification": {
     "objective": "normalized_resistance_burden",
     "normalization": 7,

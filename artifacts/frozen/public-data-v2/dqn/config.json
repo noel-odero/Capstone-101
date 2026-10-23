@@ -1,8 +1,8 @@
 {
   "shared": {
-    "ppo_seed": 12000,
-    "environment_seed": 12001,
-    "evaluation_seed": 12002,
+    "ppo_seed": 15000,
+    "environment_seed": 15001,
+    "evaluation_seed": 15002,
     "scenario_id": "REF_UNIFORM_SUPPORTED",
     "horizon": 8,
     "total_timesteps": 100096,
@@ -40,7 +40,8 @@
       "enabled": true,
       "rule": "susceptible_actions_only"
     },
-    "device": "cpu"
+    "device": "cpu",
+    "interaction_data_path": null
   },
   "dqn": {
     "learning_rate": 0.001,

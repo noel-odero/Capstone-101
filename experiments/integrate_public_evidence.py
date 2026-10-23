@@ -103,9 +103,9 @@ def public_records() -> list[dict[str, str]]:
     return records
 
 
-def build_tables(*, directed_only: bool = True) -> dict[str, str]:
+def build_tables() -> dict[str, str]:
     def training_rows(rows):
-        return [row for row in rows if not directed_only or row["directionality"] == "A_to_B"]
+        return [row for row in rows if row["directionality"] == "A_to_B"]
 
     additions = public_records()
     fields, empirical = read_csv(ARCHIVE / "empirical_interactions.csv")
@@ -150,14 +150,13 @@ def main() -> None:
     parser.add_argument("--check", action="store_true", help="Check deterministic outputs without writing.")
     args = parser.parse_args()
     outputs = build_tables()
-    previous_outputs = build_tables(directed_only=False) if not args.check else {}
     for name, content in outputs.items():
         path = PROCESSED / name
         current = path.read_text(encoding="utf-8-sig")
         if args.check:
             if current != content:
                 raise SystemExit(f"Evidence table differs from its public-data derivation: {name}")
-        elif current not in (content, previous_outputs[name], (ARCHIVE / name).read_text(encoding="utf-8-sig")):
+        elif current not in (content, (ARCHIVE / name).read_text(encoding="utf-8-sig")):
             raise SystemExit(f"Refusing to overwrite independently changed evidence table: {name}")
     if not args.check:
         for name, content in outputs.items():
