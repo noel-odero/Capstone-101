@@ -35,6 +35,33 @@ export const feasibleActionSchema = z.object({
   hasCandidateTransition: z.boolean(),
 })
 
+export const transitionEvidenceCandidateSchema = z.object({
+  targetDrug: z.string(),
+  outcome: z.enum(['cross_resistance', 'collateral_sensitivity', 'neutral']),
+  sourceIds: z.array(z.string()),
+})
+
+export const profileEvidenceSchema = z.object({
+  resistanceProfile: resistanceProfileSchema,
+  resistantCount: z.number().int(),
+  susceptibleOptionCount: z.number().int(),
+  feasibleActions: z.array(feasibleActionSchema),
+  isTerminal: z.boolean(),
+  horizon: z.number().int(),
+  scenarioId: z.string().nullable(),
+  interactionDataSha256: z.string().nullable(),
+  transitionEvidence: z.array(
+    z.object({
+      actionId: z.number().int(),
+      antibiotic: z.string(),
+      eligible: z.boolean(),
+      candidates: z.array(transitionEvidenceCandidateSchema),
+    }),
+  ),
+})
+export type ProfileEvidence = z.infer<typeof profileEvidenceSchema>
+export type TransitionEvidenceCandidate = z.infer<typeof transitionEvidenceCandidateSchema>
+
 const componentHealthSchema = z.object({
   name: z.string(),
   status: healthStateSchema,

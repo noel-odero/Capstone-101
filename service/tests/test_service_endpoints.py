@@ -76,6 +76,36 @@ def test_validate_all_resistant_profile_is_a_valid_terminal_result(client):
     assert body["susceptible_option_count"] == 0 and body["resistant_count"] == 7
 
 
+def test_model_explorer_evidence_matches_pinned_generator_for_every_state(client, runtime, monkeypatch):
+    from pathlib import Path
+    from simulation.resistance_state import ResistanceState
+    from simulation.transition_generator import CandidateTransitionGenerator
+
+    pinned_path = runtime.manifest.interaction_data_path
+    generator = CandidateTransitionGenerator(interactions_file=Path(pinned_path) if pinned_path else None)
+
+    def no_policy_call(*args, **kwargs):
+        pytest.fail("Inspecting model evidence must not invoke a learned policy.")
+
+    monkeypatch.setattr(runtime.engine, "recommend", no_policy_call)
+    for index in range(128):
+        profile = [int(bit) for bit in f"{index:07b}"]
+        response = client.post("/internal/profiles/validate", json={"resistance_profile": profile})
+        assert response.status_code == 200, response.text
+        body = response.json()
+        assert body["interaction_data_sha256"] == runtime.manifest.interaction_data_sha256
+        assert body["scenario_id"] == runtime.manifest.scenario_id
+        assert len(body["transition_evidence"]) == 7
+        for action in body["transition_evidence"]:
+            action_id = action["action_id"]
+            assert action["eligible"] == (profile[action_id] == 0)
+            expected = generator.generate(ResistanceState(tuple(profile)), action_id) if action["eligible"] else ()
+            assert action["candidates"] == [
+                {"target_drug": item.target_drug, "outcome": item.outcome, "source_ids": list(item.source_ids)}
+                for item in expected
+            ]
+
+
 def test_validate_mixed_profile_names_and_feasibility(client):
     body = client.post("/internal/profiles/validate", json={"resistance_profile": [1, 0, 1, 0, 0, 1, 0]}).json()
 

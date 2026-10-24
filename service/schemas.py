@@ -119,6 +119,19 @@ class FeasibleAction(BaseModel):
     )
 
 
+class TransitionEvidenceCandidate(BaseModel):
+    target_drug: str
+    outcome: Literal["cross_resistance", "collateral_sensitivity", "neutral"]
+    source_ids: list[str]
+
+
+class ActionTransitionEvidence(BaseModel):
+    action_id: int
+    antibiotic: str
+    eligible: bool
+    candidates: list[TransitionEvidenceCandidate]
+
+
 class ProfileValidationResponse(BaseModel):
     valid: Literal[True] = True
     resistance_profile: list[int]
@@ -131,6 +144,9 @@ class ProfileValidationResponse(BaseModel):
     is_terminal: bool
     terminal_reason: str | None
     horizon: int
+    transition_evidence: list[ActionTransitionEvidence]
+    interaction_data_sha256: str
+    scenario_id: str
 
 
 class RecommendationResponse(BaseModel):

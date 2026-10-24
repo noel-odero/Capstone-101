@@ -7,7 +7,6 @@ import { strategyResults } from '@/domain/runs'
 import { lastStepOf } from '@/domain/trajectory'
 import { STRATEGY_COLORS, strategyLabel } from '@/domain/terminology'
 import type { Comparison, StrategyId } from '@/domain/types'
-import { evaluationFrame } from './evaluation-playback'
 import { useEvaluationPlayback } from './useEvaluationPlayback'
 import { StatePanel } from './StatePanel'
 import styles from './evaluation.module.css'
@@ -32,7 +31,6 @@ export function EvaluationWorkbench({
   )
   const active = results.find((result) => result.strategy === policy) ?? first
   if (!active) return null
-  const frame = evaluationFrame(active, state.step, state.phase)
   return (
     <div className={styles.workbench}>
       <div className={styles.toolbar}>
@@ -71,7 +69,11 @@ export function EvaluationWorkbench({
           </Button>
         )}
       </div>
-      <StatePanel frame={frame} playback={state} dispatch={dispatch} />
+      <StatePanel
+        results={results}
+        selectedStep={state.step}
+        onSelectStep={(step) => dispatch({ type: 'seek', step })}
+      />
       {state.completed ? (
         <section className={styles.finalMetrics} aria-labelledby="completion-title">
           <div className={styles.completionHeading}>

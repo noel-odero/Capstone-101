@@ -10,6 +10,8 @@ Start a **New Analysis**, review the initial resistance profile, then select **R
 
 ## Structure
 
+**Model Explorer** replaces the former E. coli Profile view at `/app/profile`. It enumerates the 128 binary states (combinatorial, not isolate frequencies), filters by resistant count, and inspects the current verified simulator's candidate transitions and source IDs. Resistant actions are ineligible; eligible actions without candidates are explicitly marked as coverage gaps. Candidate destination states can be explored directly. Related samples and paged analyses are scoped to the signed-in researcher. Exploring a state neither stores a sample nor executes a policy; **Evaluate this state** opens the existing configuration workflow.
+
 | Folder | Purpose |
 | --- | --- |
 | `frontend/` | Research workspace, authentication, samples, strategy evaluation and analysis results |

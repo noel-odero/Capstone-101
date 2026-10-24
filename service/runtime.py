@@ -123,6 +123,22 @@ class ModelRuntime:
         susceptible = [name for name in ANTIBIOTICS if name not in resistant]
         is_terminal = not susceptible
         feasible = [] if is_terminal else self.feasible_actions(context)
+        evidence = [
+            {
+                "action_id": action_id,
+                "antibiotic": name,
+                "eligible": state.is_susceptible(name),
+                "candidates": [
+                    {
+                        "target_drug": candidate.target_drug,
+                        "outcome": candidate.outcome,
+                        "source_ids": list(candidate.source_ids),
+                    }
+                    for candidate in self.engine.candidate_transitions(context, action_id)
+                ] if state.is_susceptible(name) else [],
+            }
+            for action_id, name in enumerate(ANTIBIOTICS)
+        ]
         return {
             "valid": True,
             "resistance_profile": list(context.resistance_profile),
@@ -135,6 +151,9 @@ class ModelRuntime:
             "is_terminal": is_terminal,
             "terminal_reason": "no_effective_antibiotic" if is_terminal else None,
             "horizon": self.engine.horizon,
+            "transition_evidence": evidence,
+            "interaction_data_sha256": self.manifest.interaction_data_sha256,
+            "scenario_id": self.manifest.scenario_id,
         }
 
     def recommend(

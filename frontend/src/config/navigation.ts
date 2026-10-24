@@ -35,7 +35,7 @@ export const workspaceNavigation: readonly NavigationItem[] = [
   { to: '/app/insights', label: PAGE_TITLES.insights, icon: Insights },
   {
     to: '/app/profile',
-    label: 'E. coli Profile',
+    label: 'Model Explorer',
     icon: Microscope,
   },
 ]

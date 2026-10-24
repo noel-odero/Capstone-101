@@ -21,6 +21,7 @@ from sb3_contrib import MaskablePPO
 from ml.src.matched_policy_evaluation import MaskablePPOObservationPolicy
 from ml.src.masked_dqn import DQNObservationPolicy, MaskedDQN
 from ml.src.ppo_training import PPOConfig, environment_manifest, make_training_environment
+from simulation.candidate_transition import CandidateTransition
 from simulation.episode import EpisodeState
 from simulation.episode_termination import EpisodeTermination
 from simulation.observation import OBSERVATION_VECTOR_SIZE, Observation, encode_observation
@@ -206,7 +207,11 @@ class FrozenPolicyInferenceEngine:
         return self._horizon
 
     def has_candidate_transition(self, context: InferenceContext, action_id: int) -> bool:
-        return bool(self._candidate_generator.generate(context.resistance_state, action_id))
+        return bool(self.candidate_transitions(context, action_id))
+
+    def candidate_transitions(self, context: InferenceContext, action_id: int) -> tuple[CandidateTransition, ...]:
+        """Inspect the verified simulator's candidates without sampling or invoking a policy."""
+        return self._candidate_generator.generate(context.resistance_state, action_id)
 
     def recommend(self, context: InferenceContext) -> InferenceResult:
         if not isinstance(context, InferenceContext):

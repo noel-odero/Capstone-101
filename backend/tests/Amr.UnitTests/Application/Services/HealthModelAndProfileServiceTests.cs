@@ -155,6 +155,30 @@ public class HealthModelAndProfileServiceTests
     }
 
     [Fact]
+    public async Task Profile_evidence_preserves_candidate_sources_and_verified_data_identity()
+    {
+        var body = PythonFixtures.Mutate("validate_200_open", node =>
+        {
+            node["transition_evidence"] = System.Text.Json.Nodes.JsonNode.Parse(
+                """[{"action_id":1,"antibiotic":"NITROFURANTOIN","eligible":true,"candidates":[{"target_drug":"GENTAMICIN","outcome":"cross_resistance","source_ids":["TEST_SOURCE"]}]}]""");
+            node["interaction_data_sha256"] = "verified-data-hash";
+            node["scenario_id"] = "REF_UNIFORM_SUPPORTED";
+        });
+        var handler = StubHandler.Returning(() => PythonFixtures.Respond(HttpStatusCode.OK, body));
+        var result = await new ProfileValidationService(ClientFactory.Create(handler)).ValidateAsync(
+            new() { ResistanceProfile = [1, 0, 0, 1, 0, 0, 0] }, CancellationToken.None);
+
+        var action = Assert.Single(result.TransitionEvidence);
+        Assert.True(action.Eligible);
+        var candidate = Assert.Single(action.Candidates);
+        Assert.Equal("cross_resistance", candidate.Outcome);
+        Assert.Equal("GENTAMICIN", candidate.TargetDrug);
+        Assert.Equal(new[] { "TEST_SOURCE" }, candidate.SourceIds);
+        Assert.Equal("verified-data-hash", result.InteractionDataSha256);
+        Assert.Equal("REF_UNIFORM_SUPPORTED", result.ScenarioId);
+    }
+
+    [Fact]
     public async Task A_valid_all_resistant_profile_is_terminal_with_no_selected_or_feasible_action()
     {
         var handler = StubHandler.Returning(() => PythonFixtures.Fixture("validate_200_terminal"));
