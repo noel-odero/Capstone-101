@@ -1,6 +1,6 @@
-# StewardLab / AMR Decision Support
+#  Anti Microbial Resistance Decision Support
 
-A research workbench for evaluating antibiotic-selection strategies in a binary E. coli resistance model. Record labeled samples, compare frozen PPO and DQN policies with a random susceptible-action baseline, inspect transitions and revisit saved evidence through Analysis History and Analysis Insights. Model Explorer exposes the 128 possible resistance states and their transition-data coverage.
+This work is a research workbench for evaluating antibiotic-selection strategies in a binary E. coli resistance model. Record labeled samples, compare frozen PPO and DQN policies with a random susceptible-action baseline, inspect transitions and revisit saved evidence through Analysis History and Analysis Insights. Model Explorer exposes the 128 possible resistance states and their transition-data coverage.
 
 Results are model-derived research outputs, not clinical treatment recommendations. The original interactive urinary-tract 3D view is an aesthetic illustration; it does not represent measured bacterial clearance or evolution. A scientifically grounded evolution visualization is future work.
 
