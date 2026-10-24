@@ -1,4 +1,4 @@
-# StewardLab — Antimicrobial Resistance Decision Support
+# StewardLab - Antimicrobial Resistance Decision Support
 
 ### Exploring how reinforcement learning can help preserve future antibiotic treatment options.
 
@@ -129,7 +129,7 @@ The documented setup uses Windows and PowerShell. Other operating systems may re
 
 A development machine capable of running Docker, PostgreSQL, the Python scientific service, the .NET API, and the React development server is required. The local performance measurements were collected on Windows 11 using an AMD Ryzen 5 PRO 8540U processor and approximately 32 GB RAM. This is the tested environment, not a minimum hardware requirement.
 
-### Step 1 — Clone the Repository
+### Step 1 - Clone the Repository
 
 Start by cloning the project and navigating into its root directory.
 
@@ -140,7 +140,7 @@ cd Capstone-101
 
 All commands in the following setup instructions should be run from the repository root unless otherwise stated.
 
-### Step 2 — Install Project Dependencies
+### Step 2 - Install Project Dependencies
 
 Create a Python virtual environment and install the scientific and service dependencies.
 
@@ -164,7 +164,7 @@ npm --prefix frontend ci
 
 On Windows, it is recommended to use the Python executable inside `.venv`, since the plain `python` command may resolve to the Microsoft Store alias.
 
-### Step 3 — Set Up PostgreSQL
+### Step 3 - Set Up PostgreSQL
 
 StewardLab uses PostgreSQL to store researcher accounts, samples, evaluations, and saved results.
 
@@ -197,7 +197,7 @@ If the container already exists, use its existing credentials and connection str
 
 Credentials and local environment files should not be committed to Git.
 
-### Step 4 — Apply Database Migrations
+### Step 4 - Apply Database Migrations
 
 Before starting the API for the first time, the database schema must be created using Entity Framework Core migrations.
 
@@ -232,7 +232,7 @@ cd ..
 
 Migrations should also be applied after pulling repository changes that introduce database schema updates.
 
-### Step 5 — Start the Application
+### Step 5 - Start the Application
 
 StewardLab consists of multiple services, so each should be started in its own terminal.
 
@@ -302,7 +302,7 @@ You can now create an account, sign in, record samples, and begin evaluating ant
 
 The development command also retains the larger HTTP header limit needed when localhost cookies accumulate.
 
-### Step 6 — Verify That Everything Is Running
+### Step 6 - Verify That Everything Is Running
 
 To confirm that the backend is responding, run:
 
