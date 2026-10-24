@@ -82,8 +82,8 @@ def test_service_is_not_ready_until_startup_runs_and_never_calls_the_model():
 @pytest.mark.parametrize(
     ("overrides", "code"),
     [
-        ({"checkpoint": {"path": "artifacts/ppo/ppo_seed_12000/final_model.zip", "sha256": "0" * 64}}, "checkpoint_integrity_failure"),
-        ({"checkpoint": {"path": "artifacts/ppo/does_not_exist/final_model.zip", "sha256": "0" * 64}}, "checkpoint_integrity_failure"),
+        ({"checkpoint": {"path": "artifacts/frozen/public-data-v2/ppo/final_model.zip", "sha256": "0" * 64}}, "checkpoint_integrity_failure"),
+        ({"checkpoint": {"path": "artifacts/frozen/public-data-v2/does_not_exist.zip", "sha256": "0" * 64}}, "checkpoint_integrity_failure"),
         ({"simulator.interaction_data_sha256": "0" * 64}, "model_contract_mismatch"),
         ({"simulator.horizon": 9}, "model_contract_mismatch"),
         ({"simulator.scenario_id": "SENSITIVITY_Q_050"}, "model_contract_mismatch"),

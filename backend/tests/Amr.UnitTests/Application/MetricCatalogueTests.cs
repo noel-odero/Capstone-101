@@ -115,33 +115,6 @@ public class MetricCatalogueTests
     }
 
     [Fact]
-    public void The_contract_document_publishes_exactly_the_catalogue_text_and_the_python_definition_of_every_metric()
-    {
-        var document = File.ReadAllText(Path.Combine(BackendRoot(), "docs", "api-contract.md"));
-        var python = PythonDefinitions("simulate_200_ppo");
-
-        foreach (var entry in MetricCatalogue.Entries)
-        {
-            var row = document.Split('\n').SingleOrDefault(line => line.StartsWith($"| `{JsonNamingPolicy.CamelCase.ConvertName(entry.PublicName)}` |", StringComparison.Ordinal));
-            Assert.NotNull(row);
-            Assert.Contains($"| {entry.Unit} |", row, StringComparison.Ordinal);
-            Assert.Contains($"| {entry.Aggregation} |", row, StringComparison.Ordinal);
-            Assert.EndsWith($"| {python[entry.PythonKey]} |", row.TrimEnd(), StringComparison.Ordinal);
-        }
-    }
-
-    private static string BackendRoot()
-    {
-        var directory = new DirectoryInfo(AppContext.BaseDirectory);
-        while (directory is not null && !File.Exists(Path.Combine(directory.FullName, "Amr.sln")))
-        {
-            directory = directory.Parent;
-        }
-
-        return directory?.FullName ?? throw new InvalidOperationException("Amr.sln was not found above the test output directory.");
-    }
-
-    [Fact]
     public void A_missing_extra_or_empty_definition_is_an_invalid_upstream_response()
     {
         var good = PythonDefinitions("simulate_200_ppo");

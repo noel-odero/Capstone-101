@@ -1,6 +1,4 @@
-# =========================
 # Environment & secrets
-# =========================
 
 .env
 .env.*
@@ -13,9 +11,7 @@
 credentials.json
 secrets.json
 
-# =========================
 # Python
-# =========================
 
 .venv/
 venv/
@@ -34,24 +30,18 @@ htmlcov/
 
 .ipynb_checkpoints/
 
-# =========================
 # Jupyter
-# =========================
 
 *.ipynb_checkpoints
 
-# =========================
 # Python packaging
-# =========================
 
 build/
 dist/
 *.egg-info/
 .eggs/
 
-# =========================
 # Machine Learning
-# =========================
 
 *.pkl
 *.pickle
@@ -66,17 +56,13 @@ dist/
 checkpoints/
 models/
 
-# =========================
 # Experiment outputs
-# =========================
 
 experiments/runs/
 experiments/results/
 experiments/logs/
 
-# =========================
 # Node / React
-# =========================
 
 node_modules/
 frontend/test-results/
@@ -86,15 +72,11 @@ yarn-debug.log*
 yarn-error.log*
 pnpm-debug.log*
 
-dist/
-build/
 .next/
 .nuxt/
 .cache/
 
-# =========================
 # .NET
-# =========================
 
 bin/
 obj/
@@ -105,16 +87,12 @@ obj/
 *.userosscache
 *.sln.docstates
 
-# =========================
 # ASP.NET
-# =========================
 
 appsettings.Local.json
 appsettings.*.Local.json
 
-# =========================
 # IDEs
-# =========================
 
 .vscode/*
 !.vscode/settings.json
@@ -123,31 +101,23 @@ appsettings.*.Local.json
 .idea/
 *.iml
 
-# =========================
 # OS
-# =========================
 
 .DS_Store
 Thumbs.db
 desktop.ini
 
-# =========================
 # Logs
-# =========================
 
 *.log
 
-# =========================
 # Local databases
-# =========================
 
 *.db
 *.sqlite
 *.sqlite3
 
-# =========================
 # Temporary files
-# =========================
 
 *.tmp
 *.temp

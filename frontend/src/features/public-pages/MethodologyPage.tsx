@@ -89,11 +89,11 @@ export function MethodologyPage() {
         <p>
           The full specification is in the repository:{' '}
           <a
-            href={`${REPOSITORY_URL}/tree/main/docs/scientific-specification`}
+            href={`${REPOSITORY_URL}/blob/main/docs/scientific-model.md`}
             rel="noreferrer noopener"
             target="_blank"
           >
-            docs/scientific-specification
+            Scientific model
           </a>
           .
         </p>

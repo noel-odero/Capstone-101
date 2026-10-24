@@ -1,4 +1,4 @@
-"""Verify artifacts/ppo/SHA256SUMS.txt.
+"""Verify the frozen PPO/DQN release in artifacts/frozen/public-data-v2.
 
 Each line is ``<sha256>  <path>`` with the path relative to the sums file. Files with a text suffix are hashed
 after CRLF -> LF normalization, so one checksum holds for LF checkouts (Linux, Git blobs) and for CRLF checkouts
@@ -18,7 +18,7 @@ import sys
 from typing import Sequence
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
-DEFAULT_SUMS_PATH = REPO_ROOT / "artifacts" / "ppo" / "SHA256SUMS.txt"
+DEFAULT_SUMS_PATH = REPO_ROOT / "artifacts" / "frozen" / "public-data-v2" / "SHA256SUMS.txt"
 TEXT_SUFFIXES = frozenset({".json", ".txt", ".csv", ".md"})
 _LINE = re.compile(r"^([0-9A-Fa-f]{64})  (\S.*)$")
 

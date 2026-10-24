@@ -1,8 +1,0 @@
-numpy
-scipy
-gymnasium
-stable-baselines3
-sb3-contrib==2.9.0
-torch
-pytest
-matplotlib

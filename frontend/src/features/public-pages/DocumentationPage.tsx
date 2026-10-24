@@ -24,41 +24,35 @@ export function DocumentationPage() {
       <section>
         <h2>Sign-in</h2>
         <p>
-          Running analyses needs a signed-in user. Google sign-in is configured on the server with
-          these environment variables; they are never part of the interface.
-        </p>
-        <pre>{`Auth__Google__ClientId
-Auth__Google__ClientSecret`}</pre>
-        <p>
-          The authorized redirect URI in Google Cloud must be the API&apos;s callback, for example{' '}
-          <code>http://localhost:5173/api/v1/auth/google/callback</code> in development.
+          Create an account with your email and password to save samples and run analyses. Sessions
+          use cookies; the interface includes the session&apos;s CSRF token with protected requests.
         </p>
       </section>
       <section>
         <h2>Documents</h2>
         <ul>
           <li>
-            <a href={blob('backend/README.md')} rel="noreferrer noopener" target="_blank">
-              Backend README
+            <a href={blob('README.md')} rel="noreferrer noopener" target="_blank">
+              Setup and project overview
             </a>
           </li>
           <li>
             <a
-              href={blob('backend/docs/api-contract.md')}
+              href={blob('docs/api.md')}
               rel="noreferrer noopener"
               target="_blank"
             >
-              API contract
+              API and architecture
             </a>
           </li>
           <li>
-            <a href={blob('service/README.md')} rel="noreferrer noopener" target="_blank">
-              Python service README
+            <a href={blob('docs/scientific-model.md')} rel="noreferrer noopener" target="_blank">
+              Scientific model
             </a>
           </li>
           <li>
-            <a href={blob('README.md')} rel="noreferrer noopener" target="_blank">
-              Project README
+            <a href={blob('docs/research.md')} rel="noreferrer noopener" target="_blank">
+              Research and retraining
             </a>
           </li>
         </ul>

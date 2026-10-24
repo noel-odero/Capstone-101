@@ -111,7 +111,7 @@ export const routes: RouteObject[] = [
               },
               {
                 path: 'profile',
-                ...lazyPage(() => import('@/features/profile/ProfilePage'), 'ProfilePage'),
+                ...lazyPage(() => import('@/features/model-explorer/ModelExplorerPage'), 'ModelExplorerPage'),
               },
               {
                 path: 'history/analyze',
@@ -129,7 +129,7 @@ export const routes: RouteObject[] = [
               },
               {
                 path: 'history',
-                ...lazyPage(() => import('@/features/profile/HistoryPage'), 'HistoryPage'),
+                ...lazyPage(() => import('@/features/history/HistoryPage'), 'HistoryPage'),
               },
               {
                 path: 'samples',

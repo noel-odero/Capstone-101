@@ -38,10 +38,10 @@ try {
         ArgumentList           = @('-B', '-m', 'uvicorn', 'service.main:app', '--host', '127.0.0.1', '--port', "$Port", '--workers', '1')
         WorkingDirectory       = $repoRoot
         PassThru               = $true
-        NoNewWindow            = $true
         RedirectStandardOutput = $log
         RedirectStandardError  = "$log.err"
     }
+    if ($env:OS -eq 'Windows_NT') { $startInfo.WindowStyle = 'Hidden' }
     $process = Start-Process @startInfo
 
     $deadline = (Get-Date).AddSeconds($ReadinessTimeoutSeconds)

@@ -1,7 +1,7 @@
 import { rawFixtures } from '@/test/fixtures/api-fixtures'
 import { baseRoutes, mockFetch } from '@/test/mock-api'
 import { renderApp } from '@/test/test-utils'
-import { screen, waitFor } from '@testing-library/react'
+import { screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { describe, expect, it } from 'vitest'
 
@@ -10,7 +10,11 @@ const session = {
   user: { displayName: 'Ada Researcher', email: 'ada@example.org' },
   csrfToken: 'token',
 }
-const created = { ...rawFixtures.comparison, id: '5a1f3a7e-3c1c-4f43-9f0e-2f4d7a9b6c11' }
+const created = {
+  ...rawFixtures.comparison,
+  id: '5a1f3a7e-3c1c-4f43-9f0e-2f4d7a9b6c11',
+  dqn: { ...rawFixtures.comparison.ppo, strategy: 'dqn' },
+}
 
 describe('Strategy Evaluation page', () => {
   it('sends the chosen profile once and opens the 3D analysis page', async () => {
@@ -32,9 +36,30 @@ describe('Strategy Evaluation page', () => {
     )
     expect(await screen.findByRole('heading', { name: 'Resistance Trajectory' })).toBeInTheDocument()
     expect(screen.getByRole('heading', { name: 'Urinary Tract' })).toBeInTheDocument()
+    const metrics = screen.getByRole('table', { name: 'Strategy evaluation metrics' })
+    for (const name of ['PPO', 'DQN', 'Random baseline']) {
+      expect(within(metrics).getByRole('columnheader', { name })).toBeInTheDocument()
+    }
     expect(api.callsTo('POST /api/v1/comparisons')).toHaveLength(1)
     expect(api.callsTo('POST /api/v1/comparisons')[0]?.body).toEqual({
       resistanceProfile: [0, 1, 0, 0, 0, 0, 0],
     })
+  })
+
+  it('reopens a stored analysis and changes illustration steps without running it again', async () => {
+    const api = mockFetch(
+      baseRoutes({
+        'GET /api/v1/auth/session': { body: session },
+        [`GET /api/v1/comparisons/${created.id}`]: { body: created },
+      }),
+    )
+    const user = userEvent.setup()
+    renderApp(`/app/simulation/${created.id}`)
+
+    const step = await screen.findByRole('button', { name: 'Step 5' })
+    await user.click(step)
+    expect(step).toHaveAttribute('aria-pressed', 'true')
+    expect(screen.getByText(/Illustrative clearance only/)).toBeInTheDocument()
+    expect(api.callsTo('POST /api/v1/comparisons')).toHaveLength(0)
   })
 })

@@ -17,7 +17,6 @@ from ml.src.artifact_checksums import (
 )
 
 ARTIFACTS = DEFAULT_SUMS_PATH.parent
-needs_artifacts = pytest.mark.skipif(not DEFAULT_SUMS_PATH.is_file(), reason="artifacts/ppo is not present")
 
 
 def write_sums(directory, files, *, newline="\n"):
@@ -95,15 +94,18 @@ def test_command_line_exit_codes(tmp_path, capsys):
     assert main(["--sums", sums]) == 2
 
 
-@needs_artifacts
 def test_committed_artifacts_verify_on_this_checkout():
     results = verify_checksums()
 
-    assert len(results) == 97
+    assert {result.path for result in results} == {
+        path.relative_to(ARTIFACTS).as_posix()
+        for path in ARTIFACTS.rglob("*")
+        if path.is_file() and path != DEFAULT_SUMS_PATH
+    }
+    assert {"ppo/final_model.zip", "dqn/final_model.zip"} <= {result.path for result in results}
     assert [result.path for result in results if result.status != "ok"] == []
 
 
-@needs_artifacts
 def test_frozen_checkpoint_checksum_matches_the_frozen_manifest():
     manifest = json.loads((REPO_ROOT / "ml" / "frozen_ppo_manifest.json").read_text(encoding="utf-8"))
     sums = REPO_ROOT / "artifacts/frozen/public-data-v2/SHA256SUMS.txt"
@@ -114,7 +116,6 @@ def test_frozen_checkpoint_checksum_matches_the_frozen_manifest():
     assert checksum_of(relative, (sums.parent / relative).read_bytes()) == manifest["checkpoint"]["sha256"].lower()
 
 
-@needs_artifacts
 @pytest.mark.parametrize("newline", [b"\n", b"\r\n"])
 def test_policy_holds_for_lf_and_crlf_checkouts_of_every_text_file(tmp_path, newline):
     for source in ARTIFACTS.rglob("*"):

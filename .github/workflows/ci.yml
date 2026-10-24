@@ -62,7 +62,7 @@ jobs:
 
   python:
     name: Python tests
-    # ml/requirements-lock.txt is a Windows freeze (it contains pywinpty), so the full suite runs on Windows.
+    # Match the pinned research environment used to train and audit the frozen policies.
     runs-on: windows-2025
     timeout-minutes: 45
     steps:
@@ -116,7 +116,6 @@ jobs:
           cache: pip
           cache-dependency-path: service/requirements.txt
 
-      # The service's own runtime dependencies, as documented in service/README.md.
       - name: Install the Python service
         run: python -m pip install -r service/requirements.txt
 

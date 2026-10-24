@@ -1,6 +1,7 @@
 from dataclasses import replace
 import csv
 import json
+from importlib.metadata import version
 from pathlib import Path
 import shutil
 
@@ -181,24 +182,41 @@ def test_three_strategy_benchmark_preserves_paired_cases_and_saved_traces(tmp_pa
 
 
 def test_archived_ppo_must_match_budget_and_checksums(tmp_path, monkeypatch):
+    from ml.src.artifact_checksums import checksum_of
+
     values = json.loads(Path("experiments/dqn_public_data_v2_config.json").read_text())
-    protocol = BenchmarkProtocol.from_dict({**values, "ppo_checkpoint_root": "artifacts/ppo"})
+    protocol = BenchmarkProtocol.from_dict(values)
     config = protocol.shared_config(1000)
-    root = REPO_ROOT / protocol.ppo_checkpoint_root
-    with pytest.raises(ValueError, match="simulator or transition-data manifest differs"):
-        archive_inputs(config, root)
-    monkeypatch.setattr("ml.src.dqn_benchmark.environment_manifest", lambda current: environment_manifest(
-        replace(current, interaction_data_path="data/versions/interactions-v1/empirical_interactions.csv")
-    ))
-    inputs = archive_inputs(config, root)
-    assert len(inputs) == 4
-    with pytest.raises(ValueError, match="actual training budget"):
-        archive_inputs(replace(config, total_timesteps=512), root)
     target = tmp_path / "ppo_seed_1000"
     target.mkdir()
+    inputs = {
+        "final_model.zip": b"test-checkpoint",
+        "config.json": json.dumps(config.to_dict()).encode(),
+        "environment_manifest.json": json.dumps(environment_manifest(config)).encode(),
+        "training_summary.json": json.dumps({
+            "algorithm": "MaskablePPO", "total_timesteps": config.total_timesteps,
+            "software_versions": {
+                key: version(package) for package, key in (
+                    ("torch", "torch"), ("stable-baselines3", "stable_baselines3"),
+                    ("sb3-contrib", "sb3_contrib"), ("gymnasium", "gymnasium"),
+                )
+            },
+        }).encode(),
+    }
     for name, data in inputs.items():
         (target / name).write_bytes(data)
-    shutil.copyfile(root / "SHA256SUMS.txt", tmp_path / "SHA256SUMS.txt")
+    (tmp_path / "SHA256SUMS.txt").write_text("".join(
+        f"{checksum_of(name, data)}  ppo_seed_1000/{name}\n" for name, data in inputs.items()
+    ))
+    assert archive_inputs(config, tmp_path) == inputs
+    with monkeypatch.context() as changed:
+        changed.setattr("ml.src.dqn_benchmark.environment_manifest", lambda current: {
+            **environment_manifest(current), "interaction_data_sha256": "0" * 64,
+        })
+        with pytest.raises(ValueError, match="simulator or transition-data manifest differs"):
+            archive_inputs(config, tmp_path)
+    with pytest.raises(ValueError, match="actual training budget"):
+        archive_inputs(replace(config, total_timesteps=512), tmp_path)
     (target / "final_model.zip").write_bytes(inputs["final_model.zip"] + b"tampered")
     with pytest.raises(ValueError, match="checksum mismatch"):
         archive_inputs(config, tmp_path)
