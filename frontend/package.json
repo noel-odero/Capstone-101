@@ -53,7 +53,7 @@
     "format": "prettier --write .",
     "format:check": "prettier --check ."
   },
-  "description": "Research and educational frontend for AMR Decision Support: PPO versus a random susceptible-action baseline under simulated antimicrobial resistance.",
+  "description": "AMR Decision Support: an AI-powered research platform for model-based antibiotic strategy evaluation with PPO, DQN and a random susceptible-action baseline.",
   "engines": {
     "node": ">=22.12.0"
   }

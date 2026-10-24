@@ -24,8 +24,8 @@ export function DocumentationPage() {
       <section>
         <h2>Sign-in</h2>
         <p>
-          Running simulations needs a signed-in user. Google sign-in is configured on the server
-          with these environment variables; they are never part of the interface.
+          Running analyses needs a signed-in user. Google sign-in is configured on the server with
+          these environment variables; they are never part of the interface.
         </p>
         <pre>{`Auth__Google__ClientId
 Auth__Google__ClientSecret`}</pre>

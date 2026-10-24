@@ -39,7 +39,10 @@ public sealed record PythonModelInfo(
     IReadOnlyDictionary<string, string> ProvenanceFiles,
     IReadOnlyDictionary<string, string> TransitionStatusDefinitions,
     string ServiceVersion,
-    string Disclaimer);
+    string Disclaimer)
+{
+    public IReadOnlyDictionary<string, PythonPolicyModel>? Policies { get; init; }
+}
 
 public sealed record PythonAntibiotic(int ActionId, string Name, string? DrugClass);
 
@@ -60,4 +63,14 @@ public sealed record PythonProfileValidation(
     IReadOnlyList<int> FeasibleActionIds,
     bool IsTerminal,
     string? TerminalReason,
-    int Horizon);
+    int Horizon)
+{
+    public IReadOnlyList<PythonActionTransitionEvidence> TransitionEvidence { get; init; } = [];
+    public string? InteractionDataSha256 { get; init; }
+    public string? ScenarioId { get; init; }
+}
+
+public sealed record PythonTransitionEvidenceCandidate(string TargetDrug, string Outcome, IReadOnlyList<string> SourceIds);
+
+public sealed record PythonActionTransitionEvidence(
+    int ActionId, string Antibiotic, bool Eligible, IReadOnlyList<PythonTransitionEvidenceCandidate> Candidates);

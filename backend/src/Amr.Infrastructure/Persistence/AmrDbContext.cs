@@ -26,6 +26,7 @@ public sealed class AmrDbContext(DbContextOptions<AmrDbContext> options) : DbCon
 
     public DbSet<AppUser> Users => Set<AppUser>();
     public DbSet<Sample> Samples => Set<Sample>();
+    public DbSet<ResearchCollectionRecord> AnalysisCollections => Set<ResearchCollectionRecord>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -34,6 +35,20 @@ public sealed class AmrDbContext(DbContextOptions<AmrDbContext> options) : DbCon
         ConfigureStrategyRun(modelBuilder);
         ConfigureStepTrace(modelBuilder);
         ConfigureUser(modelBuilder);
+        modelBuilder.Entity<ResearchCollectionRecord>(entity =>
+        {
+            entity.ToTable("analysis_collections", table =>
+            {
+                table.HasCheckConstraint("ck_analysis_collections_name", "length(btrim(name)) > 0");
+                table.HasCheckConstraint("ck_analysis_collections_size", "cardinality(analysis_ids) BETWEEN 2 AND 50");
+            });
+            entity.HasKey(collection => collection.Id);
+            entity.Property(collection => collection.Id).ValueGeneratedNever();
+            entity.Property(collection => collection.OwnerId).HasMaxLength(200).IsRequired();
+            entity.Property(collection => collection.Name).HasMaxLength(80).IsRequired();
+            entity.Property(collection => collection.Question).HasMaxLength(500);
+            entity.HasIndex(collection => new { collection.OwnerId, collection.CreatedAtUtc });
+        });
         modelBuilder.Entity<Sample>(entity =>
         {
             entity.ToTable("samples", table =>
@@ -115,7 +130,7 @@ public sealed class AmrDbContext(DbContextOptions<AmrDbContext> options) : DbCon
         {
             entity.ToTable("strategy_runs", table =>
             {
-                table.HasCheckConstraint("ck_strategy_runs_strategy", "strategy IN ('ppo', 'random_susceptible_baseline')");
+                table.HasCheckConstraint("ck_strategy_runs_strategy", "strategy IN ('ppo', 'dqn', 'random_susceptible_baseline')");
                 table.HasCheckConstraint("ck_strategy_runs_profiles", $"cardinality(initial_profile) = {ProfileLength} AND cardinality(final_profile) = {ProfileLength}");
                 table.HasCheckConstraint("ck_strategy_runs_environment_seed", "environment_seed BETWEEN 0 AND 4294967295");
                 table.HasCheckConstraint("ck_strategy_runs_policy_seed", "policy_seed IS NULL OR policy_seed BETWEEN 0 AND 4294967295");
@@ -125,6 +140,7 @@ public sealed class AmrDbContext(DbContextOptions<AmrDbContext> options) : DbCon
             entity.Property(strategy => strategy.Id).ValueGeneratedNever();
             entity.Property(strategy => strategy.Strategy).HasConversion(SnakeCaseEnum<StrategyKind>()).HasMaxLength(32);
             entity.Property(strategy => strategy.StatesJson).HasColumnType("jsonb");
+            entity.Property(strategy => strategy.ModelJson).HasColumnType("jsonb");
             entity.HasOne(strategy => strategy.ExperimentRun)
                 .WithMany(run => run.StrategyRuns)
                 .HasForeignKey(strategy => strategy.ExperimentRunId)

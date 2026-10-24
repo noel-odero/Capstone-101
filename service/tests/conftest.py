@@ -8,7 +8,7 @@ import pytest
 from ml.src.ppo_inference import DEFAULT_MANIFEST_PATH, REPO_ROOT, load_manifest
 from service.main import create_app
 
-EXPECTED_CHECKPOINT_SHA256 = "d10c26185c9903d96d0f2003643b76be6df4f03c39e0d2e5f7945e763b7d9093"
+EXPECTED_CHECKPOINT_SHA256 = "1747b68cb572cc320c7c53ae105dfa9dd6827f689839b35c4f2bcf9520384001"
 
 
 def _protected_files() -> list[Path]:

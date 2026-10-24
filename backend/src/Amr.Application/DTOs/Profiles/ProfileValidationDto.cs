@@ -12,4 +12,14 @@ public sealed record ProfileValidationDto(
     IReadOnlyList<FeasibleActionDto> FeasibleActions,
     bool IsTerminal,
     string? TerminalReason,
-    int Horizon);
+    int Horizon)
+{
+    public IReadOnlyList<ActionTransitionEvidenceDto> TransitionEvidence { get; init; } = [];
+    public string? InteractionDataSha256 { get; init; }
+    public string? ScenarioId { get; init; }
+}
+
+public sealed record TransitionEvidenceCandidateDto(string TargetDrug, string Outcome, IReadOnlyList<string> SourceIds);
+
+public sealed record ActionTransitionEvidenceDto(
+    int ActionId, string Antibiotic, bool Eligible, IReadOnlyList<TransitionEvidenceCandidateDto> Candidates);

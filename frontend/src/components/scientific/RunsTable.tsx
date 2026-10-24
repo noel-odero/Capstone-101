@@ -4,11 +4,12 @@ import { formatDateTime, shortId } from '@/domain/formatters'
 import { profileToCode } from '@/domain/profile'
 import { runDetailPath } from '@/domain/runs'
 import { STRATEGY_NAMES } from '@/domain/terminology'
-import type { RecentRuns, RunSummary } from '@/domain/types'
+import type { RecentRuns, RunSummary, StrategyId } from '@/domain/types'
 import { formatMetricValue } from '@/domain/metrics'
 import styles from './runs-table.module.css'
+import { ProfileIndicators } from '@/features/history/ProfileIndicators'
 
-function burdenOf(run: RunSummary, strategy: 'ppo' | 'random_susceptible_baseline'): string {
+function burdenOf(run: RunSummary, strategy: StrategyId): string {
   const found = run.strategies.find((candidate) => candidate.strategy === strategy)
   return found
     ? formatMetricValue('cumulativeResistanceBurden', found.cumulativeResistanceBurden)
@@ -19,17 +20,42 @@ export interface RunsTableProps {
   runs: readonly RunSummary[]
   caption: string
   sampleLabels?: ReadonlyMap<string, string>
+  selection?: {
+    ids: readonly string[]
+    disabled: boolean
+    onToggle: (ids: string[]) => void
+  }
 }
 
 /** Stored runs: when, from which profile, the resistance burden of each strategy, and a link to open it. */
-export function RunsTable({ runs, caption, sampleLabels }: RunsTableProps) {
+export function RunsTable({ runs, caption, sampleLabels, selection }: RunsTableProps) {
+  const allSelected = runs.length > 0 && runs.every((run) => selection?.ids.includes(run.id))
+  const toggle = (ids: string[]) => {
+    if (!selection) return
+    selection.onToggle(
+      ids.every((id) => selection.ids.includes(id))
+        ? selection.ids.filter((id) => !ids.includes(id))
+        : [...new Set([...selection.ids, ...ids])],
+    )
+  }
   return (
     <div className={styles['wrap']}>
       <table className={styles['table']}>
         <caption className="visually-hidden">{caption}</caption>
         <thead>
           <tr>
-            <th scope="col">Run</th>
+            {selection ? (
+              <th scope="col">
+                <input
+                  type="checkbox"
+                  aria-label="Select this page"
+                  checked={allSelected}
+                  disabled={selection.disabled}
+                  onChange={() => toggle(runs.map((run) => run.id))}
+                />
+              </th>
+            ) : null}
+            <th scope="col">Analysis</th>
             <th scope="col">Date</th>
             <th scope="col">Initial profile</th>
             <th scope="col">
@@ -37,11 +63,15 @@ export function RunsTable({ runs, caption, sampleLabels }: RunsTableProps) {
               {STRATEGY_NAMES.ppo} burden
             </th>
             <th scope="col">
+              <span className={styles['dotDqn']} aria-hidden="true" />
+              DQN burden
+            </th>
+            <th scope="col">
               <span className={styles['dotBaseline']} aria-hidden="true" />
               Baseline burden
             </th>
             <th scope="col">
-              <span className="visually-hidden">Open</span>
+              <span className="visually-hidden">View Analysis</span>
             </th>
           </tr>
         </thead>
@@ -50,17 +80,44 @@ export function RunsTable({ runs, caption, sampleLabels }: RunsTableProps) {
             const path = runDetailPath(run)
             return (
               <tr key={run.id}>
+                {selection ? (
+                  <td>
+                    <input
+                      type="checkbox"
+                      aria-label={`Select analysis ${run.id}`}
+                      checked={selection.ids.includes(run.id)}
+                      disabled={selection.disabled}
+                      onChange={() => toggle([run.id])}
+                    />
+                  </td>
+                ) : null}
                 <th scope="row" title={run.id}>
                   {sampleLabels?.get(run.id) ??
-                    (run.kind === 'comparison' ? 'Comparison' : 'Simulation')}{' '}
+                    (run.kind === 'comparison'
+                      ? 'Strategy comparison'
+                      : 'Single-strategy analysis')}{' '}
                   <span className="muted">{shortId(run.id)}</span>
                 </th>
                 <td>{formatDateTime(run.createdAtUtc)}</td>
-                <td className={styles['code']}>{profileToCode(run.initialProfile)}</td>
+                <td className={styles['code']}>
+                  {selection ? (
+                    <ProfileIndicators
+                      profile={run.initialProfile}
+                      order={run.antibioticOrder ?? undefined}
+                    />
+                  ) : (
+                    profileToCode(run.initialProfile)
+                  )}
+                </td>
                 <td className="tabular">{burdenOf(run, 'ppo')}</td>
+                <td className="tabular">{burdenOf(run, 'dqn')}</td>
                 <td className="tabular">{burdenOf(run, 'random_susceptible_baseline')}</td>
                 <td>
-                  {path ? <Link to={path}>Open</Link> : <span className="muted">No view</span>}
+                  {path ? (
+                    <Link to={path}>View Analysis</Link>
+                  ) : (
+                    <span className="muted">No view</span>
+                  )}
                 </td>
               </tr>
             )
@@ -81,7 +138,8 @@ export function Pager({ data, onPage }: PagerProps) {
   return (
     <div className={styles['pager']}>
       <span>
-        Page {data.page} of {pages} &middot; {data.totalCount} runs
+        Page {data.page} of {pages} &middot; {data.totalCount}{' '}
+        {data.totalCount === 1 ? 'analysis' : 'analyses'}
       </span>
       <span className="row">
         <Button

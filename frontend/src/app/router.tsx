@@ -114,6 +114,20 @@ export const routes: RouteObject[] = [
                 ...lazyPage(() => import('@/features/profile/ProfilePage'), 'ProfilePage'),
               },
               {
+                path: 'history/analyze',
+                ...lazyPage(
+                  () => import('@/features/history/AnalysisInsightsPage'),
+                  'LegacyInsightsRedirect',
+                ),
+              },
+              {
+                path: 'insights',
+                ...lazyPage(
+                  () => import('@/features/history/AnalysisInsightsPage'),
+                  'AnalysisInsightsPage',
+                ),
+              },
+              {
                 path: 'history',
                 ...lazyPage(() => import('@/features/profile/HistoryPage'), 'HistoryPage'),
               },

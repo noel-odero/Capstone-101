@@ -6,6 +6,7 @@ import {
   UNAVAILABLE,
   buildMetricRows,
   buildTrajectorySeries,
+  comparePolicyTraces,
   formatMetricValue,
 } from './metrics'
 import type { StrategyResult } from './types'
@@ -41,30 +42,51 @@ describe('metric formatting', () => {
 })
 
 describe('comparison rows and trajectories', () => {
+  it('distinguishes different drug choices from identical count curves', () => {
+    const different: StrategyResult = {
+      ...ppo,
+      strategy: 'dqn',
+      steps: ppo.steps.map((step, index) =>
+        index === 0 ? { ...step, actionId: (step.actionId + 1) % 7 } : step,
+      ),
+    }
+    expect(comparePolicyTraces(ppo, different)).toEqual({
+      sameChoices: false,
+      sameCounts: true,
+      sameProfiles: true,
+    })
+    expect(comparePolicyTraces(ppo, ppo)).toEqual({
+      sameChoices: true,
+      sameCounts: true,
+      sameProfiles: true,
+    })
+  })
   it('builds the paired rows from returned metrics without altering them', () => {
-    const rows = buildMetricRows(ppo.metrics, baseline.metrics)
+    const rows = buildMetricRows([ppo, baseline])
     expect(rows.map((row) => row.key)).toEqual([...COMPARISON_METRIC_KEYS])
     const burden = rows.find((row) => row.key === 'cumulativeResistanceBurden')
-    expect(burden?.ppo).toBe(ppo.metrics.cumulativeResistanceBurden)
-    expect(burden?.baseline).toBe(baseline.metrics.cumulativeResistanceBurden)
+    expect(burden?.values).toEqual([
+      ppo.metrics.cumulativeResistanceBurden,
+      baseline.metrics.cumulativeResistanceBurden,
+    ])
   })
 
   it('aligns per-state counts by state index using only returned values', () => {
-    const series = buildTrajectorySeries(ppo, baseline, 'resistantCount')
+    const dqn: StrategyResult = { ...ppo, strategy: 'dqn', states: ppo.states.slice(0, 4) }
+    const series = buildTrajectorySeries([ppo, dqn, baseline], 'resistantCount')
     expect(series).toHaveLength(9)
-    expect(series[0]).toEqual({ step: 0, ppo: 1, baseline: 1 })
+    expect(series[0]).toEqual({ step: 0, ppo: 1, dqn: 1, random_susceptible_baseline: 1 })
     expect(series[8]).toEqual({
       step: 8,
       ppo: ppo.states[8]?.resistantCount,
-      baseline: baseline.states[8]?.resistantCount,
+      dqn: null,
+      random_susceptible_baseline: baseline.states[8]?.resistantCount,
     })
   })
 
   it('represents a terminal start as a single state', () => {
     const terminal = fixtures.comparisonTerminal.ppo as StrategyResult
-    expect(buildTrajectorySeries(terminal, terminal, 'resistantCount')).toEqual([
-      { step: 0, ppo: 7, baseline: 7 },
-    ])
+    expect(buildTrajectorySeries([terminal], 'resistantCount')).toEqual([{ step: 0, ppo: 7 }])
     expect(terminal.metrics.cumulativeResistanceBurden).toBe(8)
     expect(terminal.metrics.treatmentSteps).toBe(0)
     expect(terminal.metrics.susceptibleActionRate).toBeNull()

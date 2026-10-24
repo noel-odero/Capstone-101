@@ -140,6 +140,11 @@ public sealed class LiveEndToEndTests : IAsyncLifetime, IDisposable
         Assert.Equal(HttpStatusCode.Created, baseline.StatusCode);
         var body = await comparison.ReadJsonAsync();
         Assert.True(body.GetProperty("contract").GetProperty("verified").GetBoolean());
+        Assert.Equal("dqn", body.GetProperty("dqn").GetProperty("strategy").GetString());
+        Assert.Equal("dqn_public_v2_seed_15000", body.GetProperty("dqn").GetProperty("model").GetProperty("modelId").GetString());
+        Assert.Equal("ppo_public_v2_seed_19000", body.GetProperty("ppo").GetProperty("model").GetProperty("modelId").GetString());
+        var fetched = await (await _client.GetAsync(comparison.Headers.Location)).ReadJsonAsync();
+        Assert.True(JsonNode.DeepEquals(JsonNode.Parse(body.GetRawText()), JsonNode.Parse(fetched.GetRawText())));
         var recent = await (await _client.GetAsync("/api/v1/simulations/recent")).ReadJsonAsync();
         var ids = recent.GetProperty("items").EnumerateArray().Select(item => item.GetProperty("id").GetGuid()).ToList();
         Assert.Contains(body.GetProperty("id").GetGuid(), ids);

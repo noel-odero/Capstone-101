@@ -13,6 +13,40 @@ public class RequestValidationTests(AmrApiFactory factory) : IClassFixture<AmrAp
     private static string Simulation(string extra) => $$"""{"resistanceProfile": [0,1,0,0,0,0,0], {{extra}}}""";
 
     [Theory]
+    [InlineData("{}")]
+    [InlineData("{\"name\":\"Question\",\"analysisIds\":[]}")]
+    [InlineData("{\"name\":\"   \",\"analysisIds\":[\"11111111-1111-1111-1111-111111111111\",\"22222222-2222-2222-2222-222222222222\"]}")]
+    [InlineData("{\"name\":\"Question\",\"analysisIds\":[\"11111111-1111-1111-1111-111111111111\",\"11111111-1111-1111-1111-111111111111\"]}")]
+    public async Task Invalid_collection_requests_are_rejected_before_storage(string body)
+    {
+        var response = await _client.PostJsonAsync("/api/v1/analysis-collections", body);
+        await response.ReadProblemAsync(HttpStatusCode.UnprocessableEntity, ErrorCodes.ValidationFailed);
+    }
+
+    [Theory]
+    [InlineData("{}")]
+    [InlineData("{\"analysisIds\":[]}")]
+    [InlineData("{\"analysisIds\":[\"bad-id\",\"bad-id\"]}")]
+    [InlineData("{\"analysisIds\":[\"11111111-1111-1111-1111-111111111111\",\"11111111-1111-1111-1111-111111111111\"]}")]
+    public async Task Invalid_history_selection_is_rejected_before_reading_storage(string body)
+    {
+        var response = await _client.PostJsonAsync("/api/v1/analyses/compare", body);
+        await response.ReadProblemAsync(HttpStatusCode.UnprocessableEntity, ErrorCodes.ValidationFailed);
+    }
+
+    [Theory]
+    [InlineData("profile=010")]
+    [InlineData("initialResistantCount=8")]
+    [InlineData("strategy=unknown")]
+    [InlineData("sort=unknown")]
+    [InlineData("from=2026-10-23&to=2026-10-20")]
+    public async Task Invalid_history_filters_are_rejected_before_reading_storage(string query)
+    {
+        var response = await _client.GetAsync($"/api/v1/analyses?{query}");
+        await response.ReadProblemAsync(HttpStatusCode.UnprocessableEntity, ErrorCodes.ValidationFailed);
+    }
+
+    [Theory]
     [InlineData("[0,0,0,0,0,0]")]
     [InlineData("[0,0,0,0,0,0,0,0]")]
     [InlineData("[0,0,0,0,0,0,2]")]

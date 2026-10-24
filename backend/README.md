@@ -1,7 +1,8 @@
 # Backend (ASP.NET Core)
 
-Public API for the capstone. It validates requests, calls the internal Python scientific service for every simulation,
-comparison, model lookup and profile check, stores completed runs in PostgreSQL, and returns versioned JSON. It contains no
+Public API for AMR Decision Support, an AI-powered antibiotic strategy evaluation platform. It validates requests,
+calls the internal Python scientific service for strategy evaluations, model lookups and profile checks,
+stores completed analyses in PostgreSQL, and returns versioned JSON. It contains no
 scientific logic.
 
 Contract decisions (ids, `201 Created`, `isPersisted`, metric definitions, unsupported transitions, migrations, health,

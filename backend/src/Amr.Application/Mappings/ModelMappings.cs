@@ -1,4 +1,5 @@
 using Amr.Application.DTOs.Antibiotics;
+using Amr.Application.DTOs.Common;
 using Amr.Application.DTOs.Model;
 using Amr.Application.PythonContracts;
 
@@ -22,7 +23,11 @@ public static class ModelMappings
         model.Inference.Deterministic,
         model.TransitionStatusDefinitions,
         model.ServiceVersion,
-        model.Disclaimer);
+        model.Disclaimer)
+    {
+        Policies = model.Policies?.ToDictionary(pair => pair.Key,
+            pair => new PolicyModelDto(pair.Value.ModelId, pair.Value.Algorithm, pair.Value.CheckpointSha256)),
+    };
 
     public static AntibioticCatalogueDto ToDto(this PythonAntibiotics catalogue) => new(
         catalogue.Antibiotics.Select(item => new AntibioticDto(item.ActionId, item.Name, item.DrugClass)).ToList(),

@@ -1,0 +1,40 @@
+{
+  "sources": [
+    {
+      "source_id": "SAK2025_EXP",
+      "doi": "10.1038/s41564-024-01857-w",
+      "extract": "sakenova-directed-outcomes.csv",
+      "extract_sha256_lf": "a8871e4e2e67aad5028a32298a0ebf220d54c570cf29730e74ad2b184a3ff2a2",
+      "source_url": "https://media.springernature.com/original/springer-static/esm/art%3A10.1038%2Fs41564-024-01857-w/MediaObjects/41564_2024_1857_MOESM7_ESM.xlsx",
+      "source_sha256": "ddb2f5461f8115daf56adc0a2c557201b98736b7cb4cad2bfa1b5e8a9a011aac",
+      "measurement_notes": "Fig.3bcd; 18 outcome groups, not 18 independent interactions; frequencies are descriptive."
+    },
+    {
+      "source_id": "IBACACHE2018",
+      "doi": "10.3389/fmicb.2018.00427",
+      "extract": "ibacache-gen-mic.csv",
+      "extract_sha256_lf": "9816273e017ca9b12f2a5a94ce0347593d1387af0942a19628295a2156451ea5",
+      "source_url": "https://www.ebi.ac.uk/europepmc/webservices/rest/PMC5867336/supplementaryFiles",
+      "source_sha256": "e0476511c40f660d51ab6a67bc83b11d72bf61ca605c10718c4df0c5bf344a92",
+      "measurement_notes": "DataSheet1.docx Tables S5/S6; ug/mL; censored values retained; clones nested within evolution populations."
+    },
+    {
+      "source_id": "PHILLIPS2026",
+      "doi": "10.1093/g3journal/jkag046",
+      "extract": "phillips-caz-cip-mic.csv",
+      "extract_sha256_lf": "4be2309f955b66e88c7aa5faa03492ea8cc8b8bd02133faeb9b76118cb648f72",
+      "source_url": "https://ndownloader.figshare.com/files/56497361",
+      "source_sha256": "9e473967251589d9bac3efb68b82991827f90faf584c5279667ad99f469f63fd",
+      "measurement_notes": "raw_MIC CEF-only arm, rows 9 and 12-22; ug/mL; duplicate assays; clone 1C missing."
+    },
+    {
+      "source_id": "JAMES2024",
+      "doi": "10.1038/s44259-024-00037-4",
+      "extract": "james-mic.csv",
+      "extract_sha256_lf": "226b9b33c0e8ada4f7b549c70924e12c6a4657848c20d88c3b4d79da6e266e4d",
+      "source_url": "https://raw.githubusercontent.com/Alhubb/Collateral-Effects-of-AMR/main/Commands_and_Figure_Data_GitHub.zip",
+      "source_sha256": "fd1f8a4a7429e26d26ace6a20eb1ea4c9cfa9061f556e0e8950f46aca533b5cf",
+      "measurement_notes": "Data/MIC_all_tidy.csv; 117 original rows across three clinical backgrounds; relative MIC changes are not binary clinical breakpoint crossings."
+    }
+  ]
+}

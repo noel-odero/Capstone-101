@@ -20,6 +20,14 @@ public static class ProfileMappings
                 validation.IsTerminal,
                 validation.TerminalReason,
                 validation.Horizon)
+            {
+                TransitionEvidence = validation.TransitionEvidence.Select(action => new ActionTransitionEvidenceDto(
+                    action.ActionId, action.Antibiotic, action.Eligible,
+                    action.Candidates.Select(candidate => new TransitionEvidenceCandidateDto(
+                        candidate.TargetDrug, candidate.Outcome, candidate.SourceIds)).ToList())).ToList(),
+                InteractionDataSha256 = validation.InteractionDataSha256,
+                ScenarioId = validation.ScenarioId,
+            }
             : throw UpstreamErrors.InvalidResponse();
 
     public static FeasibleActionDto ToDto(this PythonFeasibleAction action) =>

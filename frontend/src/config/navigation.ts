@@ -1,10 +1,13 @@
 import type { IconType } from 'react-icons'
+import { PAGE_TITLES } from '@/domain/terminology'
 import {
   FiArchive as Archive,
   FiTrendingUp as ChartLine,
   FiHome as House,
   FiList as ListChecks,
   FiCrosshair as Microscope,
+  FiClock as History,
+  FiPieChart as Insights,
 } from 'react-icons/fi'
 
 export interface NavigationItem {
@@ -17,17 +20,23 @@ export interface NavigationItem {
   alsoActiveFor?: readonly string[]
 }
 
-/** The signed-in workspace: four pages. */
+/** Core analysis workflow, sample library and resistance profiles. */
 export const workspaceNavigation: readonly NavigationItem[] = [
-  { to: '/app', label: 'Home', icon: House, end: true },
+  { to: '/app', label: PAGE_TITLES.workspace, icon: House, end: true },
   { to: '/app/samples', label: 'Samples', icon: Archive },
-  { to: '/app/simulation', label: 'Simulation', icon: ChartLine },
-  { to: '/app/recommendations', label: 'Recommendations', icon: ListChecks },
+  {
+    to: '/app/simulation',
+    label: PAGE_TITLES.evaluation,
+    icon: ChartLine,
+    alsoActiveFor: ['/app/simulation'],
+  },
+  { to: '/app/recommendations', label: PAGE_TITLES.results, icon: ListChecks },
+  { to: '/app/history', label: PAGE_TITLES.history, icon: History, end: true },
+  { to: '/app/insights', label: PAGE_TITLES.insights, icon: Insights },
   {
     to: '/app/profile',
-    label: 'E. coli Profile',
+    label: 'Model Explorer',
     icon: Microscope,
-    alsoActiveFor: ['/app/history'],
   },
 ]
 

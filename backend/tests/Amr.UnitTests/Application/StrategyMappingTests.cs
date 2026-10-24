@@ -27,7 +27,7 @@ public class StrategyMappingTests
     public void The_python_ids_are_the_wire_constants()
     {
         Assert.Equal(
-            new[] { PythonStrategyIds.Ppo, PythonStrategyIds.Greedy }.Order(),
+            new[] { PythonStrategyIds.Ppo, PythonStrategyIds.Dqn, PythonStrategyIds.Greedy }.Order(),
             Enum.GetValues<StrategyKind>().Select(StrategyMapping.ToPythonId).Order());
     }
 
@@ -50,7 +50,7 @@ public class StrategyMappingTests
     {
         var schema = File.ReadAllText(Path.Combine(RepositoryRoot(), "service", "schemas.py"));
 
-        Assert.Contains($"Literal[\"{PythonStrategyIds.Ppo}\", \"{PythonStrategyIds.Greedy}\"]", schema, StringComparison.Ordinal);
+        Assert.Contains($"Literal[\"{PythonStrategyIds.Ppo}\", \"{PythonStrategyIds.Dqn}\", \"{PythonStrategyIds.Greedy}\"]", schema, StringComparison.Ordinal);
     }
 
     private static string RepositoryRoot()

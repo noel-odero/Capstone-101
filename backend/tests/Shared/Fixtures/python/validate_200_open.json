@@ -26,22 +26,22 @@
     {
       "action_id": 1,
       "antibiotic": "NITROFURANTOIN",
-      "has_candidate_transition": false
+      "has_candidate_transition": true
     },
     {
       "action_id": 2,
       "antibiotic": "FOSFOMYCIN",
-      "has_candidate_transition": false
+      "has_candidate_transition": true
     },
     {
       "action_id": 4,
       "antibiotic": "GENTAMICIN",
-      "has_candidate_transition": false
+      "has_candidate_transition": true
     },
     {
       "action_id": 5,
       "antibiotic": "MECILLINAM",
-      "has_candidate_transition": false
+      "has_candidate_transition": true
     },
     {
       "action_id": 6,

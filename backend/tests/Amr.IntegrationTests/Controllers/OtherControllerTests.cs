@@ -201,7 +201,7 @@ public class ModelAndAntibioticsControllerTests(AmrApiFactory factory) : IClassF
 
         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
         var text = await response.Content.ReadAsStringAsync();
-        Assert.Contains("\"checkpointSha256\":\"d10c26185c9903d96d0f2003643b76be6df4f03c39e0d2e5f7945e763b7d9093\"", text, StringComparison.Ordinal);
+        Assert.Contains("\"checkpointSha256\":\"1747b68cb572cc320c7c53ae105dfa9dd6827f689839b35c4f2bcf9520384001\"", text, StringComparison.Ordinal);
         Assert.DoesNotContain("artifacts/", text, StringComparison.Ordinal);
         Assert.DoesNotContain("\\\\", text, StringComparison.Ordinal);
     }

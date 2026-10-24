@@ -12,7 +12,7 @@ export function SimulationControls({
   horizon: number
 }) {
   return (
-    <section className={styles.initialConditions} aria-label="Initial simulation status">
+    <section className={styles.initialConditions} aria-label="Initial analysis conditions">
       <dl className={styles.initialSummary}>
         <div>
           <dt>Initial profile</dt>
@@ -34,7 +34,7 @@ export function SimulationControls({
         variant="secondary"
         size="sm"
       >
-        Configure new simulation
+        New Analysis
       </ButtonLink>
     </section>
   )

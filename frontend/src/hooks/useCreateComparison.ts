@@ -5,7 +5,7 @@ import type { CreateComparisonRequest } from '@/domain/types'
 
 /**
  * Creates and stores a paired run. It is never retried automatically. On success the stored comparison is cached
- * under its id and only the recent-runs list is invalidated.
+ * under its id, and history and sample lists are refreshed.
  */
 export function useCreateComparison() {
   const queryClient = useQueryClient()
@@ -15,6 +15,7 @@ export function useCreateComparison() {
     onSuccess: (comparison) => {
       queryClient.setQueryData(queryKeys.comparison(comparison.id), comparison)
       void queryClient.invalidateQueries({ queryKey: queryKeys.recentRunsRoot })
+      void queryClient.invalidateQueries({ queryKey: ['analysis-history'] })
       void queryClient.invalidateQueries({ queryKey: ['samples'] })
     },
   })

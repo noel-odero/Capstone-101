@@ -28,7 +28,7 @@ public class PythonServiceHealthCheckerTests
         new(new HealthOnlyClient(health), NullLogger<PythonServiceHealthChecker>.Instance);
 
     private static PythonHealth Health(bool modelReady, string status = "ok", string? errorCode = null) =>
-        new(status, modelReady, "0.1.0", modelReady ? "ppo_seed_12000" : null, modelReady ? "abc" : null, errorCode, "message");
+        new(status, modelReady, "0.1.0", modelReady ? "ppo_public_v2_seed_19000" : null, modelReady ? "abc" : null, errorCode, "message");
 
     private static ComponentHealthDto Component(IReadOnlyList<ComponentHealthDto> components, string name) =>
         components.Single(component => component.Name == name);

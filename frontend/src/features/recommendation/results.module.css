@@ -1,5 +1,5 @@
 .results {
-  max-width: 1180px;
+  max-width: 73.75rem;
   margin-inline: auto;
 }
 .topline {
@@ -39,6 +39,19 @@
 .results code {
   font-family: var(--font-mono);
   overflow-wrap: anywhere;
+}
+.agreement {
+  padding: 0.2rem 0.5rem;
+  background: var(--color-surface-subtle);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+}
+.validation {
+  margin-top: 1rem;
+  font-size: var(--text-sm);
+}
+.validation .tableWrap {
+  margin-top: 0.8rem;
 }
 .tabs {
   display: flex;
@@ -157,7 +170,7 @@
 }
 .chart {
   width: 100%;
-  height: clamp(230px, 36dvh, 350px);
+  height: clamp(14.375rem, 36dvh, 21.875rem);
   margin-top: 1.25rem;
 }
 .trajectoryControls {
@@ -345,7 +358,7 @@
   margin-left: 0.5rem;
 }
 .sequences {
-  grid-template-columns: repeat(2, minmax(0, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 15rem), 1fr));
   gap: 1rem;
   margin-top: 1rem;
 }
@@ -376,16 +389,11 @@
   color: var(--color-text-muted);
   white-space: nowrap;
 }
-.ppoDot,
-.baselineDot {
+.strategyDot {
   width: 0.45rem;
   height: 0.45rem;
   border-radius: 50%;
-  background: var(--color-series-ppo);
   flex-shrink: 0;
-}
-.baselineDot {
-  background: var(--color-series-baseline);
 }
 .sequence {
   display: grid;

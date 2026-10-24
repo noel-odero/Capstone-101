@@ -11,13 +11,12 @@ import {
   YAxis,
 } from 'recharts'
 import { buildTrajectorySeries } from '@/domain/metrics'
-import { STRATEGY_NAMES } from '@/domain/terminology'
+import { STRATEGY_COLORS, strategyLabel } from '@/domain/terminology'
 import type { StrategyResult } from '@/domain/types'
 import styles from './simulation.module.css'
 
 export interface TrajectoryChartProps {
-  ppo: StrategyResult
-  baseline: StrategyResult
+  results: readonly StrategyResult[]
   selectedStep: number
   onSelectStep: (step: number) => void
 }
@@ -31,16 +30,10 @@ const MEASURES = {
  * Per-state counts returned by the API. It is the number of resistant (or susceptible) antibiotics at each step, not the
  * cumulative resistance burden, which the API reports only for the whole run.
  */
-export function TrajectoryChart({
-  ppo,
-  baseline,
-  selectedStep,
-  onSelectStep,
-}: TrajectoryChartProps) {
+export function TrajectoryChart({ results, selectedStep, onSelectStep }: TrajectoryChartProps) {
   const [measure, setMeasure] = useState<keyof typeof MEASURES>('resistantCount')
-  const points = buildTrajectorySeries(ppo, baseline, measure)
-  const last = (key: 'ppo' | 'baseline') =>
-    points.filter((point) => point[key] !== null).at(-1)?.[key]
+  const points = buildTrajectorySeries(results, measure)
+  const last = (key: string) => points.filter((point) => point[key] !== null).at(-1)?.[key]
 
   return (
     <figure style={{ margin: 0 }} className="stack">
@@ -80,55 +73,50 @@ export function TrajectoryChart({
               type="number"
               domain={[0, 'dataMax']}
               allowDecimals={false}
-              tick={{ fontSize: 12 }}
-              label={{ value: 'Step', position: 'insideBottom', offset: -12, fontSize: 12 }}
+              tick={{ fontSize: '0.75rem' }}
+              label={{ value: 'Step', position: 'insideBottom', offset: -12, fontSize: '0.75rem' }}
             />
             <YAxis
               domain={[0, 7]}
               allowDecimals={false}
-              tick={{ fontSize: 12 }}
+              tick={{ fontSize: '0.75rem' }}
               label={{
                 value: MEASURES[measure].axis,
                 angle: -90,
                 position: 'insideLeft',
-                fontSize: 12,
+                fontSize: '0.75rem',
               }}
             />
             <Tooltip />
-            <Legend verticalAlign="top" height={28} />
+            <Legend verticalAlign="top" height={28} wrapperStyle={{ fontSize: '0.75rem' }} />
             <ReferenceLine
               x={selectedStep}
               stroke="var(--color-text-muted)"
               strokeDasharray="2 2"
             />
-            <Line
-              type="stepAfter"
-              dataKey="ppo"
-              name={STRATEGY_NAMES.ppo}
-              stroke="var(--color-series-ppo)"
-              strokeWidth={2.5}
-              dot={{ r: 3 }}
-              connectNulls={false}
-              isAnimationActive={false}
-            />
-            <Line
-              type="stepAfter"
-              dataKey="baseline"
-              name="Baseline"
-              stroke="var(--color-series-baseline)"
-              strokeWidth={2.5}
-              strokeDasharray="6 3"
-              dot={{ r: 3 }}
-              connectNulls={false}
-              isAnimationActive={false}
-            />
+            {results.map((result, index) => (
+              <Line
+                key={result.strategy}
+                type="stepAfter"
+                dataKey={result.strategy}
+                name={strategyLabel(result.strategy)}
+                stroke={STRATEGY_COLORS[result.strategy]}
+                strokeWidth={2.5}
+                strokeDasharray={index === 0 ? undefined : index === 1 ? '3 3' : '6 3'}
+                dot={{ r: 3 }}
+                connectNulls={false}
+                isAnimationActive={false}
+              />
+            ))}
           </LineChart>
         </ResponsiveContainer>
       </div>
       <p className="visually-hidden">
-        {MEASURES[measure].name}. {STRATEGY_NAMES.ppo} ends at {last('ppo')}; Random Susceptible
-        Baseline ends at {last('baseline')}. Select a step on the chart or the timeline to inspect
-        it.
+        {MEASURES[measure].name}.{' '}
+        {results
+          .map((result) => `${strategyLabel(result.strategy)} ends at ${last(result.strategy)}`)
+          .join('; ')}
+        . Select a step on the chart or timeline to inspect it.
       </p>
     </figure>
   )

@@ -12,8 +12,8 @@ const session = {
 }
 const created = { ...rawFixtures.comparison, id: '5a1f3a7e-3c1c-4f43-9f0e-2f4d7a9b6c11' }
 
-describe('New simulation page', () => {
-  it('sends the chosen profile once and opens the simulation page of the new run', async () => {
+describe('Strategy Evaluation page', () => {
+  it('sends the chosen profile once and opens the 3D analysis page', async () => {
     const api = mockFetch(
       baseRoutes({
         'GET /api/v1/auth/session': { body: session },
@@ -24,12 +24,14 @@ describe('New simulation page', () => {
     const user = userEvent.setup()
     const { router } = renderApp('/app/simulation/new?profile=0100000')
 
-    await user.click(await screen.findByRole('button', { name: 'Review simulation' }))
-    await user.click(screen.getByRole('button', { name: 'Run Simulation' }))
+    await user.click(await screen.findByRole('button', { name: 'Review Analysis' }))
+    await user.click(screen.getByRole('button', { name: 'Run Analysis' }))
 
     await waitFor(() =>
       expect(router.state.location.pathname).toBe(`/app/simulation/${created.id}`),
     )
+    expect(await screen.findByRole('heading', { name: 'Resistance Trajectory' })).toBeInTheDocument()
+    expect(screen.getByRole('heading', { name: 'Urinary Tract' })).toBeInTheDocument()
     expect(api.callsTo('POST /api/v1/comparisons')).toHaveLength(1)
     expect(api.callsTo('POST /api/v1/comparisons')[0]?.body).toEqual({
       resistanceProfile: [0, 1, 0, 0, 0, 0, 0],

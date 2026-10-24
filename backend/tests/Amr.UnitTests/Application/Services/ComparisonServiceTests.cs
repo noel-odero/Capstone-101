@@ -30,13 +30,15 @@ public class ComparisonServiceTests
     }
 
     [Fact]
-    public async Task Both_strategy_results_are_returned_with_public_identifiers_and_labels()
+    public async Task All_three_strategy_results_are_returned_with_public_identifiers_and_labels()
     {
         var (service, _) = Serving();
 
         var comparison = await service.RunAsync(Request(), CancellationToken.None);
 
-        Assert.Equal((StrategyKind.Ppo, "Frozen PPO Policy"), (comparison.Ppo!.Strategy, comparison.Ppo.DisplayLabel));
+        Assert.Equal((StrategyKind.Ppo, "PPO"), (comparison.Ppo!.Strategy, comparison.Ppo.DisplayLabel));
+        Assert.Equal((StrategyKind.Dqn, "DQN"), (comparison.Dqn!.Strategy, comparison.Dqn.DisplayLabel));
+        Assert.Equal("dqn_public_v2_seed_15000", comparison.Dqn.Model!.ModelId);
         Assert.Equal((StrategyKind.RandomSusceptibleBaseline, "Random Susceptible Baseline"), (comparison.Baseline!.Strategy, comparison.Baseline.DisplayLabel));
         Assert.Equal((8, 8), (comparison.Ppo.Steps.Count, comparison.Baseline.Steps.Count));
         Assert.Null(comparison.Ppo.PolicySeed);
@@ -61,7 +63,7 @@ public class ComparisonServiceTests
         Assert.Equal(100001, contract.Shared.EnvironmentSeed);
         Assert.Equal(("susceptible_actions_only", true), (contract.Shared.ActionMaskConfiguration.Rule, contract.Shared.ActionMaskConfiguration.Enabled));
         Assert.Contains("do not guarantee identical transition outcomes", comparison.PairingSemantics, StringComparison.Ordinal);
-        Assert.Contains("does not show that either strategy is better", comparison.SingleRunCaveat, StringComparison.Ordinal);
+        Assert.Contains("does not establish a superior strategy", comparison.SingleRunCaveat, StringComparison.Ordinal);
     }
 
     [Fact]
@@ -76,8 +78,8 @@ public class ComparisonServiceTests
 
         var comparison = await service.RunAsync(Request(), CancellationToken.None);
 
-        Assert.Equal("d10c26185c9903d96d0f2003643b76be6df4f03c39e0d2e5f7945e763b7d9093", comparison.Provenance.CheckpointSha256);
-        Assert.Equal("7a5e3e1fe730676a0793674e4ff4aaf3c6ce1177ad5588eed4bb2e5d627edb44", comparison.Contract!.Shared.InteractionDataSha256);
+        Assert.Equal("1747b68cb572cc320c7c53ae105dfa9dd6827f689839b35c4f2bcf9520384001", comparison.Provenance.CheckpointSha256);
+        Assert.Equal("af62f389fe92b4ecddfbc1df6c967c5da9992ed928c09dd3a68673819f42591c", comparison.Contract!.Shared.InteractionDataSha256);
         Assert.Equal(("REF_UNIFORM_SUPPORTED", 8), (comparison.Contract.Shared.ScenarioId, comparison.Contract.Shared.Horizon));
         Assert.Contains("future_key", comparison.Provenance.RewardSpecification.Keys);
         Assert.Contains("future_key", comparison.Contract.Shared.RewardSpecification.Keys);
@@ -137,6 +139,15 @@ public class ComparisonServiceTests
 
         var error = await Assert.ThrowsAsync<AmrException>(() => service.RunAsync(Request(), CancellationToken.None));
 
+        Assert.Equal(ErrorCodes.PythonServiceInvalidResponse, error.Code);
+    }
+
+    [Fact]
+    public async Task A_new_comparison_cannot_silently_omit_dqn()
+    {
+        var body = PythonFixtures.Mutate("compare_200", node => node["dqn"] = null);
+        var (service, _) = Serving(body);
+        var error = await Assert.ThrowsAsync<AmrException>(() => service.RunAsync(Request(), CancellationToken.None));
         Assert.Equal(ErrorCodes.PythonServiceInvalidResponse, error.Code);
     }
 

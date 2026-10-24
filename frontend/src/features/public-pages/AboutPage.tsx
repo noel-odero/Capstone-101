@@ -1,27 +1,26 @@
 import { REPOSITORY_URL } from '@/config/navigation'
 import { Link } from 'react-router'
 import { PublicPage } from './PublicPage'
+import { APP_NAME, APP_TAGLINE } from '@/domain/terminology'
 
 export function AboutPage() {
   return (
-    <PublicPage
-      title="About"
-      lede="A research and educational prototype for studying antibiotic sequencing in a simulated environment."
-    >
+    <PublicPage title="About" lede={`${APP_NAME}. ${APP_TAGLINE}`}>
       <section>
         <h2>The question</h2>
         <p>
-          How does a frozen PPO policy compare with a random susceptible-action baseline in a
-          simulated antibiotic-sequencing environment, in terms of resistance burden, resistance
-          emergence and the preservation of susceptible options?
+          How do frozen PPO and DQN policies compare with a random susceptible-action baseline in
+          terms of model-derived resistance burden, resistance emergence and the preservation of
+          susceptible options?
         </p>
       </section>
       <section>
         <h2>What this is</h2>
         <p>
-          A simulator of <em>E. coli</em> resistance to seven antibiotics, a trained
-          reinforcement-learning policy, and this interface for running and inspecting simulations.
-          It does not recommend treatment for anyone.
+          A research platform for evaluating antibiotic-selection strategies against a defined
+          <em> E. coli</em> resistance model. It compares policies, traces resistance changes and
+          preserves the evidence and assumptions behind each analysis. It is not validated for
+          clinical prescribing.
         </p>
       </section>
       <section>
@@ -35,8 +34,10 @@ export function AboutPage() {
         <h2>How it is built</h2>
         <ul>
           <li>A React interface (this site).</li>
-          <li>An ASP.NET Core API that stores each person&apos;s runs in PostgreSQL.</li>
-          <li>An internal Python service that runs the frozen PPO checkpoint and the simulator.</li>
+          <li>An ASP.NET Core API that stores account-owned samples and analyses in PostgreSQL.</li>
+          <li>
+            A Python evaluation engine using frozen PPO and DQN policies and a random baseline.
+          </li>
         </ul>
         <p>
           <Link to="/methodology">Methodology</Link> &middot;{' '}

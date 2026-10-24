@@ -1,4 +1,4 @@
-"""One verified frozen engine per process and the thin operations built on it."""
+"""Verified PPO and DQN engines sharing one simulator contract."""
 from __future__ import annotations
 
 import csv
@@ -10,10 +10,11 @@ from typing import Any
 
 from ml.src.ppo_inference import (
     CANDIDATES_AVAILABLE_STATUS,
+    ContractMismatchError,
     DEFAULT_MANIFEST_PATH,
     NO_CANDIDATE_STATUS,
     FrozenCheckpointManifest,
-    FrozenPPOInferenceEngine,
+    FrozenPolicyInferenceEngine,
     InferenceContext,
     TerminalStateError,
     get_frozen_engine,
@@ -25,9 +26,10 @@ from simulation.action_space import ACTION_SPACE_FILE, ActionSpace
 from simulation.resistance_state import ANTIBIOTICS
 
 logger = logging.getLogger("service")
+DQN_MANIFEST_PATH = Path(__file__).resolve().parents[1] / "artifacts/frozen/public-data-v2/dqn/manifest.json"
 
 DISCLAIMER = (
-    "Simulation output only. It is not clinical advice, a validated treatment recommendation, or a "
+    "Model-derived research analysis only. It is not clinical advice, a validated treatment recommendation, or a "
     "statement about clinical efficacy."
 )
 INTERPRETATION = (
@@ -52,11 +54,25 @@ TRANSITION_STATUS_DEFINITIONS = {
 
 @dataclass(frozen=True)
 class ModelRuntime:
-    engine: FrozenPPOInferenceEngine
+    engine: FrozenPolicyInferenceEngine
     manifest: FrozenCheckpointManifest
     manifest_document: dict[str, Any]
     config: PPOConfig
     antibiotics: tuple[dict[str, Any], ...]
+    dqn_engine: FrozenPolicyInferenceEngine
+
+    def engine_for(self, strategy: str) -> FrozenPolicyInferenceEngine:
+        return self.dqn_engine if strategy == "dqn" else self.engine
+
+    def policy_model(self, strategy: str) -> dict[str, str] | None:
+        if strategy == "greedy":
+            return None
+        engine = self.engine_for(strategy)
+        return {
+            "model_id": engine.model_id,
+            "algorithm": "MaskedDQN" if strategy == "dqn" else "MaskablePPO",
+            "checkpoint_sha256": engine.checkpoint_sha256,
+        }
 
     def describe_model(self) -> dict[str, Any]:
         document = self.manifest_document
@@ -78,6 +94,7 @@ class ModelRuntime:
             "transition_status_definitions": TRANSITION_STATUS_DEFINITIONS,
             "service_version": __version__,
             "disclaimer": DISCLAIMER,
+            "policies": {strategy: self.policy_model(strategy) for strategy in ("ppo", "dqn")},
         }
 
     def list_antibiotics(self) -> dict[str, Any]:
@@ -106,6 +123,22 @@ class ModelRuntime:
         susceptible = [name for name in ANTIBIOTICS if name not in resistant]
         is_terminal = not susceptible
         feasible = [] if is_terminal else self.feasible_actions(context)
+        evidence = [
+            {
+                "action_id": action_id,
+                "antibiotic": name,
+                "eligible": state.is_susceptible(name),
+                "candidates": [
+                    {
+                        "target_drug": candidate.target_drug,
+                        "outcome": candidate.outcome,
+                        "source_ids": list(candidate.source_ids),
+                    }
+                    for candidate in self.engine.candidate_transitions(context, action_id)
+                ] if state.is_susceptible(name) else [],
+            }
+            for action_id, name in enumerate(ANTIBIOTICS)
+        ]
         return {
             "valid": True,
             "resistance_profile": list(context.resistance_profile),
@@ -118,6 +151,9 @@ class ModelRuntime:
             "is_terminal": is_terminal,
             "terminal_reason": "no_effective_antibiotic" if is_terminal else None,
             "horizon": self.engine.horizon,
+            "transition_evidence": evidence,
+            "interaction_data_sha256": self.manifest.interaction_data_sha256,
+            "scenario_id": self.manifest.scenario_id,
         }
 
     def recommend(
@@ -181,12 +217,21 @@ def load_runtime(manifest_path: str | Path = DEFAULT_MANIFEST_PATH) -> ModelRunt
     manifest = load_manifest(manifest_path)
     with Path(manifest_path).open(encoding="utf-8") as manifest_file:
         document = json.load(manifest_file)
+    dqn_engine = get_frozen_engine(DQN_MANIFEST_PATH)
+    document_dqn = json.loads(DQN_MANIFEST_PATH.read_text(encoding="utf-8"))
+    if document["algorithm"] != "MaskablePPO" or document_dqn["algorithm"] != "MaskedDQN":
+        raise ContractMismatchError("The PPO and DQN slots must contain their declared algorithms.")
+    for key in ("simulator", "observation", "action_space", "action_masking", "inference"):
+        if document[key] != document_dqn[key]:
+            raise ContractMismatchError(f"PPO and DQN must share the same {key} contract.")
     return ModelRuntime(
         engine=engine,
         manifest=manifest,
         manifest_document=document,
         config=PPOConfig(
-            scenario_id=manifest.scenario_id, horizon=manifest.horizon, device=manifest.device
+            scenario_id=manifest.scenario_id, horizon=manifest.horizon, device=manifest.device,
+            interaction_data_path=manifest.interaction_data_path,
         ),
         antibiotics=_load_antibiotics(),
+        dqn_engine=dqn_engine,
     )

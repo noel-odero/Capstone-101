@@ -8,12 +8,11 @@ import { EmptyState } from '@/components/ui/EmptyState'
 import { ErrorState } from '@/components/ui/ErrorState'
 import { LoadingState } from '@/components/ui/LoadingState'
 import { RECENT_RUNS_PAGE_SIZE, useRecentRuns } from '@/hooks/useRecentRuns'
-import { ProfileTabs } from './ProfileTabs'
 import { SampleList } from '@/features/samples/SampleList'
 import { useSamples } from '@/features/samples/useSamples'
+import { PAGE_TITLES } from '@/domain/terminology'
 import sampleStyles from '@/features/samples/samples.module.css'
 
-/** Your stored experiments, newest first. Each row opens its simulation or PPO sequence. */
 export function HistoryPage() {
   const [params, setParams] = useSearchParams()
   const requested = Number(params.get('page'))
@@ -23,24 +22,22 @@ export function HistoryPage() {
   const requestedCategory = params.get('category')
   const category =
     requestedCategory === 'pending' || requestedCategory === 'run' ? requestedCategory : 'runs'
-
   return (
     <ContentContainer>
       <PageHeader
-        title="Experiment History"
-        subtitle="Reopen your saved simulations and strategy comparisons."
+        title={PAGE_TITLES.history}
+        subtitle="Revisit saved evaluations and compare initial resistance profiles."
         action={
           <ButtonLink to="/app/simulation/new" variant="dark">
-            New Experiment
+            New Analysis
           </ButtonLink>
         }
       />
-      <ProfileTabs />
       <div className={sampleStyles.categories} role="group" aria-label="History categories">
         {[
-          ['runs', 'All runs'],
-          ['pending', 'Samples not run'],
-          ['run', 'Samples run'],
+          ['runs', 'All analyses'],
+          ['pending', 'Samples not analyzed'],
+          ['run', 'Samples analyzed'],
         ].map(([key, label]) => (
           <button
             key={key}
@@ -77,11 +74,11 @@ export function HistoryPage() {
           ) : null}
           {runs.data && runs.data.totalCount === 0 ? (
             <EmptyState
-              title="No simulations yet"
-              description="Your simulations will be listed here."
+              title="No analyses yet"
+              description="Your saved analyses will be listed here."
               action={
                 <ButtonLink to="/app/simulation/new" variant="dark">
-                  Run Simulation
+                  New Analysis
                 </ButtonLink>
               }
             />
@@ -89,11 +86,11 @@ export function HistoryPage() {
           {runs.data && runs.data.totalCount > 0 ? (
             <Card as="div" flush>
               {runs.data.items.length === 0 ? (
-                <p style={{ padding: 'var(--space-4)' }}>No runs on this page.</p>
+                <p style={{ padding: 'var(--space-4)' }}>No analyses on this page.</p>
               ) : (
                 <RunsTable
                   runs={runs.data.items}
-                  caption="Your simulations, newest first"
+                  caption="Your analyses, newest first"
                   sampleLabels={
                     new Map(
                       samples.data?.flatMap((sample) =>

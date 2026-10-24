@@ -9,16 +9,14 @@ const BacteriaClearanceScene = lazy(() =>
   })),
 )
 export interface StatePanelProps {
-  ppo: StrategyResult
-  baseline: StrategyResult
+  results: readonly StrategyResult[]
   selectedStep: number
   onSelectStep: (step: number) => void
 }
-export function StatePanel({ ppo, baseline, selectedStep, onSelectStep }: StatePanelProps) {
+export function StatePanel({ results, selectedStep, onSelectStep }: StatePanelProps) {
   const [playing, setPlaying] = useState(false)
-  const last = lastStepOf(ppo.steps, baseline.steps)
+  const last = lastStepOf(...results.map((result) => result.steps))
   const active = playing && selectedStep < last
-  const shownStep = Math.min(selectedStep, ppo.steps.length)
   useEffect(() => {
     if (!active) return
     const timer = setTimeout(() => onSelectStep(selectedStep + 1), 1400)
@@ -46,7 +44,7 @@ export function StatePanel({ ppo, baseline, selectedStep, onSelectStep }: StateP
       </ul>
       <div className={styles['clearanceScene']}>
         <Suspense fallback={<p className={styles['organCaption']}>Preparing 3D view…</p>}>
-          <BacteriaClearanceScene step={shownStep} horizon={last} />
+          <BacteriaClearanceScene step={selectedStep} horizon={last} />
         </Suspense>
       </div>
       <p className={styles['clearanceNote']}>

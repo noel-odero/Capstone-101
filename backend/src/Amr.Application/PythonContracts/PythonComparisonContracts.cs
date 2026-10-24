@@ -43,4 +43,7 @@ public sealed record PythonComparison(
     PythonStrategyResult Greedy,
     IReadOnlyDictionary<string, string> MetricDefinitions,
     string SingleRunCaveat,
-    string Disclaimer);
+    string Disclaimer)
+{
+    public PythonStrategyResult? Dqn { get; init; }
+}

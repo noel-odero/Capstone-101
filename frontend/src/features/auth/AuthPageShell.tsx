@@ -18,7 +18,7 @@ const COPY: Readonly<Record<AccountMode, { title: string; lead: string; switchPa
   },
   register: {
     title: 'Create an account',
-    lead: 'Your simulations are saved to your account.',
+    lead: 'Your analyses are saved to your account.',
     switchPath: '/auth/sign-in',
   },
 }

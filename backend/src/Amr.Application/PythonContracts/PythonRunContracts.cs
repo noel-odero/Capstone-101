@@ -6,6 +6,7 @@ namespace Amr.Application.PythonContracts;
 public static class PythonStrategyIds
 {
     public const string Ppo = "ppo";
+    public const string Dqn = "dqn";
     public const string Greedy = "greedy";
 }
 
@@ -80,7 +81,12 @@ public sealed record PythonStrategyResult(
     string TerminationReason,
     IReadOnlyList<PythonStateSnapshot> States,
     IReadOnlyList<PythonStepTrace> Steps,
-    PythonStrategyMetrics Metrics);
+    PythonStrategyMetrics Metrics)
+{
+    public PythonPolicyModel? Model { get; init; }
+}
+
+public sealed record PythonPolicyModel(string ModelId, string Algorithm, string CheckpointSha256);
 
 /// <param name="RewardSpecification">Declared dict[str, Any] in service/schemas.py; kept as an open map so no key is dropped.</param>
 public sealed record PythonProvenance(

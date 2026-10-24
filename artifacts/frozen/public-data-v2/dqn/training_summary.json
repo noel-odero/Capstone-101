@@ -1,0 +1,13 @@
+{
+  "algorithm": "MaskedDQN",
+  "total_timesteps": 100096,
+  "gradient_updates": 24960,
+  "training_episodes": 12512,
+  "masking": [
+    "warm_up",
+    "exploration",
+    "inference",
+    "bellman_target"
+  ],
+  "checkpoint_sha256": "3afac9221dd29662708ba37f9a32326f389feb15efc31151706f738c0fd8c72d"
+}

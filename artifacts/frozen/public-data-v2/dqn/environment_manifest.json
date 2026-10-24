@@ -1,0 +1,79 @@
+{
+  "scenario_id": "REF_UNIFORM_SUPPORTED",
+  "horizon": 8,
+  "action_names": [
+    "CIPROFLOXACIN",
+    "NITROFURANTOIN",
+    "FOSFOMYCIN",
+    "TRIMETHOPRIM",
+    "GENTAMICIN",
+    "MECILLINAM",
+    "CEFTAZIDIME"
+  ],
+  "action_count": 7,
+  "observation_shape": [
+    15
+  ],
+  "observation_low": [
+    -1.0,
+    -1.0,
+    -1.0,
+    -1.0,
+    -1.0,
+    -1.0,
+    -1.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0
+  ],
+  "observation_high": [
+    1.0,
+    1.0,
+    1.0,
+    1.0,
+    1.0,
+    1.0,
+    1.0,
+    1.0,
+    1.0,
+    1.0,
+    1.0,
+    1.0,
+    1.0,
+    1.0,
+    8.0
+  ],
+  "observation_dtype": "float32",
+  "interaction_data_sha256": "af62f389fe92b4ecddfbc1df6c967c5da9992ed928c09dd3a68673819f42591c",
+  "reward_specification": {
+    "objective": "normalized_resistance_burden",
+    "normalization": 7,
+    "terminal_convention": "all_resistant_state_persists_to_horizon"
+  },
+  "action_masking": true,
+  "training_profile_design": "cycle_all_nonterminal_profiles",
+  "training_profile_count": 127,
+  "validation_initial_profiles": [
+    "SSSSSSS",
+    "SSSSSSR",
+    "RSSSSSS",
+    "SSSSSRR",
+    "RRSSSSS",
+    "SSSSRRR",
+    "SRSSRSR",
+    "RSSSRRS",
+    "RRRSSSS",
+    "SSSRRRR",
+    "RSSRRSR",
+    "RRRRSSS",
+    "SSRRRRR",
+    "RRRRRSS",
+    "SRRRRRR",
+    "RRRRRRS"
+  ]
+}

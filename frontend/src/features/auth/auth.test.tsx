@@ -181,9 +181,7 @@ describe('email and password authentication', () => {
       password: 'a long enough password',
       displayName: 'Ada Researcher',
     })
-    expect(
-      await screen.findByRole('heading', { name: /Welcome to.*StewardLab/ }),
-    ).toBeInTheDocument()
+    expect(await screen.findByRole('heading', { name: /Research.*Workspace/ })).toBeInTheDocument()
   })
 
   it('omits the name when it is left blank', async () => {
@@ -303,9 +301,7 @@ describe('email and password authentication', () => {
     expect(button).toBeDisabled()
     expect(signInCalls()).toHaveLength(1)
     release()
-    expect(
-      await screen.findByRole('heading', { name: /Welcome to.*StewardLab/ }),
-    ).toBeInTheDocument()
+    expect(await screen.findByRole('heading', { name: /Research.*Workspace/ })).toBeInTheDocument()
     expect(signInCalls()).toHaveLength(1)
   })
 

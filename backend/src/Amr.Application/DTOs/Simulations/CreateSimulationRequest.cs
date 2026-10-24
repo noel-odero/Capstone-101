@@ -6,7 +6,7 @@ namespace Amr.Application.DTOs.Simulations;
 
 public sealed record CreateSimulationRequest : RunRequestBase
 {
-    /// <summary>Accepted values: ppo, random_susceptible_baseline.</summary>
+    /// <summary>Accepted values: ppo, dqn, random_susceptible_baseline.</summary>
     [EnumDataType(typeof(StrategyKind))]
     public required StrategyKind Strategy { get; init; }
 }

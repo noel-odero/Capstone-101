@@ -1,4 +1,15 @@
+.publicAuth {
+  min-height: 100svh;
+}
+
+.publicAuth > main {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
 .page {
+  flex: 1;
   display: grid;
   place-items: center;
   padding: var(--space-12) var(--page-gutter);

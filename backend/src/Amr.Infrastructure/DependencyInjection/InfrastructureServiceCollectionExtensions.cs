@@ -48,6 +48,8 @@ public static class InfrastructureServiceCollectionExtensions
 
         services.AddSingleton(TimeProvider.System);
         services.AddScoped<IRunRepository, RunRepository>();
+        services.AddScoped<IAnalysisRepository, RunRepository>();
+        services.AddScoped<IAnalysisCollectionRepository, AnalysisCollectionRepository>();
         services.AddScoped<ISampleRepository, SampleRepository>();
         services.AddScoped<IUserAccounts, UserAccountStore>();
         services.AddScoped<IDependencyHealthProbe, DatabaseHealthProbe>();

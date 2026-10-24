@@ -96,7 +96,7 @@
 }
 .laptop {
   display: block;
-  width: min(100%, 460px);
+  width: min(100%, 28.75rem);
   justify-self: start;
   align-self: center;
   min-width: 0;
@@ -151,6 +151,14 @@
 }
 .footnote a {
   color: inherit;
+}
+@media (min-width: 1920px) and (min-height: 901px) {
+  .home {
+    min-height: calc(100svh - 5.2rem);
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+  }
 }
 @media (max-width: 700px) {
   .steps {

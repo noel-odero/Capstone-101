@@ -45,8 +45,8 @@ def test_comparison_reports_the_verified_shared_configuration(client, runtime):
         "reward_specification", "action_mask_configuration", "transition_seed_schedule",
     ]
     shared = contract_["shared"]
-    assert shared["initial_profile"] == body["ppo"]["initial_profile"] == body["greedy"]["initial_profile"] == [0, 1, 0, 0, 0, 0, 0]
-    assert shared["environment_seed"] == body["ppo"]["environment_seed"] == body["greedy"]["environment_seed"] == 77
+    assert shared["initial_profile"] == body["ppo"]["initial_profile"] == body["dqn"]["initial_profile"] == body["greedy"]["initial_profile"] == [0, 1, 0, 0, 0, 0, 0]
+    assert shared["environment_seed"] == body["ppo"]["environment_seed"] == body["dqn"]["environment_seed"] == body["greedy"]["environment_seed"] == 77
     assert shared["scenario_id"] == body["provenance"]["scenario_id"] == runtime.manifest.scenario_id
     assert shared["horizon"] == body["provenance"]["horizon"] == runtime.engine.horizon
     assert shared["interaction_data_sha256"] == body["provenance"]["interaction_data_sha256"] == runtime.manifest.interaction_data_sha256
@@ -152,13 +152,14 @@ def test_diverging_transition_seed_schedules_are_rejected(runtime):
 
 
 @pytest.mark.parametrize("tamper", ["profile", "environment_seed"])
-def test_mismatched_baseline_run_fails_the_request_without_returning_results(client, monkeypatch, tamper):
+@pytest.mark.parametrize("tampered_strategy", ["greedy", "dqn"])
+def test_mismatched_strategy_fails_without_returning_results(client, monkeypatch, tamper, tampered_strategy):
     original = rollout._evaluate
 
     def tampered(runtime, strategy, profile, environment_seed, policy_seed):
-        if strategy == "greedy" and tamper == "profile":
+        if strategy == tampered_strategy and tamper == "profile":
             profile = (1,) + tuple(profile[1:])
-        if strategy == "greedy" and tamper == "environment_seed":
+        if strategy == tampered_strategy and tamper == "environment_seed":
             environment_seed += 1
         return original(runtime, strategy, profile, environment_seed, policy_seed)
 

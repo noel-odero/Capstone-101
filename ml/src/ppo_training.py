@@ -24,6 +24,7 @@ from simulation.episode_progression import EpisodeProgression
 from simulation.resistance_state import ANTIBIOTICS
 from simulation.reward import RewardSpecification
 from simulation.stochastic_transition_model import StochasticTransitionModel
+from simulation.transition_generator import CandidateTransitionGenerator
 from simulation.transition_sampler import REFERENCE_SCENARIO_ID, SENSITIVITY_SCENARIOS, TransitionSampler
 from ml.src.ppo_visualizations import generate_training_plots
 
@@ -67,8 +68,15 @@ class PPOConfig:
         "rule": "susceptible_actions_only",
     })
     device: str = "cpu"
+    interaction_data_path: str | None = None
 
     def __post_init__(self) -> None:
+        if self.interaction_data_path is not None:
+            if not isinstance(self.interaction_data_path, str) or not self.interaction_data_path.strip():
+                raise ValueError("Interaction data path must be a nonempty repository-relative path.")
+            data_path = Path(self.interaction_data_path)
+            if data_path.is_absolute() or ".." in data_path.parts:
+                raise ValueError("Interaction data path must stay inside the repository.")
         for name in (
             "ppo_seed", "environment_seed", "evaluation_seed", "horizon",
             "total_timesteps", "n_steps", "batch_size", "n_epochs",
@@ -158,7 +166,14 @@ class PPOConfig:
 
 
 def make_training_environment(config: PPOConfig) -> AntibioticEnvironment:
-    transition_model = StochasticTransitionModel(sampler=TransitionSampler(config.scenario_id))
+    interactions_file = (
+        Path(__file__).resolve().parents[2] / config.interaction_data_path
+        if config.interaction_data_path is not None else None
+    )
+    transition_model = StochasticTransitionModel(
+        sampler=TransitionSampler(config.scenario_id),
+        candidate_generator=CandidateTransitionGenerator(interactions_file=interactions_file),
+    )
     episode_step = EpisodeStep(transition_model=transition_model)
     progression = EpisodeProgression(episode_step=episode_step)
     return AntibioticEnvironment(episode_progression=progression, max_steps=config.horizon)

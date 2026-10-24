@@ -14,6 +14,7 @@ public sealed class StrategyRun
     public StrategyKind Strategy { get; set; }
 
     public required string DisplayLabel { get; set; }
+    public string? ModelJson { get; set; }
 
     public required int[] InitialProfile { get; set; }
 

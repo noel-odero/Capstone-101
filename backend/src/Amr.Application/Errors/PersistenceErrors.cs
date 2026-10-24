@@ -9,13 +9,13 @@ public static class PersistenceErrors
     public static AmrException Unavailable(Exception? innerException = null) => new(
         ErrorCategory.DependencyUnavailable,
         ErrorCodes.DatabaseUnavailable,
-        "The simulation ran but its result could not be saved because the database is unavailable. No record exists for this run.",
+        "The analysis ran but its result could not be saved because the database is unavailable. No record exists for this analysis.",
         innerException);
 
     public static AmrException Failed(Exception? innerException = null) => new(
         ErrorCategory.Internal,
         ErrorCodes.PersistenceFailed,
-        "The simulation ran but its result could not be saved. No record exists for this run.",
+        "The analysis ran but its result could not be saved. No record exists for this analysis.",
         innerException);
 
     public static AmrException AccountsUnavailable(Exception? innerException = null) => new(

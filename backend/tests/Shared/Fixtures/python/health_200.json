@@ -2,8 +2,8 @@
   "status": "ok",
   "model_ready": true,
   "service_version": "0.1.0",
-  "model_id": "ppo_seed_12000",
-  "checkpoint_sha256": "d10c26185c9903d96d0f2003643b76be6df4f03c39e0d2e5f7945e763b7d9093",
+  "model_id": "ppo_public_v2_seed_19000",
+  "checkpoint_sha256": "1747b68cb572cc320c7c53ae105dfa9dd6827f689839b35c4f2bcf9520384001",
   "error_code": null,
   "message": "The frozen model passed checkpoint, data and contract verification."
 }

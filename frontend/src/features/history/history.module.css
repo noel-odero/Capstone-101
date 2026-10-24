@@ -1,0 +1,193 @@
+.filters {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: end;
+  gap: 0.8rem;
+  padding-block: 0.8rem;
+}
+.filters label {
+  display: grid;
+  gap: 0.35rem;
+  flex: 1 1 9rem;
+  font-size: var(--text-xs);
+  color: var(--color-text-muted);
+}
+.filters input,
+.filters select {
+  min-width: 0;
+  max-width: 100%;
+  width: 100%;
+  padding: 0.55rem 0.65rem;
+  border: 1px solid var(--color-border-strong);
+  border-radius: var(--radius-md);
+  background: var(--color-surface);
+  color: var(--color-text);
+  font: inherit;
+  font-size: var(--text-sm);
+  min-height: 2.4rem;
+}
+.profile {
+  display: grid;
+  gap: 0.4rem;
+  width: max-content;
+}
+.profile code {
+  letter-spacing: 0.1em;
+  font-size: var(--text-sm);
+}
+.bits {
+  display: flex;
+  gap: 0.2rem;
+}
+.bits > span {
+  font: 500 0.6rem var(--font-mono);
+  display: grid;
+  place-items: center;
+  width: 1.15rem;
+  height: 1.2rem;
+  border-radius: 3px;
+}
+.susceptible {
+  color: var(--color-susceptible-fg);
+  background: var(--color-susceptible-bg);
+}
+.resistant {
+  color: var(--color-resistant-fg);
+  background: var(--color-resistant-bg);
+}
+.panel {
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  background: var(--color-surface);
+  min-width: 0;
+  overflow: hidden;
+}
+.panelHeading {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 1rem;
+  padding: 1.25rem;
+}
+.panel h2 {
+  font-size: var(--text-lg);
+  margin: 0;
+  font-weight: 600;
+  letter-spacing: -0.02em;
+}
+.panel h3 {
+  font-size: var(--text-sm);
+  font-weight: 600;
+  margin: 0 0 1rem;
+}
+.panelHeading p {
+  margin: 0.3rem 0 0;
+  color: var(--color-text-muted);
+  font-size: var(--text-xs);
+}
+.footnote {
+  font-size: var(--text-xs);
+  color: var(--color-text-muted);
+  line-height: 1.6;
+  margin: 0.8rem 1.25rem 1rem;
+}
+.inspectorGrid {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  gap: 1.5rem;
+  padding: 0 1.25rem 1.25rem;
+}
+.sequence + .sequence {
+  margin-top: 1rem;
+}
+.sequence > strong {
+  font-size: var(--text-xs);
+}
+.sequence ol {
+  list-style: none;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+  padding: 0;
+  margin: 0.5rem 0 0;
+}
+.sequence button {
+  text-align: left;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  padding: 0.45rem 0.55rem;
+  background: var(--color-surface);
+  color: var(--color-text);
+  font-size: 0.7rem;
+  cursor: pointer;
+}
+.sequence button[aria-pressed='true'] {
+  border-color: var(--color-text-muted);
+  background: var(--color-surface-subtle);
+}
+.sequence button > span {
+  color: var(--color-text-muted);
+  margin-right: 0.45rem;
+}
+.sequence small {
+  display: block;
+  color: var(--color-text-muted);
+  margin-top: 0.2rem;
+}
+.trace {
+  border-block: 1px solid var(--color-border);
+  padding: 1.25rem;
+  background: var(--color-surface-subtle);
+}
+.trace .footnote {
+  margin: 1rem 0 0;
+}
+.traceValues {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 1rem 1.5rem;
+  font-size: var(--text-sm);
+  margin: 0;
+}
+.traceValues dt {
+  font-size: var(--text-xs);
+  color: var(--color-text-muted);
+  margin-bottom: 0.3rem;
+}
+.traceValues dd {
+  margin: 0;
+  overflow-wrap: anywhere;
+}
+.provenance {
+  padding: 1.25rem;
+  font-size: var(--text-sm);
+}
+.provenance summary {
+  cursor: pointer;
+}
+.provenance .traceValues {
+  margin-block: 1rem;
+}
+.provenance pre {
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  font-size: var(--text-xs);
+}
+.detailLinks {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.6rem;
+  padding: 0 1.25rem 1.25rem;
+}
+@media (max-width: 740px) {
+  .inspectorGrid,
+  .traceValues {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .panelHeading,
+  .trace,
+  .provenance {
+    padding: 1rem;
+  }
+}

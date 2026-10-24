@@ -61,11 +61,11 @@ export function SampleList({
               <code>{profileToCode(sample.resistanceProfile)}</code>
               <span className={styles.status} data-run={sample.runs.length > 0}>
                 {sample.runs.length
-                  ? `Run · ${sample.runs.length} ${sample.runs.length === 1 ? 'simulation' : 'simulations'}`
-                  : 'Not run'}
+                  ? `Analyzed · ${sample.runs.length} ${sample.runs.length === 1 ? 'analysis' : 'analyses'}`
+                  : 'Not analyzed'}
               </span>
               <Link className={styles.action} to={`/app/simulation/new?sample=${sample.id}`}>
-                {sample.runs.length ? 'Run again' : 'Set up simulation'}
+                {sample.runs.length ? 'Analyze again' : 'New Analysis'}
               </Link>
               {sample.runs.length ? (
                 <details className={styles.runHistory}>
@@ -89,9 +89,9 @@ export function SampleList({
           {search
             ? 'No labels match your search.'
             : category === 'pending'
-              ? 'No samples are waiting to be run.'
+              ? 'No samples are waiting to be analyzed.'
               : category === 'run'
-                ? 'No samples have saved simulations yet.'
+                ? 'No samples have saved analyses yet.'
                 : 'No samples recorded yet.'}
         </p>
       )}

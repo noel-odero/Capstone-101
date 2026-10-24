@@ -42,6 +42,6 @@ public sealed class SimulationsController(ISimulationService simulations, IRunHi
     public async Task<ActionResult<SimulationDto>> Get(Guid id, CancellationToken cancellationToken)
     {
         var simulation = await simulations.GetAsync(id, cancellationToken);
-        return simulation is null ? NotFoundProblem(ErrorCodes.NotFound, "No simulation has this id.") : simulation;
+        return simulation is null ? NotFoundProblem(ErrorCodes.NotFound, "No analysis has this id.") : simulation;
     }
 }

@@ -19,6 +19,8 @@ public static class ServiceCollectionExtensions
         services.AddScoped<IComparisonService, ComparisonService>();
         services.AddScoped<IRecommendationService, RecommendationService>();
         services.AddScoped<IRunHistoryService, RunHistoryService>();
+        services.AddScoped<IAnalysisComparisonService, AnalysisComparisonService>();
+        services.AddScoped<IAnalysisCollectionService, AnalysisCollectionService>();
         services.AddScoped<ISampleService, SampleService>();
         return services;
     }

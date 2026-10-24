@@ -108,7 +108,7 @@ public class RecentRunsTests(AmrApiFactory factory, RecentRunsFixture db)
         var simulation = items[OldestSimulation];
         Assert.Equal("simulation", simulation.GetProperty("kind").GetString());
         Assert.Equal(new[] { "ppo" }, simulation.GetProperty("strategies").EnumerateArray().Select(strategy => strategy.GetProperty("strategy").GetString()));
-        Assert.Equal("ppo_seed_12000", simulation.GetProperty("modelId").GetString());
+        Assert.Equal("ppo_public_v2_seed_19000", simulation.GetProperty("modelId").GetString());
         Assert.Equal("completed", simulation.GetProperty("status").GetString());
         Assert.Equal("2026-01-01T10:00:00+00:00", simulation.GetProperty("createdAtUtc").GetString());
         Assert.Equal(new[] { 0, 1, 0, 0, 0, 0, 0 }, simulation.GetProperty("initialProfile").EnumerateArray().Select(value => value.GetInt32()));
@@ -116,7 +116,7 @@ public class RecentRunsTests(AmrApiFactory factory, RecentRunsFixture db)
         var comparison = items[MiddleComparison];
         Assert.Equal("comparison", comparison.GetProperty("kind").GetString());
         Assert.Equal(
-            new[] { "ppo", "random_susceptible_baseline" },
+            new[] { "ppo", "random_susceptible_baseline", "dqn" },
             comparison.GetProperty("strategies").EnumerateArray().Select(strategy => strategy.GetProperty("strategy").GetString()));
 
         var stored = await (await Client.GetAsync($"/api/v1/comparisons/{MiddleComparison}")).ReadJsonAsync();

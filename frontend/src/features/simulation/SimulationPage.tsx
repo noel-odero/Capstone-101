@@ -4,13 +4,15 @@ import { isApiError } from '@/api/api-errors'
 import { ContentContainer } from '@/components/layout/ContentContainer'
 import { PageHeader } from '@/components/layout/PageHeader'
 import { ComparisonMetrics } from '@/components/scientific/ComparisonMetrics'
+import { ComparisonNotice } from '@/components/scientific/ComparisonNotice'
 import { ButtonLink } from '@/components/ui/Button'
 import { Card, CardHeader } from '@/components/ui/Card'
 import { EmptyState } from '@/components/ui/EmptyState'
 import { ErrorState } from '@/components/ui/ErrorState'
 import { LoadingState } from '@/components/ui/LoadingState'
 import { StatusIndicator } from '@/components/ui/StatusIndicator'
-import { GLOSSARY } from '@/domain/terminology'
+import { GLOSSARY, PAGE_TITLES, PROTOTYPE_STATEMENT } from '@/domain/terminology'
+import { strategyResults } from '@/domain/runs'
 import { useAntibiotics } from '@/hooks/useAntibiotics'
 import { useComparison } from '@/hooks/useComparison'
 import { useSample } from '@/features/samples/useSamples'
@@ -19,7 +21,7 @@ import { TrajectoryChart } from './TrajectoryChart'
 import { SimulationControls } from './SimulationControls'
 import styles from './simulation.module.css'
 
-/** A stored comparison: PPO and the Random Susceptible Baseline from the same profile across the fixed horizon. */
+/** A stored comparison from matched starting conditions. */
 export function SimulationPage() {
   const { comparisonId } = useParams()
   const comparison = useComparison(comparisonId)
@@ -30,8 +32,8 @@ export function SimulationPage() {
   if (comparison.isPending) {
     return (
       <ContentContainer>
-        <PageHeader title="Simulation" />
-        <LoadingState label="Loading the simulation" lines={4} block />
+        <PageHeader title={PAGE_TITLES.trajectory} />
+        <LoadingState label="Loading the resistance trajectory" lines={4} block />
       </ContentContainer>
     )
   }
@@ -39,14 +41,14 @@ export function SimulationPage() {
     const missing = isApiError(comparison.error) && comparison.error.kind === 'not_found'
     return (
       <ContentContainer>
-        <PageHeader title="Simulation" />
+        <PageHeader title={PAGE_TITLES.trajectory} />
         <ErrorState
           error={comparison.error}
-          title={missing ? 'No simulation has this ID' : undefined}
+          title={missing ? 'No analysis has this ID' : undefined}
           onRetry={missing ? undefined : () => void comparison.refetch()}
         >
           <ButtonLink to="/app/simulation/new" variant="secondary" size="sm">
-            Start a new simulation
+            New Analysis
           </ButtonLink>
         </ErrorState>
       </ContentContainer>
@@ -58,23 +60,24 @@ export function SimulationPage() {
   if (data.status !== 'completed' || !ppo || !baseline) {
     return (
       <ContentContainer>
-        <PageHeader title="Simulation" />
+        <PageHeader title={PAGE_TITLES.trajectory} />
         <EmptyState
-          title="This simulation did not complete"
+          title="This analysis did not complete"
           description={data.error?.message ?? 'No results were returned.'}
-          action={<ButtonLink to="/app/simulation/new">Run Simulation</ButtonLink>}
+          action={<ButtonLink to="/app/simulation/new">New Analysis</ButtonLink>}
         />
       </ContentContainer>
     )
   }
 
-  const noSteps = ppo.steps.length === 0 && baseline.steps.length === 0
+  const results = strategyResults(data)
+  const noSteps = results.every((result) => result.steps.length === 0)
 
   return (
     <ContentContainer>
       <PageHeader
-        title="Simulation"
-        subtitle="Compare antibiotic strategies and see how they impact simulated resistance over time."
+        title={PAGE_TITLES.trajectory}
+        subtitle="Inspect model-derived resistance changes across antibiotic strategies."
         action={
           sample.data ? (
             <ButtonLink to="/app/samples" variant="secondary" size="sm">
@@ -84,6 +87,7 @@ export function SimulationPage() {
         }
       />
 
+      <ComparisonNotice comparison={data} />
       <SimulationControls
         key={data.id}
         initialProfile={ppo.initialProfile}
@@ -94,15 +98,14 @@ export function SimulationPage() {
         <Card as="div">
           <p role="note">
             <StatusIndicator kind="warning" label="No feasible actions remain" />{' '}
-            {GLOSSARY.noFeasibleActions} Neither strategy took a step.
+            {GLOSSARY.noFeasibleActions} No strategy took a step.
           </p>
           <ComparisonMetrics comparison={data} />
         </Card>
       ) : antibiotics.data ? (
         <div className={styles['grid']}>
           <StatePanel
-            ppo={ppo}
-            baseline={baseline}
+            results={results}
             selectedStep={selectedStep}
             onSelectStep={setSelectedStep}
           />
@@ -110,8 +113,7 @@ export function SimulationPage() {
             <Card aria-labelledby="chart-title">
               <CardHeader titleId="chart-title" title="Resistance trajectory" />
               <TrajectoryChart
-                ppo={ppo}
-                baseline={baseline}
+                results={results}
                 selectedStep={selectedStep}
                 onSelectStep={setSelectedStep}
               />
@@ -133,7 +135,7 @@ export function SimulationPage() {
       )}
 
       <p className="muted" style={{ marginTop: 'var(--space-3)', fontSize: 'var(--text-xs)' }}>
-        {data.disclaimer}
+        {PROTOTYPE_STATEMENT}
       </p>
     </ContentContainer>
   )

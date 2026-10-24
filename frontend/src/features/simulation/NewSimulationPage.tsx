@@ -3,6 +3,7 @@ import { Link, useNavigate, useSearchParams } from 'react-router'
 import { isApiError } from '@/api/api-errors'
 import { ContentContainer } from '@/components/layout/ContentContainer'
 import { PageHeader } from '@/components/layout/PageHeader'
+import { LogoMark } from '@/components/layout/Brand'
 import { Button } from '@/components/ui/Button'
 import { ErrorState } from '@/components/ui/ErrorState'
 import { LoadingState } from '@/components/ui/LoadingState'
@@ -17,7 +18,7 @@ import {
   toggleAntibiotic,
 } from '@/domain/profile'
 import { parseSeedInput } from '@/domain/seeds'
-import { GLOSSARY } from '@/domain/terminology'
+import { GLOSSARY, PAGE_TITLES } from '@/domain/terminology'
 import type { CreateComparisonRequest } from '@/domain/types'
 import { useAntibiotics } from '@/hooks/useAntibiotics'
 import { useCreateComparison } from '@/hooks/useCreateComparison'
@@ -27,7 +28,7 @@ import type { SavedSample } from '@/features/samples/sample-api'
 import styles from './simulation.module.css'
 import setup from './setup.module.css'
 
-/** The input form behind "Run Simulation": a starting profile and optional seeds, then both strategies run for the fixed horizon. */
+/** Configure a shared starting profile and optional seeds for all three strategies. */
 function SimulationForm({ sample }: { sample?: SavedSample }) {
   const [params] = useSearchParams()
   const navigate = useNavigate()
@@ -80,14 +81,14 @@ function SimulationForm({ sample }: { sample?: SavedSample }) {
       <div className={setup.stage}>
         <div className={setup.card}>
           <div className={setup.emblem} aria-hidden="true">
-            S
+            <LogoMark size={28} />
           </div>
           <PageHeader
-            title={reviewing ? 'Review your simulation' : 'Configure your simulation'}
+            title={reviewing ? 'Review Analysis' : PAGE_TITLES.evaluation}
             subtitle={
               reviewing
-                ? 'Check your starting conditions before running both strategies.'
-                : 'Set a starting profile. Explore what happens next.'
+                ? 'Check your starting conditions before comparing all three strategies.'
+                : 'Set an initial resistance profile to evaluate antibiotic strategies.'
             }
           />
           {sample ? (
@@ -103,7 +104,7 @@ function SimulationForm({ sample }: { sample?: SavedSample }) {
           <form
             onSubmit={submit}
             noValidate
-            aria-label="Simulation configuration"
+            aria-label="Analysis configuration"
             className={styles['formCard']}
           >
             <fieldset disabled={reviewing || create.isPending} className={setup.configuration}>
@@ -180,10 +181,17 @@ function SimulationForm({ sample }: { sample?: SavedSample }) {
                 <h2 className={styles['fieldTitle']}>02 — Comparison strategies</h2>
                 <div className={setup.policy}>
                   <span>
-                    <strong>PPO · Reinforcement learning</strong>
-                    <small>Learned antibiotic-selection policy</small>
+                    <strong>PPO</strong>
+                    <small>Proximal Policy Optimization</small>
                   </span>
-                  <span className={setup.available}>Available</span>
+                  <span className={setup.available}>Frozen model</span>
+                </div>
+                <div className={setup.policy}>
+                  <span>
+                    <strong>DQN</strong>
+                    <small>Deep Q-Network</small>
+                  </span>
+                  <span className={setup.available}>Frozen model</span>
                 </div>
                 <div className={setup.policy}>
                   <span>
@@ -246,7 +254,11 @@ function SimulationForm({ sample }: { sample?: SavedSample }) {
 
             <div className="row">
               <Button type="submit" variant="dark" loading={create.isPending} disabled={blocked}>
-                {create.isPending ? 'Running' : reviewing ? 'Run Simulation' : 'Review simulation'}
+                {create.isPending
+                  ? 'Evaluating'
+                  : reviewing
+                    ? 'Run Analysis'
+                    : 'Review Analysis'}
               </Button>
               {reviewing ? (
                 <Button
@@ -261,16 +273,16 @@ function SimulationForm({ sample }: { sample?: SavedSample }) {
             </div>
 
             <div role="status" aria-live="polite" className="visually-hidden">
-              {create.isPending ? 'Running the simulation. This can take a minute.' : ''}
+              {create.isPending ? 'Running the analysis. This can take a minute.' : ''}
             </div>
             {create.isPending ? (
               <LoadingState
-                label="Running both strategies. This can take up to a minute."
+                label="Comparing PPO, DQN and baseline. This can take up to a minute."
                 lines={1}
               />
             ) : null}
             {create.isError ? (
-              <ErrorState error={create.error} title="The simulation could not be run">
+              <ErrorState error={create.error} title="The analysis could not be completed">
                 {mayBeStored ? (
                   <p>
                     The server may have finished and stored it anyway. Check your{' '}

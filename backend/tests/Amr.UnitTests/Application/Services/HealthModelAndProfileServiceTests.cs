@@ -105,9 +105,9 @@ public class HealthModelAndProfileServiceTests
 
         var model = await new ModelInfoService(ClientFactory.Create(handler)).GetModelAsync(CancellationToken.None);
 
-        Assert.Equal("ppo_seed_12000", model.ModelId);
-        Assert.Equal("d10c26185c9903d96d0f2003643b76be6df4f03c39e0d2e5f7945e763b7d9093", model.CheckpointSha256);
-        Assert.Equal("7a5e3e1fe730676a0793674e4ff4aaf3c6ce1177ad5588eed4bb2e5d627edb44", model.InteractionDataSha256);
+        Assert.Equal("ppo_public_v2_seed_19000", model.ModelId);
+        Assert.Equal("1747b68cb572cc320c7c53ae105dfa9dd6827f689839b35c4f2bcf9520384001", model.CheckpointSha256);
+        Assert.Equal("af62f389fe92b4ecddfbc1df6c967c5da9992ed928c09dd3a68673819f42591c", model.InteractionDataSha256);
         Assert.Equal(("REF_UNIFORM_SUPPORTED", 8, "susceptible_actions_only", true), (model.ScenarioId, model.Horizon, model.ActionMaskRule, model.DeterministicInference));
         Assert.Equal(("Discrete", 7), (model.ActionSpace.Type, model.ActionSpace.Count));
         Assert.Equal(new[] { 15 }, model.Observation.Shape);
@@ -151,7 +151,31 @@ public class HealthModelAndProfileServiceTests
         Assert.Equal("""{"resistance_profile":[1,0,0,1,0,0,0]}""", handler.Requests.Single().Body);
         Assert.False(result.IsTerminal);
         Assert.Equal(new[] { 1, 2, 4, 5, 6 }, result.FeasibleActions.Select(action => action.ActionId));
-        Assert.Contains(result.FeasibleActions, action => action is { Antibiotic: "GENTAMICIN", HasCandidateTransition: false });
+        Assert.Contains(result.FeasibleActions, action => action is { Antibiotic: "GENTAMICIN", HasCandidateTransition: true });
+    }
+
+    [Fact]
+    public async Task Profile_evidence_preserves_candidate_sources_and_verified_data_identity()
+    {
+        var body = PythonFixtures.Mutate("validate_200_open", node =>
+        {
+            node["transition_evidence"] = System.Text.Json.Nodes.JsonNode.Parse(
+                """[{"action_id":1,"antibiotic":"NITROFURANTOIN","eligible":true,"candidates":[{"target_drug":"GENTAMICIN","outcome":"cross_resistance","source_ids":["TEST_SOURCE"]}]}]""");
+            node["interaction_data_sha256"] = "verified-data-hash";
+            node["scenario_id"] = "REF_UNIFORM_SUPPORTED";
+        });
+        var handler = StubHandler.Returning(() => PythonFixtures.Respond(HttpStatusCode.OK, body));
+        var result = await new ProfileValidationService(ClientFactory.Create(handler)).ValidateAsync(
+            new() { ResistanceProfile = [1, 0, 0, 1, 0, 0, 0] }, CancellationToken.None);
+
+        var action = Assert.Single(result.TransitionEvidence);
+        Assert.True(action.Eligible);
+        var candidate = Assert.Single(action.Candidates);
+        Assert.Equal("cross_resistance", candidate.Outcome);
+        Assert.Equal("GENTAMICIN", candidate.TargetDrug);
+        Assert.Equal(new[] { "TEST_SOURCE" }, candidate.SourceIds);
+        Assert.Equal("verified-data-hash", result.InteractionDataSha256);
+        Assert.Equal("REF_UNIFORM_SUPPORTED", result.ScenarioId);
     }
 
     [Fact]

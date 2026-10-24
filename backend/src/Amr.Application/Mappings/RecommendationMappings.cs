@@ -7,13 +7,13 @@ namespace Amr.Application.Mappings;
 public static class RecommendationMappings
 {
     public const string Interpretation =
-        "These are the actions the frozen PPO policy selected in this simulated run, each chosen among drugs that were " +
+        "These are the actions the frozen learned policy selected in this simulated run, each chosen among drugs that were " +
         "susceptible in the simulator. A step marked unsupported_no_candidate has no modeled transition, so the simulator " +
         "left the profile unchanged. This is simulation output, not clinical advice or evidence of efficacy.";
 
-    /// <returns>Null unless the run is a completed PPO simulation; baseline runs, failed runs and comparisons have no recommendation.</returns>
+    /// <returns>Null unless the run is a completed learned-policy simulation.</returns>
     public static RecommendationDto? ToRecommendationDto(this SimulationDto simulation) =>
-        simulation is { Status: RunStatus.Completed, Result: { Strategy: StrategyKind.Ppo } result }
+        simulation is { Status: RunStatus.Completed, Result: { Strategy: StrategyKind.Ppo or StrategyKind.Dqn } result }
             ? new RecommendationDto(
                 simulation.Id,
                 result.Strategy,
