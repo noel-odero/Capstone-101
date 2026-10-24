@@ -191,8 +191,8 @@ export function ResistanceNetwork() {
         </button>
       </div>
       <figcaption>
-        Conceptual scientific visualization, not a representation of the simulation’s biological
-        data.
+        Conceptual scientific visualization, not a representation of the evaluation model’s
+        biological data.
       </figcaption>
     </figure>
   )

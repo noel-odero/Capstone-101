@@ -19,15 +19,15 @@ import type { ProfileRun } from './useProfileRun'
 export function ProfileOverview({ run }: { run: ProfileRun }) {
   return (
     <>
-      <section className={styles['overviewIdentity']} aria-label="Simulation profile summary">
+      <section className={styles['overviewIdentity']} aria-label="Analysis profile summary">
         <span className={styles['overviewAvatar']}>
           <FiActivity size={30} />
         </span>
-        <div>
+        <div className={styles.identityCopy}>
           <h2>E. coli · {profileToCode(run.ppo.initialProfile)}</h2>
           <p>
-            Simulated resistance profile <span>·</span> Seven antibiotics <span>·</span> Kigali,
-            Rwanda
+            Initial resistance profile <span>·</span> Seven antibiotics <span>·</span> Model-based
+            evaluation
           </p>
         </div>
         <ButtonLink
@@ -47,21 +47,23 @@ export function ProfileActivity({ run }: { run: ProfileRun }) {
   const points = buildTrajectorySeries(results, 'resistantCount')
   return (
     <div className={styles['overviewGrid']}>
-      <section className={styles['overviewCard']}>
-        <h2>Resistance Trend</h2>
-        <div style={{ height: '12.5rem', width: '100%' }}>
+      <section className={styles['overviewCard']} aria-labelledby="profile-trend-title">
+        <h2 id="profile-trend-title">Resistance Trend</h2>
+        <div className={styles.trendChart}>
           <ResponsiveContainer>
-            <LineChart data={points} margin={{ top: 20, right: 16, left: -25, bottom: 10 }}>
+            <LineChart data={points} margin={{ top: 16, right: 12, left: 0, bottom: 10 }}>
               <CartesianGrid vertical={false} stroke="var(--color-border)" />
               <XAxis
                 dataKey="step"
-                tick={{ fontSize: '0.6875rem', fill: '#7289ad' }}
+                tick={{ fontSize: '0.6875rem', fill: 'var(--color-text-muted)' }}
                 axisLine={false}
                 tickLine={false}
               />
               <YAxis
                 domain={[0, 7]}
-                tick={{ fontSize: '0.6875rem', fill: '#7289ad' }}
+                allowDecimals={false}
+                width={32}
+                tick={{ fontSize: '0.6875rem', fill: 'var(--color-text-muted)' }}
                 axisLine={false}
                 tickLine={false}
               />
@@ -86,8 +88,8 @@ export function ProfileActivity({ run }: { run: ProfileRun }) {
         </div>
         <p className={styles['axisCaption']}>Step</p>
       </section>
-      <section className={styles['overviewCard']}>
-        <h2>Recent Activity</h2>
+      <section className={styles['overviewCard']} aria-labelledby="profile-activity-title">
+        <h2 id="profile-activity-title">Recent Activity</h2>
         <ol className={styles['activityList']}>
           <li>
             <FiCheck />
@@ -99,14 +101,14 @@ export function ProfileActivity({ run }: { run: ProfileRun }) {
           <li>
             <FiActivity />
             <div>
-              Step 0<p>Simulation started · profile {profileToCode(run.ppo.initialProfile)}</p>
+              Step 0<p>Analysis started · profile {profileToCode(run.ppo.initialProfile)}</p>
             </div>
           </li>
           <li>
             <FiInfo />
             <div>
               {run.dqn ? 'PPO + DQN' : run.provenance.algorithm}
-              <p>Research simulation · {run.provenance.horizon} steps</p>
+              <p>Model-based evaluation · {run.provenance.horizon} steps</p>
             </div>
           </li>
         </ol>

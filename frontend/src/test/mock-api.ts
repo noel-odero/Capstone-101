@@ -72,6 +72,8 @@ export function baseRoutes(overrides: MockRoutes = {}): MockRoutes {
     'GET /api/v1/model': { body: rawFixtures.model },
     'GET /api/v1/antibiotics': { body: rawFixtures.antibiotics },
     'GET /api/v1/simulations/recent': { body: emptyRecentRuns },
+    'GET /api/v1/analyses': { body: emptyRecentRuns },
+    'GET /api/v1/analysis-collections': { body: [] },
     'GET /api/v1/samples': { body: [] },
     ...overrides,
   }

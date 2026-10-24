@@ -4,7 +4,7 @@ import { countResistant, profileToCode, RESISTANT } from '@/domain/profile'
 import type { ResistanceProfile } from '@/domain/types'
 import styles from './profile.module.css'
 
-/** The seven antibiotics with their state, and how many are resistant. Each state is a word and a dot, never colour alone. */
+/** Seven antibiotic states, with text labels and an accessible resistance count. */
 export function ProfileStrip({
   profile,
   entries,
@@ -36,13 +36,7 @@ export function ProfileStrip({
                 aria-label={`${entry.displayName}: ${isResistant ? 'resistant' : 'susceptible'}`}
               >
                 <span className={styles['abbr']}>{entry.abbreviation ?? entry.displayName}</span>
-                <span className={styles['state']}>
-                  <span
-                    className={isResistant ? styles['dotResistant'] : styles['dotSusceptible']}
-                    aria-hidden="true"
-                  />
-                  {isResistant ? 'R' : 'S'}
-                </span>
+                <span className={styles['state']}>{isResistant ? 'R' : 'S'}</span>
               </li>
             )
           })}

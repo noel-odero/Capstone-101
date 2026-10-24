@@ -9,7 +9,7 @@ export function PublicFooter({ compact = false }: { compact?: boolean }) {
   if (compact) {
     return (
       <footer className={styles.compactFooter}>
-        <p>Research and simulation only.</p>
+        <p>Model-based research only.</p>
         <nav aria-label="Footer resources">
           <Link to="/methodology">Methodology</Link>
           <Link to="/limitations">Limitations</Link>
@@ -28,8 +28,7 @@ export function PublicFooter({ compact = false }: { compact?: boolean }) {
           <div>
             <Brand />
             <p className={styles['footerBlurb']} style={{ marginTop: 'var(--space-3)' }}>
-              A research and educational prototype exploring reinforcement learning for antibiotic
-              sequencing under simulated resistance.
+              An AI-powered antibiotic strategy evaluation platform for model-based research.
             </p>
           </div>
           <nav className={styles['footerColumn']} aria-labelledby="footer-learn">
@@ -72,8 +71,8 @@ export function PublicFooter({ compact = false }: { compact?: boolean }) {
           </nav>
         </div>
         <p className={styles['footerNote']}>
-          {APP_NAME} is not a clinical tool. Results come from a simplified simulation and are not
-          treatment guidance.
+          {APP_NAME} is a research prototype. Findings are model-derived and are not clinical
+          treatment recommendations.
         </p>
       </ContentContainer>
     </footer>

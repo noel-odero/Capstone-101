@@ -14,9 +14,9 @@ export function ComparisonNotice({
     : `profile=${profileToCode(comparison.ppo.initialProfile)}`
   return (
     <aside className={styles.comparisonNotice} role="note">
-      <span>This saved run predates DQN. Start a new comparison to include it.</span>
+      <span>This saved analysis predates DQN. Start a new analysis to include it.</span>
       <ButtonLink to={`/app/simulation/new?${query}`} variant="secondary" size="sm">
-        Run with DQN
+        Analyze with DQN
       </ButtonLink>
     </aside>
   )

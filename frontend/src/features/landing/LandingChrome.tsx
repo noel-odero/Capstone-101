@@ -1,21 +1,16 @@
 import { Link } from 'react-router'
 import { FiArrowUpRight, FiMoon, FiSun } from 'react-icons/fi'
 import { REPOSITORY_URL } from '@/config/navigation'
+import { APP_NAME } from '@/domain/terminology'
+import { LogoMark } from '@/components/layout/Brand'
 import { useAuth } from '@/features/auth/useAuth'
 import styles from './landing.module.css'
 
-export function StewardBrand() {
+function LandingBrand() {
   return (
-    <Link to="/" className={styles['stewardBrand']} aria-label="StewardLab home">
-      <svg viewBox="0 0 32 36" width="30" height="34" fill="none" aria-hidden="true">
-        <path d="M16 1 30 9v18l-14 8L2 27V9Z" stroke="currentColor" strokeWidth="1.3" />
-        <path d="m16 6 10 6v12l-10 6-10-6V12Z" stroke="currentColor" />
-        <path d="m16 11 6 4v7l-6 4-6-4v-7Z" stroke="currentColor" />
-        <path d="M16 1v34M2 9l28 18M30 9 2 27" stroke="currentColor" strokeOpacity=".5" />
-      </svg>
-      <span>
-        StewardLab<span className={styles['brandPoint']}>.</span>
-      </span>
+    <Link to="/" className={styles['stewardBrand']} aria-label={`${APP_NAME} home`}>
+      <LogoMark size={32} />
+      <span>{APP_NAME}</span>
     </Link>
   )
 }
@@ -31,7 +26,7 @@ export function LandingHeader({
   return (
     <header className={styles['landingHeader']}>
       <div className={styles['headerInner']}>
-        <StewardBrand />
+        <LandingBrand />
         <nav aria-label="Primary">
           <Link to="/documentation">Platform</Link>
           <Link to="/methodology">Research</Link>
@@ -56,7 +51,7 @@ export function LandingHeader({
             className={styles['signInLink']}
             to={auth.status === 'authenticated' ? '/app' : '/auth/sign-in'}
           >
-            {auth.status === 'authenticated' ? 'Workbench' : 'Sign in'}
+            {auth.status === 'authenticated' ? 'Workspace' : 'Sign in'}
             <FiArrowUpRight />
           </Link>
         </div>

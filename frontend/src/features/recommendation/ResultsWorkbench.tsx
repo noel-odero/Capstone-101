@@ -16,6 +16,8 @@ import {
   STRATEGY_COLORS,
   strategyLabel,
   terminationLabel,
+  PAGE_TITLES,
+  PROTOTYPE_STATEMENT,
 } from '@/domain/terminology'
 import type { Comparison, Simulation, StrategyId, StrategyResult } from '@/domain/types'
 import { useSample } from '@/features/samples/useSamples'
@@ -203,17 +205,17 @@ export function ResultsWorkbench({
   return (
     <div className={styles.results}>
       <div className={styles.topline}>
-        <span>Stewardship / Results</span>
+        <span>Research / Results</span>
         <span className={styles.completed}>
           <FiCheck aria-hidden="true" /> Completed
         </span>
       </div>
       <PageHeader
-        title="Results and Recommendations"
+        title={PAGE_TITLES.results}
         subtitle={`E. coli resistance model · 7 antibiotics · ${run.provenance.horizon}-step horizon`}
         action={
           <ButtonLink to={`/app/simulation/new?profile=${initial}`} variant="secondary" size="sm">
-            New simulation
+            New Analysis
           </ButtonLink>
         }
       />
@@ -236,12 +238,12 @@ export function ResultsWorkbench({
         ) : null}
         {comparisonId ? (
           <Link to={`/app/simulation/${comparisonId}`}>
-            <FiLayers aria-hidden="true" /> 3D simulation
+            <FiLayers aria-hidden="true" /> Explore Resistance Trajectory
           </Link>
         ) : null}
       </div>
       {'baseline' in run ? <ComparisonNotice comparison={run} /> : null}
-      <div className={styles.tabs} role="tablist" aria-label="Simulation results">
+      <div className={styles.tabs} role="tablist" aria-label="Analysis results">
         {tabs.map((name, index) => (
           <button
             key={name}
@@ -308,7 +310,7 @@ export function ResultsWorkbench({
         ) : tab === 'Trajectory' ? (
           <section className={styles.section}>
             <h2>Resistance over time</h2>
-            <p className={styles.muted}>Resistant antibiotics by simulation step.</p>
+            <p className={styles.muted}>Resistant antibiotics by evaluation step.</p>
             <div className={styles.chart}>
               <ResponsiveContainer width="100%" height="100%">
                 <LineChart data={points} margin={{ top: 15, right: 20, bottom: 10, left: -20 }}>
@@ -378,7 +380,7 @@ export function ResultsWorkbench({
           </section>
         ) : (
           <section className={styles.section}>
-            <h2>Compare simulated strategies</h2>
+            <h2>Strategy comparison</h2>
             <p className={styles.muted}>
               {baseline
                 ? pairingVerified
@@ -386,7 +388,7 @@ export function ResultsWorkbench({
                   : 'Inspect the recorded assumptions below.'
                 : `This saved run contains ${strategyLabel(ppo.strategy)} only. Run a new comparison to evaluate all three strategies.`}
             </p>
-            {metricTable(comparisonMetrics, 'Independent simulation outcome metrics')}
+            {metricTable(comparisonMetrics, 'Independent evaluation metrics')}
             {fallbackOnly.length ? (
               <p className={styles.note} role="note">
                 {fallbackOnly.map((result) => strategyLabel(result.strategy)).join(' and ')} had no
@@ -401,7 +403,7 @@ export function ResultsWorkbench({
                 model, nonterminal runs last the full horizon. These checks do not establish
                 treatment effectiveness.
               </p>
-              {metricTable(validationMetrics, 'Simulation constraint checks')}
+              {metricTable(validationMetrics, 'Evaluation constraint checks')}
             </details>
           </section>
         )}
@@ -447,7 +449,7 @@ export function ResultsWorkbench({
                 </>
               )}
               <small>
-                Simulated effect; the target may differ from the next drug in the sequence.
+                Modeled effect; the target may differ from the next drug in the sequence.
               </small>
             </div>
             <details>
@@ -503,7 +505,7 @@ export function ResultsWorkbench({
         ) : (
           <p className={styles.muted}>
             {step === 0
-              ? 'Select any antibiotic step to inspect its simulated transition.'
+              ? 'Select any antibiotic step to inspect its modeled transition.'
               : 'This strategy has no recorded action at the selected step.'}
           </p>
         )}
@@ -572,8 +574,7 @@ export function ResultsWorkbench({
         </p>
       </details>
       <p className={styles.footer}>
-        Research simulation only. Not a clinical prescribing recommendation.{' '}
-        <Link to="/limitations">Limitations</Link>
+        {PROTOTYPE_STATEMENT} <Link to="/limitations">Limitations</Link>
       </p>
     </div>
   )

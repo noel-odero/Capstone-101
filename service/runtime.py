@@ -29,7 +29,7 @@ logger = logging.getLogger("service")
 DQN_MANIFEST_PATH = Path(__file__).resolve().parents[1] / "artifacts/frozen/public-data-v2/dqn/manifest.json"
 
 DISCLAIMER = (
-    "Simulation output only. It is not clinical advice, a validated treatment recommendation, or a "
+    "Model-derived research analysis only. It is not clinical advice, a validated treatment recommendation, or a "
     "statement about clinical efficacy."
 )
 INTERPRETATION = (

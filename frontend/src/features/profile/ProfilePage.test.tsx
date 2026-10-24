@@ -23,6 +23,7 @@ function routes(
   return baseRoutes({
     'GET /api/v1/auth/session': { body: session },
     'GET /api/v1/simulations/recent': { body: runs },
+    'GET /api/v1/analyses': { body: runs },
     [`GET /api/v1/comparisons/${runId}`]: {
       body: {
         ...rawFixtures.comparison,
@@ -34,7 +35,7 @@ function routes(
 }
 
 describe('E. coli Profile page', () => {
-  it('shows the starting profile of the latest run, its resistance level, and the PPO sequence', async () => {
+  it('shows the latest initial profile, its resistance level and strategy activity', async () => {
     mockFetch(routes(undefined, true))
     renderApp('/app/profile')
 
@@ -48,7 +49,7 @@ describe('E. coli Profile page', () => {
     ).toBeInTheDocument()
     expect(screen.getByLabelText(`Profile ${profileToCode(initial)}`)).toBeInTheDocument()
     expect(screen.getByText('PPO + DQN')).toBeInTheDocument()
-    expect(screen.queryByRole('link', { name: 'Run with DQN' })).not.toBeInTheDocument()
+    expect(screen.queryByRole('link', { name: 'Analyze with DQN' })).not.toBeInTheDocument()
 
     const drugs = within(
       screen.getByRole('list', { name: 'Resistance of each antibiotic' }),
@@ -64,20 +65,21 @@ describe('E. coli Profile page', () => {
     expect(screen.getByLabelText('Resistance level')).toHaveTextContent(`${resistant} / 7`)
   })
 
-  it('links to the recommendations of this run and to the treatment history', async () => {
+  it('keeps results and history in the sidebar without duplicating profile tabs', async () => {
     mockFetch(routes())
     renderApp('/app/profile')
 
-    const tabs = await screen.findByRole('navigation', { name: 'Profile sections' })
-    expect(within(tabs).getByRole('link', { name: 'Resistance evolution' })).toHaveAttribute(
-      'aria-current',
-      'page',
-    )
-    expect(within(tabs).getByRole('link', { name: 'Policy-selected sequence' })).toHaveAttribute(
+    await screen.findByRole('heading', { name: 'Current Resistance Profile' })
+    expect(screen.queryByRole('navigation', { name: 'Profile sections' })).not.toBeInTheDocument()
+    expect(screen.queryByRole('link', { name: 'Policy-selected sequence' })).not.toBeInTheDocument()
+    expect(screen.getByRole('region', { name: 'Resistance Trend' })).toBeInTheDocument()
+    expect(screen.getByRole('region', { name: 'Recent Activity' })).toBeInTheDocument()
+    const navigation = screen.getByRole('navigation', { name: 'Workspace' })
+    expect(within(navigation).getByRole('link', { name: 'Analysis Results' })).toHaveAttribute(
       'href',
-      `/app/recommendations/comparison/${runId}`,
+      '/app/recommendations',
     )
-    expect(within(tabs).getByRole('link', { name: 'Experiment History' })).toHaveAttribute(
+    expect(within(navigation).getByRole('link', { name: 'Analysis History' })).toHaveAttribute(
       'href',
       '/app/history',
     )
@@ -95,7 +97,7 @@ describe('E. coli Profile page', () => {
     expect(screen.queryByRole('region', { name: 'Model parameters' })).not.toBeInTheDocument()
   })
 
-  it('invites a first simulation instead of showing numbers when there are no runs, and disables the recommendations tab', async () => {
+  it('invites a first analysis instead of showing numbers when there are no runs', async () => {
     mockFetch(routes({ items: [], page: 1, pageSize: 10, totalCount: 0 }))
     renderApp('/app/profile')
 
@@ -105,18 +107,30 @@ describe('E. coli Profile page', () => {
     ).not.toBeInTheDocument()
   })
 
-  it('keeps the same tabs on the history page, with the history tab current', async () => {
+  it('keeps history accessible through its dedicated navigation and saved 3D analyses', async () => {
     mockFetch(routes())
     renderApp('/app/history')
 
-    const tabs = await screen.findByRole('navigation', { name: 'Profile sections' })
-    expect(within(tabs).getByRole('link', { name: 'Experiment History' })).toHaveAttribute(
+    await screen.findByRole('heading', { name: 'Analysis History' })
+    const navigation = screen.getByRole('navigation', { name: 'Workspace' })
+    expect(within(navigation).getByRole('link', { name: 'Analysis History' })).toHaveAttribute(
       'aria-current',
       'page',
     )
-    expect(within(tabs).getByRole('link', { name: 'Resistance evolution' })).toHaveAttribute(
+    expect(within(navigation).getByRole('link', { name: 'E. coli Profile' })).toHaveAttribute(
       'href',
       '/app/profile',
+    )
+    const history = await screen.findByRole('table', { name: 'Your analyses, newest first' })
+    expect(screen.queryByRole('checkbox')).not.toBeInTheDocument()
+    expect(screen.queryByRole('form', { name: 'Filter saved analyses' })).not.toBeInTheDocument()
+    expect(within(navigation).getByRole('link', { name: 'Analysis Insights' })).toHaveAttribute(
+      'href',
+      '/app/insights',
+    )
+    expect(within(history).getByRole('link', { name: 'View Analysis' })).toHaveAttribute(
+      'href',
+      `/app/simulation/${runId}`,
     )
   })
 })

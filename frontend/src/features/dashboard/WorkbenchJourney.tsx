@@ -25,7 +25,7 @@ const steps = [
 
 export function WorkbenchJourney() {
   return (
-    <section className={styles.journey} aria-label="Explore the workbench">
+    <section className={styles.journey} aria-label="Explore the research workspace">
       <div className={styles.steps}>
         {steps.map(({ title, description, to, icon: Icon }) => (
           <Link className={styles.step} to={to} key={title}>

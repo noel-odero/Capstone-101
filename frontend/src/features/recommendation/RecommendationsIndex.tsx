@@ -6,6 +6,7 @@ import { ErrorState } from '@/components/ui/ErrorState'
 import { LoadingState } from '@/components/ui/LoadingState'
 import { RECENT_RUNS_PAGE_SIZE, useRecentRuns } from '@/hooks/useRecentRuns'
 import { Navigate } from 'react-router'
+import { PAGE_TITLES } from '@/domain/terminology'
 
 /** `/app/recommendations`: opens the sequences of your latest run, or invites you to run one. */
 export function RecommendationsIndex() {
@@ -14,7 +15,7 @@ export function RecommendationsIndex() {
   if (recent.isPending) {
     return (
       <ContentContainer>
-        <PageHeader title="Recommendations" />
+        <PageHeader title={PAGE_TITLES.results} />
         <LoadingState label="Opening your latest run" lines={2} />
       </ContentContainer>
     )
@@ -22,7 +23,7 @@ export function RecommendationsIndex() {
   if (recent.isError) {
     return (
       <ContentContainer>
-        <PageHeader title="Recommendations" />
+        <PageHeader title={PAGE_TITLES.results} />
         <ErrorState error={recent.error} onRetry={() => void recent.refetch()} />
       </ContentContainer>
     )
@@ -45,15 +46,15 @@ export function RecommendationsIndex() {
   return (
     <ContentContainer>
       <PageHeader
-        title="Recommendations"
-        subtitle="Strategy sequences and outcomes from your runs."
+        title={PAGE_TITLES.results}
+        subtitle="Strategy sequences and model-derived outcomes from your analyses."
       />
       <EmptyState
         title="No sequences yet"
         description="Compare PPO, DQN and the baseline to review their sequences and outcomes."
         action={
           <ButtonLink to="/app/simulation/new" variant="dark">
-            Run New Simulation
+            New Analysis
           </ButtonLink>
         }
       />

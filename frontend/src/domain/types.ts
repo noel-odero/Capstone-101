@@ -254,6 +254,7 @@ export const runSummarySchema = z.object({
   createdAtUtc: z.string(),
   initialProfile: resistanceProfileSchema,
   modelId: z.string(),
+  antibioticOrder: z.array(z.string()).nullish(),
   strategies: z.array(strategySummarySchema),
 })
 

@@ -9,6 +9,7 @@ import { useAntibiotics } from '@/hooks/useAntibiotics'
 import { useComparison } from '@/hooks/useComparison'
 import { useSimulation } from '@/hooks/useSimulation'
 import { ResultsWorkbench } from './ResultsWorkbench'
+import { PAGE_TITLES } from '@/domain/terminology'
 
 export function RecommendationPage() {
   const { comparisonId, simulationId } = useParams()
@@ -23,12 +24,12 @@ export function RecommendationPage() {
     <ContentContainer>
       {query.isPending || antibiotics.isPending ? (
         <>
-          <PageHeader title="Results and Recommendations" />
-          <LoadingState label="Loading simulation results" lines={3} block />
+          <PageHeader title={PAGE_TITLES.results} />
+          <LoadingState label="Loading analysis results" lines={3} block />
         </>
       ) : query.isError || antibiotics.isError ? (
         <>
-          <PageHeader title="Results and Recommendations" />
+          <PageHeader title={PAGE_TITLES.results} />
           <ErrorState
             error={query.error ?? antibiotics.error}
             onRetry={() => {
@@ -48,10 +49,10 @@ export function RecommendationPage() {
         />
       ) : (
         <>
-          <PageHeader title="Results and Recommendations" />
+          <PageHeader title={PAGE_TITLES.results} />
           <EmptyState
             title="No completed results available"
-            description="Choose a completed run or configure a new simulation."
+            description="Choose a completed analysis or configure a new one."
             action={<ButtonLink to="/app/history">Open history</ButtonLink>}
           />
         </>

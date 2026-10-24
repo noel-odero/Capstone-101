@@ -7,8 +7,18 @@ import type { StrategyId } from './types'
  */
 
 export const APP_NAME = 'AMR Decision Support'
+export const APP_TAGLINE = 'An AI-powered antibiotic strategy evaluation platform.'
 export const PROTOTYPE_STATEMENT =
-  'A research and educational prototype. Results come from a simplified simulation and are not clinical treatment guidance.'
+  'Research prototype. Findings are model-derived and are not clinical treatment recommendations.'
+
+export const PAGE_TITLES = {
+  workspace: 'Research Workspace',
+  evaluation: 'Strategy Evaluation',
+  results: 'Analysis Results',
+  trajectory: 'Resistance Trajectory',
+  history: 'Analysis History',
+  insights: 'Analysis Insights',
+} as const
 
 export const STRATEGY_NAMES: Readonly<Record<StrategyId, string>> = {
   ppo: 'PPO',
@@ -17,26 +27,25 @@ export const STRATEGY_NAMES: Readonly<Record<StrategyId, string>> = {
 }
 
 export const STRATEGY_DESCRIPTIONS: Readonly<Record<StrategyId, string>> = {
-  ppo: 'A frozen Proximal Policy Optimization policy. It selects one antibiotic per step from those the simulator marks susceptible.',
-  dqn: 'A frozen Deep Q-Network policy. It selects one antibiotic per step from those the simulator marks susceptible.',
+  ppo: 'A frozen Proximal Policy Optimization policy. It selects one antibiotic per step from those the model marks susceptible.',
+  dqn: 'A frozen Deep Q-Network policy. It selects one antibiotic per step from those the model marks susceptible.',
   random_susceptible_baseline:
     'The existing baseline (implemented by the Greedy policy in the scientific code). It samples uniformly at random among susceptible antibiotics and is not a search for the best sequence.',
 }
 
 export const GLOSSARY = {
   susceptible:
-    'The antibiotic is marked susceptible in the current simulated resistance profile. This is a simulator flag, not clinical efficacy.',
-  resistant: 'The antibiotic is marked resistant in the current simulated resistance profile.',
+    'The antibiotic is marked susceptible in the current resistance profile. This is a model flag, not clinical efficacy.',
+  resistant: 'The antibiotic is marked resistant in the current resistance profile.',
   feasible:
-    "Feasible under the simulator's current action mask: only antibiotics that are susceptible in the current state may be selected.",
+    "Feasible under the model's current action mask: only antibiotics that are susceptible in the current state may be selected.",
   transitionSupport:
     'Whether candidate transition data exist for the selected action in the current state. It is separate from susceptibility.',
   unsupported:
-    'No modeled transition applies to this action in this state. The simulator keeps the profile unchanged; this does not establish biological stability or treatment effectiveness.',
-  supported:
-    'The simulator has at least one modeled transition outcome for this action in this state.',
+    'No modeled transition applies to this action in this state. The model keeps the profile unchanged; this does not establish biological stability or treatment effectiveness.',
+  supported: 'The model has at least one transition outcome for this action in this state.',
   observedOutcome:
-    'What the simulator actually did after the action. It is a simulated outcome, not a clinical one.',
+    'The outcome sampled by the evaluation model after an action. It is model-derived, not a measured clinical outcome.',
   resistanceEmergence:
     'A step after which the number of resistant antibiotics increased. It counts steps, not individual antibiotics.',
   noFeasibleActions:

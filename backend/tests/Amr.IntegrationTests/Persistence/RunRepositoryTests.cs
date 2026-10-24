@@ -1,6 +1,7 @@
 using System.Text.Json;
 using System.Text.Json.Nodes;
 using Amr.Application.DTOs.Comparisons;
+using Amr.Application.DTOs.Analyses;
 using Amr.Application.DTOs.Simulations;
 using Amr.Application.Errors;
 using Amr.Domain.Enums;
@@ -37,6 +38,75 @@ public class RunRepositoryTests(PostgresDatabaseFixture db) : IClassFixture<Post
         (await SampleDtos.Simulation(strategy)) with { Id = Guid.NewGuid() };
 
     private static async Task<ComparisonDto> NewComparisonAsync() => (await SampleDtos.Comparison()) with { Id = Guid.NewGuid() };
+
+    [PostgresFact]
+    public async Task Research_collections_persist_the_question_and_cannot_include_or_expose_another_users_evidence()
+    {
+        var owner = $"collections:{Guid.NewGuid():N}";
+        var first = await NewComparisonAsync();
+        var second = first with { Id = Guid.NewGuid() };
+        var foreign = first with { Id = Guid.NewGuid() };
+        await using (var write = db.CreateContext())
+        {
+            await Repository(write, owner).SaveComparisonAsync(first, CancellationToken.None);
+            await Repository(write, owner).SaveComparisonAsync(second, CancellationToken.None);
+            await Repository(write, owner + ":other").SaveComparisonAsync(foreign, CancellationToken.None);
+        }
+        await using (var write = db.CreateContext())
+        {
+            var collections = new AnalysisCollectionRepository(write, new Amr.TestSupport.FixedCurrentUser(owner), TimeProvider.System);
+            var saved = await collections.CreateAsync(new() { Name = "  Policy agreement  ", Question = "Why do equal burdens hide different actions?", AnalysisIds = [second.Id, first.Id] }, CancellationToken.None);
+            Assert.Equal("Policy agreement", saved.Name);
+            Assert.Equal(new[] { second.Id, first.Id }, saved.AnalysisIds);
+            var error = await Assert.ThrowsAsync<AmrException>(() => collections.CreateAsync(new() { Name = "Not mine", AnalysisIds = [first.Id, foreign.Id] }, CancellationToken.None));
+            Assert.Equal("analysis_not_found", error.Code);
+        }
+        await using var read = db.CreateContext();
+        var mine = new AnalysisCollectionRepository(read, new Amr.TestSupport.FixedCurrentUser(owner), TimeProvider.System);
+        var collection = Assert.Single(await mine.ListAsync(CancellationToken.None));
+        Assert.Equal("Why do equal burdens hide different actions?", collection.Question);
+        Assert.Equal(new[] { second.Id, first.Id }, collection.AnalysisIds);
+        var others = new AnalysisCollectionRepository(read, new Amr.TestSupport.FixedCurrentUser(owner + ":other"), TimeProvider.System);
+        Assert.Empty(await others.ListAsync(CancellationToken.None));
+    }
+
+    [PostgresFact]
+    public async Task History_selection_filters_sorting_and_batch_reads_keep_ownership_and_missing_policies()
+    {
+        var owner = $"history:{Guid.NewGuid():N}";
+        var first = await NewComparisonAsync();
+        var older = first with { Id = Guid.NewGuid(), CreatedAtUtc = first.CreatedAtUtc.AddMinutes(-1), Dqn = null };
+        var foreign = first with { Id = Guid.NewGuid() };
+        await using (var write = db.CreateContext())
+        {
+            await Repository(write, owner).SaveComparisonAsync(first, CancellationToken.None);
+            await Repository(write, owner).SaveComparisonAsync(older, CancellationToken.None);
+            await Repository(write, owner + ":other").SaveComparisonAsync(foreign, CancellationToken.None);
+        }
+        await using var read = db.CreateContext();
+        var repository = Repository(read, owner);
+        var profile = string.Join("", first.Ppo!.InitialProfile);
+        var filtered = await repository.ListRecentAsync(new() { Profile = profile, InitialResistantCount = 1, Strategy = "dqn" }, CancellationToken.None);
+        Assert.Equal(first.Id, Assert.Single(filtered.Items).Id);
+        Assert.Equal(first.Provenance.AntibioticOrder, filtered.Items[0].AntibioticOrder);
+        foreach (var sort in new[] { "newest", "oldest", "ppo", "dqn", "baseline", "disagreement" })
+        {
+            var page = await repository.ListRecentAsync(new() { Sort = sort, PageSize = 1 }, CancellationToken.None);
+            Assert.Equal(2, page.TotalCount);
+            Assert.Equal(sort == "oldest" ? older.Id : first.Id, Assert.Single(page.Items).Id);
+        }
+        var missing = await repository.ListRecentAsync(new() { Strategy = "missing_dqn", From = older.CreatedAtUtc.AddSeconds(-1), To = older.CreatedAtUtc.AddSeconds(1) }, CancellationToken.None);
+        Assert.Equal(older.Id, Assert.Single(missing.Items).Id);
+        Assert.Empty((await repository.ListRecentAsync(new() { Profile = "1111111" }, CancellationToken.None)).Items);
+        var batch = await repository.FindManyAsync([first.Id, older.Id, foreign.Id, Guid.NewGuid()], CancellationToken.None);
+        Assert.Equal(2, batch.Count);
+        Assert.DoesNotContain(batch, item => item.Id == foreign.Id);
+        Assert.DoesNotContain(batch.Single(item => item.Id == older.Id).Strategies, result => result.Strategy == StrategyKind.Dqn);
+        Assert.NotEmpty(batch.Single(item => item.Id == first.Id).Strategies.Single(result => result.Strategy == StrategyKind.Dqn).Steps);
+        var service = new Amr.Application.Services.AnalysisComparisonService(repository);
+        var error = await Assert.ThrowsAsync<AmrException>(() => service.CompareAsync(new() { AnalysisIds = [first.Id, foreign.Id] }, CancellationToken.None));
+        Assert.Equal("analysis_not_found", error.Code);
+    }
 
     [PostgresTheory]
     [InlineData(StrategyKind.Ppo)]

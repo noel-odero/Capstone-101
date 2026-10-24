@@ -23,7 +23,7 @@ public sealed class RecommendationsController(IRecommendationService recommendat
     {
         var recommendation = await recommendations.GetBySimulationAsync(simulationId, cancellationToken);
         return recommendation is null
-            ? NotFoundProblem(ErrorCodes.RecommendationNotFound, "No PPO recommendations exist for this simulation.")
+            ? NotFoundProblem(ErrorCodes.RecommendationNotFound, "No learned-policy results exist for this analysis.")
             : recommendation;
     }
 }

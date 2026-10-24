@@ -32,16 +32,17 @@
   align-items: center;
   gap: 0.65rem;
   color: var(--landing-text);
-  font-size: 1.6rem;
+  font-size: clamp(1rem, 1.5vw, 1.3rem);
   font-weight: 600;
-  letter-spacing: -0.065em;
+  letter-spacing: -0.035em;
   white-space: nowrap;
 }
 .stewardBrand:hover {
   color: var(--landing-text);
 }
-.brandPoint {
-  color: #78bde9;
+.stewardBrand svg {
+  flex-shrink: 0;
+  color: #4b91ff;
 }
 .headerInner nav {
   display: flex;
@@ -159,6 +160,13 @@
   align-items: center;
   gap: 1.6rem 1.9rem;
   margin-top: 2.4rem;
+}
+.scope {
+  max-width: 52ch;
+  margin-top: 1.25rem;
+  font-size: 0.72rem;
+  line-height: 1.65;
+  color: var(--landing-muted);
 }
 .launchButton {
   display: inline-flex;
@@ -360,7 +368,10 @@
 }
 @media (max-width: 1000px) {
   .headerInner {
+    flex-wrap: wrap;
+    padding-block: 0.75rem;
     gap: 2.5rem;
+    row-gap: 0.75rem;
     padding-inline: 6%;
   }
   .heroGrid {
@@ -401,7 +412,7 @@
     gap: 1.5rem;
   }
   .stewardBrand {
-    font-size: 1.3rem;
+    font-size: 1rem;
   }
   .stewardBrand svg {
     width: 24px;

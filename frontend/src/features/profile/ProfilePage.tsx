@@ -8,12 +8,12 @@ import { LoadingState } from '@/components/ui/LoadingState'
 import { useAntibiotics } from '@/hooks/useAntibiotics'
 import { ProfileActivity, ProfileOverview } from './ProfileOverview'
 import { ProfileStrip } from './ProfileStrip'
-import { ProfileTabs } from './ProfileTabs'
 import { useProfileRun } from './useProfileRun'
+import styles from './profile.module.css'
 
-const SUBTITLE = 'Your latest resistance profile and strategy comparison.'
+const SUBTITLE = 'Inspect your latest profile and resistance trends.'
 
-/** The E. coli Profile: the latest stored run's starting profile, how resistance changes along PPO's sequence, and links to the history. */
+/** The latest initial profile, strategy resistance trends and recent activity. */
 export function ProfilePage() {
   const state = useProfileRun()
   const antibiotics = useAntibiotics()
@@ -26,7 +26,7 @@ export function ProfilePage() {
           subtitle={SUBTITLE}
           action={
             <ButtonLink to="/app/simulation/new" variant="dark">
-              Run Simulation
+              New Analysis
             </ButtonLink>
           }
         />
@@ -43,10 +43,10 @@ export function ProfilePage() {
         {state.status === 'empty' ? (
           <EmptyState
             title="No profile yet"
-            description="Run a simulation and its resistance profile will appear here."
+            description="Evaluate a strategy and its resistance profile will appear here."
             action={
               <ButtonLink to="/app/simulation/new" variant="dark">
-                Run Simulation
+                New Analysis
               </ButtonLink>
             }
           />
@@ -58,29 +58,27 @@ export function ProfilePage() {
   const { run } = state
   return (
     <ContentContainer>
-      <PageHeader
-        title="E. coli Profile"
-        subtitle="View your simulation profile and experiment history."
-      />
-      <ProfileOverview run={run} />
-      {run.baseline ? <ComparisonNotice comparison={run} /> : null}
-      <ProfileTabs />
-      {antibiotics.isPending ? (
-        <LoadingState label="Loading the antibiotics" lines={3} block />
-      ) : null}
-      {antibiotics.isError ? (
-        <ErrorState
-          error={antibiotics.error}
-          title="The antibiotic list could not be loaded"
-          onRetry={() => void antibiotics.refetch()}
-        />
-      ) : null}
-      {antibiotics.data ? (
-        <div className="stack-lg">
-          <ProfileStrip profile={run.ppo.initialProfile} entries={antibiotics.data} />
-          <ProfileActivity run={run} />
-        </div>
-      ) : null}
+      <div className={styles.profile}>
+        <PageHeader title="E. coli Profile" subtitle={SUBTITLE} />
+        <ProfileOverview run={run} />
+        {run.baseline ? <ComparisonNotice comparison={run} /> : null}
+        {antibiotics.isPending ? (
+          <LoadingState label="Loading the antibiotics" lines={3} block />
+        ) : null}
+        {antibiotics.isError ? (
+          <ErrorState
+            error={antibiotics.error}
+            title="The antibiotic list could not be loaded"
+            onRetry={() => void antibiotics.refetch()}
+          />
+        ) : null}
+        {antibiotics.data ? (
+          <div className="stack-lg">
+            <ProfileStrip profile={run.ppo.initialProfile} entries={antibiotics.data} />
+            <ProfileActivity run={run} />
+          </div>
+        ) : null}
+      </div>
     </ContentContainer>
   )
 }

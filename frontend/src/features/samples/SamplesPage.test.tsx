@@ -20,7 +20,7 @@ const sample: SavedSample = {
 }
 
 describe('sample workflow', () => {
-  it('saves profiles without running simulations and resets for the next sample', async () => {
+  it('saves profiles without running analyses and resets for the next sample', async () => {
     const saved: SavedSample[] = []
     const api = mockFetch(
       baseRoutes({
@@ -51,7 +51,7 @@ describe('sample workflow', () => {
       'aria-checked',
       'false',
     )
-    expect(screen.getByRole('link', { name: 'Set up simulation' })).toHaveAttribute(
+    expect(screen.getByRole('link', { name: 'New Analysis' })).toHaveAttribute(
       'href',
       `/app/simulation/new?sample=${sample.id}`,
     )
@@ -73,12 +73,12 @@ describe('sample workflow', () => {
     expect(screen.getByText('UTI-024')).toBeInTheDocument()
     expect(await screen.findByRole('switch', { name: 'Ciprofloxacin resistant' })).toBeDisabled()
     expect(screen.getByRole('button', { name: 'Reset' })).toBeDisabled()
-    await user.click(screen.getByRole('button', { name: 'Review simulation' }))
+    await user.click(screen.getByRole('button', { name: 'Review Analysis' }))
     await waitFor(() =>
-      expect(screen.getByRole('heading', { name: 'Review your simulation' })).toBeInTheDocument(),
+      expect(screen.getByRole('heading', { name: 'Review Analysis' })).toBeInTheDocument(),
     )
     expect(api.callsTo('POST /api/v1/comparisons')).toHaveLength(0)
-    await user.click(screen.getByRole('button', { name: 'Run Simulation' }))
+    await user.click(screen.getByRole('button', { name: 'Run Analysis' }))
     await waitFor(() =>
       expect(router.state.location.pathname).toBe(`/app/simulation/${created.id}`),
     )

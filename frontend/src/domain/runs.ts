@@ -16,17 +16,3 @@ export function runDetailPath(run: Pick<RunSummary, 'id' | 'kind' | 'strategies'
     ? `/app/recommendations/simulation/${run.id}`
     : null
 }
-
-/** Open the learned-policy sequences of a stored run. */
-export function recommendationPath(
-  run: Pick<RunSummary, 'id' | 'kind' | 'strategies'>,
-): string | null {
-  if (
-    !run.strategies.some((strategy) => strategy.strategy === 'ppo' || strategy.strategy === 'dqn')
-  ) {
-    return null
-  }
-  return run.kind === 'comparison'
-    ? `/app/recommendations/comparison/${run.id}`
-    : `/app/recommendations/simulation/${run.id}`
-}

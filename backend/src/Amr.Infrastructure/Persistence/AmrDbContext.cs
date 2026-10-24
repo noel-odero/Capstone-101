@@ -26,6 +26,7 @@ public sealed class AmrDbContext(DbContextOptions<AmrDbContext> options) : DbCon
 
     public DbSet<AppUser> Users => Set<AppUser>();
     public DbSet<Sample> Samples => Set<Sample>();
+    public DbSet<ResearchCollectionRecord> AnalysisCollections => Set<ResearchCollectionRecord>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -34,6 +35,20 @@ public sealed class AmrDbContext(DbContextOptions<AmrDbContext> options) : DbCon
         ConfigureStrategyRun(modelBuilder);
         ConfigureStepTrace(modelBuilder);
         ConfigureUser(modelBuilder);
+        modelBuilder.Entity<ResearchCollectionRecord>(entity =>
+        {
+            entity.ToTable("analysis_collections", table =>
+            {
+                table.HasCheckConstraint("ck_analysis_collections_name", "length(btrim(name)) > 0");
+                table.HasCheckConstraint("ck_analysis_collections_size", "cardinality(analysis_ids) BETWEEN 2 AND 50");
+            });
+            entity.HasKey(collection => collection.Id);
+            entity.Property(collection => collection.Id).ValueGeneratedNever();
+            entity.Property(collection => collection.OwnerId).HasMaxLength(200).IsRequired();
+            entity.Property(collection => collection.Name).HasMaxLength(80).IsRequired();
+            entity.Property(collection => collection.Question).HasMaxLength(500);
+            entity.HasIndex(collection => new { collection.OwnerId, collection.CreatedAtUtc });
+        });
         modelBuilder.Entity<Sample>(entity =>
         {
             entity.ToTable("samples", table =>

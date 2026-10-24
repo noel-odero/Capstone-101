@@ -1,8 +1,9 @@
-# Internal simulation service
+# Internal model-based evaluation service
 
 FastAPI service over the shared frozen PPO/DQN inference layer (`ml/src/ppo_inference.py`) and the stochastic
 resistance simulator. It is internal: the ASP.NET Core API is the intended caller, not the browser. It
-stores nothing, and all output is simulation output, not clinical advice.
+stores nothing, and all output is model-derived research analysis, not clinical advice. The engine
+uses a computational simulation; internal endpoint and schema names remain stable for compatibility.
 
 ## Install
 

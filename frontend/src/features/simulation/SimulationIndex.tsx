@@ -4,6 +4,7 @@ import { PageHeader } from '@/components/layout/PageHeader'
 import { ErrorState } from '@/components/ui/ErrorState'
 import { LoadingState } from '@/components/ui/LoadingState'
 import { RECENT_RUNS_PAGE_SIZE, useRecentRuns } from '@/hooks/useRecentRuns'
+import { PAGE_TITLES } from '@/domain/terminology'
 
 /** Open the latest three-strategy run, or configure a comparison with the current policies. */
 export function SimulationIndex() {
@@ -12,15 +13,15 @@ export function SimulationIndex() {
   if (recent.isPending) {
     return (
       <ContentContainer>
-        <PageHeader title="Simulation" />
-        <LoadingState label="Opening your latest simulation" lines={2} />
+        <PageHeader title={PAGE_TITLES.trajectory} />
+        <LoadingState label="Opening your latest resistance trajectory" lines={2} />
       </ContentContainer>
     )
   }
   if (recent.isError) {
     return (
       <ContentContainer>
-        <PageHeader title="Simulation" />
+        <PageHeader title={PAGE_TITLES.trajectory} />
         <ErrorState error={recent.error} onRetry={() => void recent.refetch()} />
       </ContentContainer>
     )

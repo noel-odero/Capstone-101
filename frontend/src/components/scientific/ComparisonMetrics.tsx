@@ -18,7 +18,7 @@ export function ComparisonMetrics({
     <div className="stack">
       <div className={styles['tableWrap']}>
         <table className={styles['comparisonMetrics']}>
-          <caption className="visually-hidden">Paired simulation metrics</caption>
+          <caption className="visually-hidden">Strategy evaluation metrics</caption>
           <thead>
             <tr>
               <th scope="col">Metric</th>

@@ -2,6 +2,10 @@
 
 Decisions that are easy to get wrong. Code comments on the DTOs and interfaces carry the same statements.
 
+The product calls these operations **analyses** and **strategy evaluations**. Existing route names
+(`/simulations`, `/comparisons`, `/recommendations`), resource kinds and DTO fields remain stable for
+compatibility. Analyses still use a computational simulation; the terminology does not imply clinical validation.
+
 ## Endpoints
 
 | Route | Success | Behavior |
@@ -17,6 +21,31 @@ Decisions that are easy to get wrong. Code comments on the DTOs and interfaces c
 | `GET /api/v1/comparisons/{id}` | 200 / 404 | The stored comparison, in the same representation as the POST response |
 | `GET /api/v1/recommendations/{simulationId}` | 200 / 404 | Learned-policy steps of a stored simulation |
 | `GET /api/v1/simulations/recent` | 200 | Stored simulations and comparisons, newest first |
+| `GET /api/v1/analyses` | 200 | Owner-scoped, paginated saved history with profile, resistance-count, strategy, UTC date and sort filters |
+| `POST /api/v1/analyses/compare` | 200 / 404 / 422 | Reads 2–50 distinct, non-empty saved analysis UUIDs; returns recorded strategy results, compatibility issues and nullable within-analysis burden differences |
+| `GET /api/v1/analysis-collections` | 200 | Lists the signed-in account's saved research collections |
+| `POST /api/v1/analysis-collections` | 201 / 404 / 422 | Saves a name, optional research question and 2–50 distinct owned analysis UUIDs |
+
+**Analysis Insights.** `GET /analyses` accepts `page`, `pageSize`, `profile` (seven binary digits),
+`initialResistantCount` (0–7), `strategy` (`ppo`, `dqn`, `baseline`, `missing_dqn`), inclusive
+`from`/`to` timestamps, and `sort` (`newest`, `oldest`, `ppo`, `dqn`, `baseline`, `disagreement`).
+Burden sorts are ascending, missing policies last; disagreement sorts absolute PPO–DQN burden
+differences descending, paired records first. Ties use date then id.
+
+`POST /analyses/compare` takes `{ "analysisIds": ["<uuid>", "<uuid>"] }` and preserves selection order.
+It uses stored data only and requires the same authentication and antiforgery protection as other POSTs.
+Missing and foreign-owned IDs produce the same `404 analysis_not_found` for the entire request;
+neither is silently excluded. Missing strategies and their differences remain absent/null, never zero.
+Compatibility checks cover checkpoint and transition-data identities, scenario, horizon, action order/mask,
+reward and metric definitions, shared-condition verification, service versions, profiles and seeds.
+Repeated recorded random draws are flagged. Unknown identities are not guessed.
+The response is descriptive: no pooled mean, significance test or automatic algorithm winner is computed.
+The comparison read layer does not require new scientific records. Research collections use the
+`AddAnalysisCollections` migration: owner, name (80 characters), optional question (500 characters),
+creation time and ordered analysis UUIDs. Foreign and missing IDs return the same 404; collections
+never expose another account's evidence. Saving a collection does not run a policy.
+The archive continues to use `/simulations/recent`. Existing `/app/history/analyze` links redirect
+to the standalone `/app/insights` page. Exports are generated in the browser from validated saved results.
 
 Any database-backed route answers 503 `database_unavailable` while the database cannot be reached. A missing run is never
 reported as an empty result or a 404 in that case.
@@ -43,7 +72,7 @@ has `isPersisted: true`.
 | Database unreachable, authentication or resource failure, timeout | 503 | `database_unavailable` |
 | The write was rejected (constraint, missing schema, duplicate run id) | 500 | `persistence_failed` |
 
-The message says the simulation ran but no record exists, and no id is issued to the client. The failure is logged at
+The message says the analysis ran but no record exists, and no id is issued to the client. The failure is logged at
 error level with the Python run id and the request's `X-Correlation-ID`, so the orphaned upstream execution can be found.
 Python is called once per request: there are no automatic retries of simulation or comparison POSTs, and a failed save does
 not re-run Python. If the client cancels during the save, the transaction is abandoned and normally rolls back, but a

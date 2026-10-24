@@ -47,6 +47,30 @@ public sealed partial class RunRepository(AmrDbContext db, TimeProvider clock, I
         try
         {
             var mine = db.ExperimentRuns.Where(run => run.OwnerId == owner);
+            if (!string.IsNullOrEmpty(query.Profile))
+            {
+                var profile = query.Profile.Select(bit => bit - '0').ToArray();
+                mine = mine.Where(run => run.InitialProfile.SequenceEqual(profile));
+            }
+            if (query.InitialResistantCount is { } count)
+                mine = mine.Where(run => run.StrategyRuns.Any(strategy => strategy.InitialResistantCount == count));
+            if (query.Strategy == "missing_dqn")
+                mine = mine.Where(run => !run.StrategyRuns.Any(strategy => strategy.Strategy == StrategyKind.Dqn));
+            else if (query.Strategy is { } requestedStrategy)
+            {
+                var strategy = requestedStrategy switch { "ppo" => StrategyKind.Ppo, "dqn" => StrategyKind.Dqn, _ => StrategyKind.RandomSusceptibleBaseline };
+                mine = mine.Where(run => run.StrategyRuns.Any(result => result.Strategy == strategy));
+            }
+            if (query.From is { } from)
+            {
+                var utc = from.ToUniversalTime();
+                mine = mine.Where(run => run.CreatedAtUtc >= utc);
+            }
+            if (query.To is { } to)
+            {
+                var utc = to.ToUniversalTime();
+                mine = mine.Where(run => run.CreatedAtUtc <= utc);
+            }
             var total = await mine.CountAsync(cancellationToken);
             var skip = (long)(query.Page - 1) * query.PageSize;
             if (skip >= total)
@@ -54,9 +78,25 @@ public sealed partial class RunRepository(AmrDbContext db, TimeProvider clock, I
                 return new PagedResultDto<RunSummaryDto>([], query.Page, query.PageSize, total);
             }
 
-            var rows = await mine
-                .OrderByDescending(run => run.CreatedAtUtc)
-                .ThenByDescending(run => run.Id)
+            IOrderedQueryable<ExperimentRun> ordered;
+            if (query.Sort is "ppo" or "dqn" or "baseline")
+            {
+                var strategy = query.Sort switch { "ppo" => StrategyKind.Ppo, "dqn" => StrategyKind.Dqn, _ => StrategyKind.RandomSusceptibleBaseline };
+                ordered = mine.OrderBy(run => !run.StrategyRuns.Any(result => result.Strategy == strategy))
+                    .ThenBy(run => run.StrategyRuns.Where(result => result.Strategy == strategy).Select(result => (double?)result.CumulativeResistanceBurden).FirstOrDefault())
+                    .ThenByDescending(run => run.CreatedAtUtc).ThenByDescending(run => run.Id);
+            }
+            else if (query.Sort == "disagreement")
+            {
+                ordered = mine.OrderByDescending(run => run.StrategyRuns.Any(result => result.Strategy == StrategyKind.Ppo) && run.StrategyRuns.Any(result => result.Strategy == StrategyKind.Dqn))
+                    .ThenByDescending(run => Math.Abs(
+                        run.StrategyRuns.Where(result => result.Strategy == StrategyKind.Ppo).Select(result => result.CumulativeResistanceBurden).FirstOrDefault() -
+                        run.StrategyRuns.Where(result => result.Strategy == StrategyKind.Dqn).Select(result => result.CumulativeResistanceBurden).FirstOrDefault()))
+                    .ThenByDescending(run => run.CreatedAtUtc).ThenByDescending(run => run.Id);
+            }
+            else ordered = query.Sort == "oldest" ? mine.OrderBy(run => run.CreatedAtUtc).ThenBy(run => run.Id)
+                : mine.OrderByDescending(run => run.CreatedAtUtc).ThenByDescending(run => run.Id);
+            var rows = await ordered
                 .Skip((int)skip)
                 .Take(query.PageSize)
                 .Select(run => new
@@ -67,6 +107,7 @@ public sealed partial class RunRepository(AmrDbContext db, TimeProvider clock, I
                     run.CreatedAtUtc,
                     run.InitialProfile,
                     run.ModelVersion.ModelId,
+                    run.ModelVersion.AntibioticOrder,
                     Strategies = run.StrategyRuns.Select(strategy => new
                     {
                         strategy.Strategy,
@@ -88,7 +129,7 @@ public sealed partial class RunRepository(AmrDbContext db, TimeProvider clock, I
                 row.Strategies
                     .OrderBy(strategy => strategy.Strategy)
                     .Select(strategy => new StrategySummaryDto(strategy.Strategy, strategy.DisplayLabel, strategy.CumulativeResistanceBurden, strategy.FinalResistantCount, strategy.TerminationReason))
-                    .ToList())).ToList();
+                    .ToList()) { AntibioticOrder = row.AntibioticOrder }).ToList();
             return new PagedResultDto<RunSummaryDto>(items, query.Page, query.PageSize, total);
         }
         catch (Exception exception) when (IsDatabaseFailure(exception, cancellationToken))

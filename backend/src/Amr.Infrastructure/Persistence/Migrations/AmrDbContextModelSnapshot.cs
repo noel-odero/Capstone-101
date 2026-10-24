@@ -289,6 +289,50 @@ namespace Amr.Infrastructure.Persistence.Migrations
                         });
                 });
 
+            modelBuilder.Entity("Amr.Infrastructure.Persistence.Entities.ResearchCollectionRecord", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.PrimitiveCollection<Guid[]>("AnalysisIds")
+                        .IsRequired()
+                        .HasColumnType("uuid[]")
+                        .HasColumnName("analysis_ids");
+
+                    b.Property<DateTimeOffset>("CreatedAtUtc")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at_utc");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasMaxLength(80)
+                        .HasColumnType("character varying(80)")
+                        .HasColumnName("name");
+
+                    b.Property<string>("OwnerId")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("character varying(200)")
+                        .HasColumnName("owner_id");
+
+                    b.Property<string>("Question")
+                        .HasMaxLength(500)
+                        .HasColumnType("character varying(500)")
+                        .HasColumnName("question");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("OwnerId", "CreatedAtUtc");
+
+                    b.ToTable("analysis_collections", null, t =>
+                        {
+                            t.HasCheckConstraint("ck_analysis_collections_name", "length(btrim(name)) > 0");
+
+                            t.HasCheckConstraint("ck_analysis_collections_size", "cardinality(analysis_ids) BETWEEN 2 AND 50");
+                        });
+                });
+
             modelBuilder.Entity("Amr.Infrastructure.Persistence.Entities.Sample", b =>
                 {
                     b.Property<Guid>("Id")

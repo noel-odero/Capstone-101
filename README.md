@@ -1,14 +1,18 @@
-# StewardLab / AMR Decision Support
+# AMR Decision Support
 
-A research workbench for exploring antibiotic resistance in a simulated E. coli environment. Save labeled starting profiles, compare frozen PPO and DQN policies with a random susceptible-action baseline, inspect collateral sensitivity and cross-resistance transitions, and revisit saved results.
+An AI-powered antibiotic strategy evaluation platform. Save labeled initial resistance profiles, compare frozen PPO and DQN policies with a random susceptible-action baseline, inspect collateral sensitivity and cross-resistance transitions, and revisit saved analyses.
 
-Research and simulation only. This platform is not validated for clinical prescribing or patient-specific treatment decisions. The 3D bacteria clearance animation is illustrative; the model tracks resistance, not bacterial load.
+Research prototype. Findings are model-derived and are not clinical treatment recommendations. The evaluation engine uses a computational simulation of binary E. coli resistance; it is not validated for clinical prescribing or patient-specific treatment decisions. The 3D bacteria clearance animation is illustrative; the model tracks resistance, not bacterial load.
+
+Start a **New Analysis**, review the initial resistance profile, then select **Run Analysis** to open the 3D resistance view with its charts and metrics. **Strategy Evaluation** reopens that view; **Analysis Results** and **Analysis History** remain separate pages. Existing API routes, resource kinds and scientific code retain their technical names for compatibility; the updated wording does not change the models, evidence or evaluation methodology.
+
+**Analysis History** remains the archive of completed evaluations and sample status. The separate **Analysis Insights** page opens recent saved evidence and lets you choose 2–50 records across pages. It provides outcome lines, a starting-resistance scatter plot, coverage rings, failure-case filters and an inspector for sequences, trajectories and transition support. Save selected records with a research question in account-owned collections, or export an HTML research report, metric CSV or complete JSON evidence bundle. Insights reads stored results; it does not rerun policies or infer overall algorithm superiority from user-selected records.
 
 ## Structure
 
 | Folder | Purpose |
 | --- | --- |
-| `frontend/` | React workbench, authentication, samples, simulation and results |
+| `frontend/` | Research workspace, authentication, samples, strategy evaluation and analysis results |
 | `backend/` | ASP.NET Core API, account ownership and PostgreSQL persistence |
 | `service/` | Internal Python inference service and frozen-model validation |
 | `simulation/` | Resistance state, actions, transitions and reward |

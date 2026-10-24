@@ -46,7 +46,7 @@ export function SamplesPage() {
     <ContentContainer>
       <PageHeader
         title="Samples"
-        subtitle="Record starting profiles now. Run and compare them when you’re ready."
+        subtitle="Record initial resistance profiles now. Evaluate strategies when you’re ready."
         action={<Link to="/app/history?category=pending">View sample history</Link>}
       />
       <div className={styles.layout}>
@@ -130,7 +130,7 @@ export function SamplesPage() {
                 aria-pressed={category === status}
                 onClick={() => setCategory(status)}
               >
-                {status === 'all' ? 'All' : status === 'pending' ? 'Not run' : 'Run'}{' '}
+                {status === 'all' ? 'All' : status === 'pending' ? 'Not analyzed' : 'Analyzed'}{' '}
                 <span>
                   {samples.data?.filter(
                     (sample) =>
