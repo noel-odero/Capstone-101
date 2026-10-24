@@ -1,0 +1,287 @@
+{
+  "as_of": "2026-10-24",
+  "repository_commit": "42fdd0ec968c5600abb71140e22c839a8101331a",
+  "scope": "Final report evidence snapshot; local verification is not clinical or cross-device validation.",
+  "source_files": {
+    "experiments/runs/public-data-v2/report.json": "a0b1c83777e86177017eaad584c600c011f86e4684dec8abd223562abb375457",
+    "experiments/results/public-data-v2-review-rerun/analysis.json": "4b2b76a36141582e6c4501c21c1655df50ebdc6f10a382d02bcadedf0f68dc07",
+    "artifacts/frozen/public-data-v2/selection.json": "d13bf9983718c02bd31fa113b0f011ad514fb46ba330f9be9b4bad10428c01eb",
+    "experiments/results/model-review/review.json": "41c200c5e49a7c34ad117ab2efc2bf28eb809565f1c30a464198e700093211c9"
+  },
+  "study": {
+    "protocol": {
+      "study_id": "dqn_ppo_baseline_public_data_v2",
+      "stage": "full",
+      "training_timesteps": 100096,
+      "training_seeds": [
+        1000,
+        2000,
+        3000,
+        4000,
+        5000,
+        6000,
+        7000,
+        8000,
+        9000,
+        10000,
+        11000,
+        12000,
+        13000,
+        14000,
+        15000,
+        16000,
+        17000,
+        18000,
+        19000,
+        20000
+      ],
+      "evaluation_seed_bases": [
+        100001,
+        200001,
+        300001,
+        400001,
+        500001
+      ],
+      "baseline_policy_seed_start": 900001,
+      "ppo_config": "experiments/ppo_baseline_config.json",
+      "dqn": {
+        "learning_rate": 0.001,
+        "buffer_size": 100000,
+        "learning_starts": 256,
+        "batch_size": 64,
+        "train_freq": 4,
+        "gradient_steps": 1,
+        "target_update_interval": 256,
+        "exploration_fraction": 0.3,
+        "exploration_initial_eps": 1.0,
+        "exploration_final_eps": 0.05,
+        "max_grad_norm": 10.0
+      },
+      "ppo_checkpoint_root": null,
+      "expected_interaction_data_sha256": "af62f389fe92b4ecddfbc1df6c967c5da9992ed928c09dd3a68673819f42591c"
+    },
+    "summary": {
+      "dqn": {
+        "resistance_burden": 2.8835044642857137,
+        "resistance_emergence_events": 0.523359375,
+        "remaining_susceptible_options": 4.881640625,
+        "antibiotic_exposure": 7.9375,
+        "unsupported_steps": 2.32578125,
+        "susceptible_action_rate": 1.0
+      },
+      "ppo": {
+        "resistance_burden": 2.8884709821428567,
+        "resistance_emergence_events": 0.50984375,
+        "remaining_susceptible_options": 4.88015625,
+        "antibiotic_exposure": 7.9375,
+        "unsupported_steps": 2.86328125,
+        "susceptible_action_rate": 1.0
+      },
+      "random_susceptible_baseline": {
+        "resistance_burden": 3.776785714285714,
+        "resistance_emergence_events": 1.1515625,
+        "remaining_susceptible_options": 3.7484375,
+        "antibiotic_exposure": 7.9375,
+        "unsupported_steps": 1.6265625,
+        "susceptible_action_rate": 1.0
+      }
+    },
+    "training_replicates": 20,
+    "checked_actions": 208280,
+    "paired_dqn_minus_ppo_burden": {
+      "interval": {
+        "mean": -0.00496651785714286,
+        "lower_bound": -0.02212045980496461,
+        "upper_bound": 0.01218742409067889,
+        "sample_count": 20,
+        "excluded_count": 0,
+        "confidence_level": 0.95,
+        "sample_standard_deviation": 0.036652593835820105,
+        "method": "student_t",
+        "limitations": [
+          "strong_sample_skew_t_approximation_may_be_unreliable"
+        ]
+      },
+      "negative_count": 10,
+      "tie_count": 0,
+      "positive_count": 10,
+      "per_seed": {
+        "1000": 0.011830357142857295,
+        "2000": -0.010044642857142794,
+        "3000": -0.015625,
+        "4000": 0.020312500000000178,
+        "5000": -0.019642857142857295,
+        "6000": 0.0006696428571428825,
+        "7000": 0.02187500000000009,
+        "8000": -0.10915178571428585,
+        "9000": -0.025892857142857384,
+        "10000": -0.0020089285714286476,
+        "11000": 0.003794642857142705,
+        "12000": -0.013169642857142616,
+        "13000": 0.042187500000000266,
+        "14000": 0.004687500000000178,
+        "15000": -0.024107142857142883,
+        "16000": -0.0058035714285713524,
+        "17000": -0.07522321428571432,
+        "18000": 0.020535714285714324,
+        "19000": 0.04598214285714253,
+        "20000": 0.0294642857142855
+      }
+    }
+  },
+  "frozen_selection": {
+    "study_id": "dqn_ppo_baseline_public_data_v2",
+    "study_report_sha256": "a0b1c83777e86177017eaad584c600c011f86e4684dec8abd223562abb375457",
+    "selection_rule": "Lowest validation mean cumulative resistance burden; exact ties: fewer emergence events, more susceptible options, lower training seed.",
+    "checkpoint_set": "final fully trained checkpoint from every training replicate",
+    "validation_seed_bases": [
+      1100001,
+      1200001,
+      1300001,
+      1400001,
+      1500001
+    ],
+    "validation_policy_seed_start": 1900001,
+    "confirmation_seed_bases": [
+      2100001,
+      2200001,
+      2300001,
+      2400001,
+      2500001
+    ],
+    "confirmation_policy_seed_start": 2900001,
+    "interaction_data_sha256": "af62f389fe92b4ecddfbc1df6c967c5da9992ed928c09dd3a68673819f42591c",
+    "training_steps": 100096,
+    "selected": {
+      "ppo": {
+        "strategy": "ppo",
+        "training_seed": 19000,
+        "checkpoint_sha256": "1747b68cb572cc320c7c53ae105dfa9dd6827f689839b35c4f2bcf9520384001",
+        "validation": {
+          "episodes": 640,
+          "resistance_burden": 2.902008928571428,
+          "resistance_emergence_events": 0.6125,
+          "remaining_susceptible_options": 4.8953125,
+          "antibiotic_exposure": 7.9375,
+          "unsupported_steps": 2.9453125,
+          "susceptible_action_rate": 1.0
+        }
+      },
+      "dqn": {
+        "strategy": "dqn",
+        "training_seed": 15000,
+        "checkpoint_sha256": "3afac9221dd29662708ba37f9a32326f389feb15efc31151706f738c0fd8c72d",
+        "validation": {
+          "episodes": 640,
+          "resistance_burden": 2.888616071428571,
+          "resistance_emergence_events": 0.5796875,
+          "remaining_susceptible_options": 4.9109375,
+          "antibiotic_exposure": 7.9375,
+          "unsupported_steps": 2.54375,
+          "susceptible_action_rate": 1.0
+        }
+      }
+    },
+    "confirmation": {
+      "ppo": {
+        "episodes": 640,
+        "resistance_burden": 2.876116071428571,
+        "resistance_emergence_events": 0.584375,
+        "remaining_susceptible_options": 4.9109375,
+        "antibiotic_exposure": 7.9375,
+        "unsupported_steps": 3,
+        "susceptible_action_rate": 1.0
+      },
+      "dqn": {
+        "episodes": 640,
+        "resistance_burden": 2.8734374999999996,
+        "resistance_emergence_events": 0.540625,
+        "remaining_susceptible_options": 4.9296875,
+        "antibiotic_exposure": 7.9375,
+        "unsupported_steps": 2.5421875,
+        "susceptible_action_rate": 1.0
+      },
+      "random_susceptible_baseline": {
+        "episodes": 640,
+        "resistance_burden": 3.7991071428571423,
+        "resistance_emergence_events": 1.1328125,
+        "remaining_susceptible_options": 3.74375,
+        "antibiotic_exposure": 7.9375,
+        "unsupported_steps": 1.759375,
+        "susceptible_action_rate": 1.0
+      }
+    },
+    "audited_actions": 208280,
+    "scope": "Best measured validation score among available final checkpoints; confirmation is not used for reselection. Profiles are known; stochastic draws are held out. No clinical or general superiority claim.",
+    "baseline": "Random susceptible-action code and recorded RNG seeds; no learned checkpoint."
+  },
+  "software_verification": {
+    "python_passed": 499,
+    "frontend_passed": 124,
+    "dotnet_unit_passed": 281,
+    "dotnet_integration_passed": 274,
+    "live_integration_passed": 10,
+    "total_passed": 1188,
+    "build": "passed; .NET warnings treated as errors",
+    "frontend_lint": "passed",
+    "frozen_checksums": "13 of 13 verified",
+    "processed_data": "deterministic integration check passed",
+    "test_log_scope": "Latest completed checks observed in the development session; not a hosted CI run or fresh-machine certification."
+  },
+  "local_service_probe": {
+    "endpoint": "POST /internal/compare",
+    "persistence": "none",
+    "environment_seed": 100001,
+    "policy_seed": 900001,
+    "hardware": "AMD Ryzen 5 PRO 8540U; approximately 32 GB installed RAM",
+    "os": "Windows 11 Enterprise 10.0.26200",
+    "cases": [
+      {
+        "profile": "0000000",
+        "status": 200,
+        "requests": 3,
+        "median_ms": 30.18
+      },
+      {
+        "profile": "1000001",
+        "status": 200,
+        "requests": 3,
+        "median_ms": 28.1
+      },
+      {
+        "profile": "1111110",
+        "status": 200,
+        "requests": 3,
+        "median_ms": 29.64
+      },
+      {
+        "profile": "1111111",
+        "status": 200,
+        "requests": 3,
+        "median_ms": 15.85,
+        "actions_per_strategy": 0
+      },
+      {
+        "profile": "000000",
+        "status": 422,
+        "requests": 1,
+        "error": "request_validation_error"
+      },
+      {
+        "profile": "0020000",
+        "status": 422,
+        "requests": 1,
+        "error": "invalid_context"
+      }
+    ],
+    "limitations": "Warm local Python-service requests only; excludes public API persistence, frontend rendering, cold starts, load and browser/GPU performance."
+  },
+  "not_completed": [
+    "Structured practitioner usability validation",
+    "Cross-browser/version and cross-device performance matrix",
+    "Measured 3D FPS or production browser memory",
+    "Verified public deployment",
+    "Prior treatment-history input",
+    "Regional prevalence-calibrated starting distributions"
+  ]
+}
