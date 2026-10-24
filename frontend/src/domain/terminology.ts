@@ -12,7 +12,7 @@ export const PROTOTYPE_STATEMENT =
   'Research prototype. Findings are model-derived and are not clinical treatment recommendations.'
 
 export const PAGE_TITLES = {
-  workspace: 'Research Workspace',
+  workspace: 'Home',
   evaluation: 'Strategy Evaluation',
   results: 'Analysis Results',
   trajectory: 'Resistance Trajectory',
