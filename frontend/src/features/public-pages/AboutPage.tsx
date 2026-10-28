@@ -1,118 +1,51 @@
-import { FiArchive, FiLayers, FiActivity, FiGithub } from 'react-icons/fi'
 import { Link } from 'react-router'
 import { REPOSITORY_URL } from '@/config/navigation'
-import { PROTOTYPE_STATEMENT } from '@/domain/terminology'
+import { APP_NAME, PROTOTYPE_STATEMENT } from '@/domain/terminology'
 import { PublicPage } from './PublicPage'
 import styles from './public-pages.module.css'
 
 export function AboutPage() {
   return (
     <PublicPage
-      title="Better questions. Clearer evidence."
-      eyebrow="About StewardLab"
-      lede="A research workspace for exploring how antibiotic choices shape modeled E. coli resistance."
-      visual={
-        <figure className={styles.stateVisual}>
-          <div className={styles.visualLabel}>
-            <span>The model at a glance</span>
-            <FiLayers aria-hidden="true" />
-          </div>
-          <div className={styles.stateGrid} aria-hidden="true">
-            {Array.from({ length: 128 }, (_, state) => (
-              <span
-                key={state}
-                style={{ opacity: 0.2 + state.toString(2).replaceAll('0', '').length / 9 }}
-              />
-            ))}
-          </div>
-          <div className={styles.modelNumbers}>
-            <div>
-              <strong>128</strong>
-              <span>possible states</span>
-            </div>
-            <div>
-              <strong>7</strong>
-              <span>antibiotics</span>
-            </div>
-            <div>
-              <strong>3</strong>
-              <span>strategies</span>
-            </div>
-          </div>
-          <figcaption>
-            Shade indicates resistant-drug count. These are model states, not measured isolates.
-          </figcaption>
-        </figure>
-      }
+      title="About"
+      lede="A research platform for model-based antibiotic strategy evaluation."
     >
-      <section className={styles.question}>
-        <p className={styles.eyebrow}>The research question</p>
-        <h2>Can a learned strategy preserve more susceptible options?</h2>
+      <section>
+        <h2>About the project</h2>
         <p>
-          Compare frozen PPO and DQN policies with a random susceptible-action baseline, under the
-          same starting conditions.
+          {APP_NAME}, also known as StewardLab, explores how antibiotic-selection strategies affect
+          resistance in a defined E. coli model. It is built for researchers and students
+          investigating reinforcement learning for antimicrobial stewardship.
         </p>
       </section>
-      <section aria-labelledby="about-workflow">
-        <div className={styles.sectionHeading}>
-          <h2 id="about-workflow">From a profile to an investigation</h2>
-          <span>Built for researchers and students</span>
-        </div>
-        <div className={styles.threeColumns}>
-          {[
-            {
-              icon: FiArchive,
-              title: 'Record',
-              text: 'Keep labeled sample profiles together and track what needs evaluation.',
-            },
-            {
-              icon: FiActivity,
-              title: 'Compare',
-              text: 'Inspect strategy outcomes, resistance changes, and transition evidence.',
-            },
-            {
-              icon: FiLayers,
-              title: 'Investigate',
-              text: 'Revisit saved analyses and find questions worth exploring next.',
-            },
-          ].map(({ icon: Icon, title, text }, index) => (
-            <div className={styles.feature} key={title}>
-              <div className={styles.featureTop}>
-                <Icon aria-hidden="true" />
-                <span>0{index + 1}</span>
-              </div>
-              <h3>{title}</h3>
-              <p>{text}</p>
-            </div>
-          ))}
-        </div>
+      <section>
+        <h2>What you can do</h2>
+        <ul>
+          <li>Record and organize labeled sample resistance profiles.</li>
+          <li>Compare PPO, DQN, and a random susceptible-action baseline.</li>
+          <li>Inspect resistance changes and the evidence behind modeled transitions.</li>
+          <li>Revisit saved analyses and investigate patterns across evaluations.</li>
+        </ul>
       </section>
-      <div className={styles.bottomBar}>
-        <div>
-          <strong>Explore with the assumptions in view.</strong>
-          <p>{PROTOTYPE_STATEMENT}</p>
-        </div>
-        <Link className={styles.actionLink} to="/methodology">
-          See the methodology
-        </Link>
-      </div>
-      <details className={styles.details}>
-        <summary>Under the hood</summary>
-        <div className={styles.detailsBody}>
-          <p>
-            React interface · ASP.NET Core API · PostgreSQL storage · Python evaluation engine. PPO
-            and DQN are trained offline and frozen during analysis.
-          </p>
-          <a
-            className={styles.inlineLink}
-            href={REPOSITORY_URL}
-            target="_blank"
-            rel="noreferrer noopener"
-          >
-            <FiGithub aria-hidden="true" /> Explore the source
+      <section>
+        <h2>Research scope</h2>
+        <p>
+          The model represents binary resistance to seven antibiotics. PPO and DQN are trained
+          offline and remain frozen during evaluation.
+        </p>
+        <p className={styles.note}>{PROTOTYPE_STATEMENT}</p>
+      </section>
+      <section>
+        <h2>Further information</h2>
+        <p>
+          Read the <Link to="/methodology">methodology</Link> and{' '}
+          <Link to="/limitations">limitations</Link>, or explore the{' '}
+          <a href={REPOSITORY_URL} target="_blank" rel="noreferrer noopener">
+            source code on GitHub
           </a>
-        </div>
-      </details>
+          .
+        </p>
+      </section>
     </PublicPage>
   )
 }
