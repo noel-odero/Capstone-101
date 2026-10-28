@@ -178,6 +178,34 @@ Test a dump in a separate database before relying on it. Restoring over the live
 
 ## 8. Update the application
 
+### Automatic updates
+
+The VM can poll this public repository every two minutes and deploy only the latest `main` commit after its **push** CI run succeeds. Pull-request runs, failed/queued runs, and older successful commits cannot trigger a deployment. CI includes frontend build/lint/tests, .NET, Python, and live integration checks. This uses outbound HTTPS, without a GitHub token, an SSH deployment key, or changes to the SSH firewall rule.
+
+After pushing these scripts, install once on the VM:
+
+```bash
+cd /opt/stewardlab
+git pull --ff-only
+sudo bash deploy/install-auto-update.sh
+```
+
+The first successful deployment establishes the saved release SHA. Later changes limited to the frontend, Caddy, or documentation rebuild only `web`. Other updates build the stack, back up PostgreSQL, pause the API, apply migrations, and restart the services. Healthy container checks and the public HTTPS readiness endpoint must pass before a release is recorded. Persistent volumes and the server's private `.env` remain in place.
+
+```bash
+sudo journalctl -u stewardlab-autodeploy.service -n 60 --no-pager
+sudo /usr/local/sbin/stewardlab-autodeploy --check
+sudo systemctl disable --now stewardlab-autodeploy.timer
+```
+
+The last command pauses future automatic updates; it does not stop an update already running. To resume, use `sudo systemctl enable --now stewardlab-autodeploy.timer`. If a deployment fails, that commit is blocked from automatic retries. Inspect the logs and resolve the failure before removing `/var/lib/stewardlab-deploy/failed` and starting the service again. Migration failures need manual review; images cannot automatically reverse schema changes. Re-run the installer after changing the updater script or timer configuration.
+
+The polling endpoint is public and uses at most about 30 unauthenticated API requests per hour while waiting for CI ([GitHub allows 60 per originating IP](https://docs.github.com/en/rest/using-the-rest-api/rate-limits-for-the-rest-api)). Network errors or rate limits stop the check without deploying unverified code. Making the repository private requires a different authenticated setup.
+
+### Manual updates
+
+Pause the automatic-update timer before a manual deployment to avoid competing updates, and resume it afterwards.
+
 ```bash
 cd /opt/stewardlab
 sudo bash deploy/backup.sh
