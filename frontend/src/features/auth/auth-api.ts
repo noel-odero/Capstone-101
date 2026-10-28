@@ -2,6 +2,9 @@ import { requestJson } from '@/api/http-client'
 import { z } from 'zod'
 import {
   sessionSchema,
+  verificationSchema,
+  signInResultSchema,
+  type EmailVerification,
   type Registration,
   type Session,
   type SignInCredentials,
@@ -26,22 +29,36 @@ export function getSession(signal?: AbortSignal): Promise<Session> {
 }
 
 /** Never retried automatically: a wrong password counts toward the account lockout. */
-export function signIn(credentials: SignInCredentials): Promise<Session> {
-  return requestJson('/auth/sign-in', sessionSchema, {
+export function signIn(credentials: SignInCredentials): Promise<Session | EmailVerification> {
+  return requestJson('/auth/sign-in', signInResultSchema, {
     method: 'POST',
     body: { email: credentials.email, password: credentials.password },
   })
 }
 
-export function register(registration: Registration): Promise<Session> {
+export function register(registration: Registration): Promise<EmailVerification> {
   const name = registration.displayName?.trim()
-  return requestJson('/auth/register', sessionSchema, {
+  return requestJson('/auth/register', verificationSchema, {
     method: 'POST',
     body: {
       email: registration.email,
       password: registration.password,
       ...(name ? { displayName: name } : {}),
     },
+  })
+}
+
+export function verifyEmail(challengeToken: string, code: string): Promise<Session> {
+  return requestJson('/auth/verify-email', sessionSchema, {
+    method: 'POST',
+    body: { challengeToken, code },
+  })
+}
+
+export function resendVerification(challengeToken: string): Promise<EmailVerification> {
+  return requestJson('/auth/resend-verification', verificationSchema, {
+    method: 'POST',
+    body: { challengeToken },
   })
 }
 

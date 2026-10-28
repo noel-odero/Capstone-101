@@ -1,6 +1,6 @@
 import { z } from 'zod'
 
-/** `GET /api/v1/auth/session` and the answer to sign-in and registration: who the browser is, and the antiforgery token it must send with state-changing requests. */
+/** The server session and its identity-bound antiforgery token. */
 export const sessionSchema = z.object({
   isAuthenticated: z.boolean(),
   user: z
@@ -14,6 +14,17 @@ export const sessionSchema = z.object({
 
 export type Session = z.infer<typeof sessionSchema>
 export type SessionUser = NonNullable<Session['user']>
+
+export const verificationSchema = z.object({
+  verificationRequired: z.literal(true),
+  challengeToken: z.string().regex(/^[A-Za-z0-9_-]{43}$/),
+  email: z.string(),
+  expiresAtUtc: z.string().datetime({ offset: true }),
+  resendAvailableAtUtc: z.string().datetime({ offset: true }),
+})
+
+export type EmailVerification = z.infer<typeof verificationSchema>
+export const signInResultSchema = z.union([sessionSchema, verificationSchema])
 
 export const SESSION_QUERY_KEY = ['auth', 'session'] as const
 

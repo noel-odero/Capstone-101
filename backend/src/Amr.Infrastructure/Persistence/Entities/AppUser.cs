@@ -20,4 +20,6 @@ public sealed class AppUser
     public DateTimeOffset? LockedUntilUtc { get; set; }
 
     public DateTimeOffset CreatedAtUtc { get; set; }
+
+    public DateTimeOffset? EmailVerifiedAtUtc { get; set; }
 }

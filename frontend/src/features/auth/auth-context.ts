@@ -1,5 +1,11 @@
 import { createContext } from 'react'
-import type { AuthStatus, Registration, SessionUser, SignInCredentials } from './auth-types'
+import type {
+  AuthStatus,
+  EmailVerification,
+  Registration,
+  SessionUser,
+  SignInCredentials,
+} from './auth-types'
 
 export interface AuthContextValue {
   status: AuthStatus
@@ -10,8 +16,12 @@ export interface AuthContextValue {
   signedOutByUser: boolean
   /** Rejects with an `ApiError` when the credentials are wrong, the account is locked, or the server is unreachable. */
   signIn: (credentials: SignInCredentials) => Promise<void>
-  /** Creates the account and signs it in. Rejects with an `ApiError` (409 when the email is already registered). */
+  /** Requests an email code; registration does not start an authenticated session. */
   register: (registration: Registration) => Promise<void>
+  verification: EmailVerification | null
+  verifyEmail: (code: string) => Promise<void>
+  resendVerification: () => Promise<void>
+  cancelVerification: () => void
   signOut: () => Promise<void>
   signingOut: boolean
   retry: () => void

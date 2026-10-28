@@ -44,6 +44,10 @@ namespace Amr.Infrastructure.Persistence.Migrations
                         .HasColumnType("character varying(254)")
                         .HasColumnName("email");
 
+                    b.Property<DateTimeOffset?>("EmailVerifiedAtUtc")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("email_verified_at_utc");
+
                     b.Property<int>("FailedSignInCount")
                         .HasColumnType("integer")
                         .HasColumnName("failed_sign_in_count");
@@ -73,6 +77,77 @@ namespace Amr.Infrastructure.Persistence.Migrations
                     b.ToTable("users", null, t =>
                         {
                             t.HasCheckConstraint("ck_users_failed_sign_in_count", "failed_sign_in_count >= 0");
+                        });
+                });
+
+            modelBuilder.Entity("Amr.Infrastructure.Persistence.Entities.EmailVerification", b =>
+                {
+                    b.Property<string>("NormalizedEmail")
+                        .HasMaxLength(254)
+                        .HasColumnType("character varying(254)")
+                        .HasColumnName("normalized_email");
+
+                    b.Property<string>("CodeHash")
+                        .HasMaxLength(64)
+                        .HasColumnType("character varying(64)")
+                        .HasColumnName("code_hash");
+
+                    b.Property<string>("DisplayName")
+                        .IsRequired()
+                        .HasMaxLength(80)
+                        .HasColumnType("character varying(80)")
+                        .HasColumnName("display_name");
+
+                    b.Property<string>("Email")
+                        .IsRequired()
+                        .HasMaxLength(254)
+                        .HasColumnType("character varying(254)")
+                        .HasColumnName("email");
+
+                    b.Property<DateTimeOffset>("ExpiresAtUtc")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("expires_at_utc");
+
+                    b.Property<int>("FailedAttempts")
+                        .HasColumnType("integer")
+                        .HasColumnName("failed_attempts");
+
+                    b.Property<string>("PasswordHash")
+                        .HasMaxLength(256)
+                        .HasColumnType("character varying(256)")
+                        .HasColumnName("password_hash");
+
+                    b.Property<int>("SendCount")
+                        .HasColumnType("integer")
+                        .HasColumnName("send_count");
+
+                    b.Property<DateTimeOffset>("SendWindowStartedAtUtc")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("send_window_started_at_utc");
+
+                    b.Property<DateTimeOffset>("SentAtUtc")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("sent_at_utc");
+
+                    b.Property<string>("TicketHash")
+                        .HasMaxLength(64)
+                        .HasColumnType("character varying(64)")
+                        .HasColumnName("ticket_hash");
+
+                    b.Property<Guid?>("UserId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("user_id");
+
+                    b.HasKey("NormalizedEmail");
+
+                    b.HasIndex("TicketHash")
+                        .IsUnique();
+
+                    b.ToTable("email_verifications", null, t =>
+                        {
+                            t.HasCheckConstraint("ck_email_verifications_attempts", "failed_attempts BETWEEN 0 AND 5");
+
+                            t.HasCheckConstraint("ck_email_verifications_sends", "send_count BETWEEN 1 AND 5");
                         });
                 });
 

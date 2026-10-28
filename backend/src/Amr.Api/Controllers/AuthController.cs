@@ -14,7 +14,7 @@ namespace Amr.Api.Controllers;
 /// <summary>Email-and-password accounts and the cookie session. These routes are public on purpose; everything else requires a signed-in user.</summary>
 [Route(ApiRoutes.Auth)]
 [AllowAnonymous]
-public sealed class AuthController(AccountService accounts, IAntiforgery antiforgery) : ApiControllerBase
+public sealed class AuthController(AccountService accounts, EmailVerificationService verification, IAntiforgery antiforgery) : ApiControllerBase
 {
     [HttpGet("session")]
     [ProducesResponseType<SessionDto>(StatusCodes.Status200OK)]
@@ -26,23 +26,30 @@ public sealed class AuthController(AccountService accounts, IAntiforgery antifor
 
     [HttpPost("register")]
     [EnableRateLimiting(AmrAuthentication.RateLimitPolicy)]
-    [ProducesResponseType<SessionDto>(StatusCodes.Status201Created)]
-    [ProducesResponseType<ProblemDetails>(StatusCodes.Status409Conflict, AmrProblemDetails.ContentType)]
-    public async Task<IActionResult> Register(RegisterRequest request, CancellationToken cancellationToken)
-    {
-        var outcome = await accounts.RegisterAsync(request.Email!, request.Password!, request.DisplayName, cancellationToken);
-        if (outcome.User is null)
-        {
-            return Problem(StatusCodes.Status409Conflict, ErrorCodes.EmailAlreadyRegistered, "An account with this email already exists. Sign in instead.");
-        }
+    [ProducesResponseType<VerificationRequiredDto>(StatusCodes.Status202Accepted)]
+    public Task<IActionResult> Register(RegisterRequest request, CancellationToken cancellationToken) =>
+        BeginVerificationAsync(() => verification.RegisterAsync(request, cancellationToken));
 
+    [HttpPost("verify-email")]
+    [EnableRateLimiting(AmrAuthentication.RateLimitPolicy)]
+    [ProducesResponseType<SessionDto>(StatusCodes.Status200OK)]
+    public async Task<IActionResult> VerifyEmail(VerifyEmailRequest request, CancellationToken cancellationToken)
+    {
         Response.Headers.CacheControl = "no-store";
-        return StatusCode(StatusCodes.Status201Created, await StartSessionAsync(outcome.User));
+        var user = await verification.VerifyAsync(request.ChallengeToken!, request.Code!, cancellationToken);
+        return Ok(await StartSessionAsync(user));
     }
+
+    [HttpPost("resend-verification")]
+    [EnableRateLimiting(AmrAuthentication.RateLimitPolicy)]
+    [ProducesResponseType<VerificationRequiredDto>(StatusCodes.Status202Accepted)]
+    public Task<IActionResult> ResendVerification(ResendVerificationRequest request, CancellationToken cancellationToken) =>
+        BeginVerificationAsync(() => verification.ResendAsync(request.ChallengeToken!, cancellationToken));
 
     [HttpPost("sign-in")]
     [EnableRateLimiting(AmrAuthentication.RateLimitPolicy)]
     [ProducesResponseType<SessionDto>(StatusCodes.Status200OK)]
+    [ProducesResponseType<VerificationRequiredDto>(StatusCodes.Status202Accepted)]
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status401Unauthorized, AmrProblemDetails.ContentType)]
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status429TooManyRequests, AmrProblemDetails.ContentType)]
     public async Task<IActionResult> SignIn(SignInRequest request, CancellationToken cancellationToken)
@@ -60,6 +67,11 @@ public sealed class AuthController(AccountService accounts, IAntiforgery antifor
         if (outcome.User is null)
         {
             return Problem(StatusCodes.Status401Unauthorized, ErrorCodes.InvalidCredentials, "The email or password is incorrect.");
+        }
+
+        if (outcome.Status == AccountStatus.EmailUnverified)
+        {
+            return await BeginVerificationAsync(() => verification.ForExistingAccountAsync(outcome.User, cancellationToken));
         }
 
         return Ok(await StartSessionAsync(outcome.User));
@@ -80,6 +92,20 @@ public sealed class AuthController(AccountService accounts, IAntiforgery antifor
         await HttpContext.SignInAsync(AmrAuthentication.CookieScheme, principal);
         HttpContext.User = principal; // so the CSRF token issued below is bound to the new identity
         return BuildSession(principal);
+    }
+
+    private async Task<IActionResult> BeginVerificationAsync(Func<Task<VerificationRequiredDto>> begin)
+    {
+        Response.Headers.CacheControl = "no-store";
+        try
+        {
+            return Accepted(await begin());
+        }
+        catch (AmrException exception) when (exception.Code == ErrorCodes.VerificationRateLimited)
+        {
+            Response.Headers.RetryAfter = "60";
+            return Problem(StatusCodes.Status429TooManyRequests, exception.Code, exception.Message);
+        }
     }
 
     private SessionDto BuildSession(ClaimsPrincipal principal)

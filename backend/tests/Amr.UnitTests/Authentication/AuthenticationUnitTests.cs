@@ -41,7 +41,7 @@ public class AuthenticationUnitTests
                 return Task.FromResult<UserAccount?>(null);
             }
 
-            var user = new UserAccount(Guid.NewGuid(), email, displayName, passwordHash, null);
+            var user = new UserAccount(Guid.NewGuid(), email, displayName, passwordHash, null, Clock!.Now);
             ByEmail[normalizedEmail] = user;
             return Task.FromResult<UserAccount?>(user);
         }
@@ -94,37 +94,14 @@ public class AuthenticationUnitTests
     public void Emails_are_matched_trimmed_and_case_insensitively(string input, string expected) =>
         Assert.Equal(expected, AccountService.NormalizeEmail(input));
 
-    [Fact]
-    public async Task Registering_keeps_the_email_as_typed_and_defaults_the_name_to_its_local_part()
-    {
-        var (service, accounts, _) = CreateService();
-
-        var outcome = await service.RegisterAsync(" Ada.Lovelace@Example.org ", "a long enough password", null, CancellationToken.None);
-
-        Assert.Equal(AccountStatus.Succeeded, outcome.Status);
-        Assert.Equal("Ada.Lovelace@Example.org", outcome.User!.Email);
-        Assert.Equal("Ada.Lovelace", outcome.User.DisplayName);
-        Assert.NotEqual("a long enough password", outcome.User.PasswordHash);
-        Assert.Contains("ada.lovelace@example.org", accounts.ByEmail.Keys);
-    }
-
-    [Fact]
-    public async Task Registering_the_same_email_twice_is_refused_whatever_its_case()
-    {
-        var (service, _, _) = CreateService();
-        await service.RegisterAsync("ada@example.org", "a long enough password", "Ada", CancellationToken.None);
-
-        var again = await service.RegisterAsync("ADA@example.org", "another long password", "Impostor", CancellationToken.None);
-
-        Assert.Equal(AccountStatus.EmailTaken, again.Status);
-        Assert.Null(again.User);
-    }
+    private static Task<UserAccount?> AddAccountAsync(InMemoryAccounts accounts) =>
+        accounts.CreateAsync("ada@example.org", "ada@example.org", "Ada", new PasswordService().Hash("a long enough password"), CancellationToken.None);
 
     [Fact]
     public async Task Sign_in_needs_the_right_password_and_gives_the_same_answer_for_a_wrong_password_and_an_unknown_email()
     {
-        var (service, _, _) = CreateService();
-        await service.RegisterAsync("ada@example.org", "a long enough password", "Ada", CancellationToken.None);
+        var (service, accounts, _) = CreateService();
+        await AddAccountAsync(accounts);
 
         var ok = await service.SignInAsync("Ada@example.org", "a long enough password", CancellationToken.None);
         var wrongPassword = await service.SignInAsync("ada@example.org", "not the password!", CancellationToken.None);
@@ -141,8 +118,8 @@ public class AuthenticationUnitTests
     [Fact]
     public async Task Repeated_wrong_passwords_lock_the_account_even_against_the_right_password_until_the_lockout_ends()
     {
-        var (service, _, clock) = CreateService(new AuthOptions { MaxFailedSignIns = 3, LockoutMinutes = 10 });
-        await service.RegisterAsync("ada@example.org", "a long enough password", "Ada", CancellationToken.None);
+        var (service, accounts, clock) = CreateService(new AuthOptions { MaxFailedSignIns = 3, LockoutMinutes = 10 });
+        await AddAccountAsync(accounts);
 
         for (var attempt = 0; attempt < 3; attempt++)
         {
@@ -160,8 +137,8 @@ public class AuthenticationUnitTests
     [Fact]
     public async Task A_successful_sign_in_resets_the_failure_count()
     {
-        var (service, _, _) = CreateService(new AuthOptions { MaxFailedSignIns = 3 });
-        await service.RegisterAsync("ada@example.org", "a long enough password", "Ada", CancellationToken.None);
+        var (service, accounts, _) = CreateService(new AuthOptions { MaxFailedSignIns = 3 });
+        await AddAccountAsync(accounts);
 
         for (var round = 0; round < 3; round++)
         {
@@ -200,9 +177,9 @@ public class AuthenticationUnitTests
         Assert.False(new System.ComponentModel.DataAnnotations.RegularExpressionAttribute(RegisterRequest.EmailPattern).IsValid(email));
 
     [Fact]
-    public void The_session_principal_carries_only_the_id_name_and_email()
+    public void The_session_principal_contains_identity_and_verification_but_no_credentials()
     {
-        var user = new UserAccount(Guid.Parse("0f8fad5b-d9cb-469f-a165-70867728950e"), "ada@example.org", "Ada", "hash-must-not-leak", null);
+        var user = new UserAccount(Guid.Parse("0f8fad5b-d9cb-469f-a165-70867728950e"), "ada@example.org", "Ada", "hash-must-not-leak", null, DateTimeOffset.UtcNow);
 
         var principal = AmrAuthentication.CreatePrincipal(user);
 
@@ -210,7 +187,29 @@ public class AuthenticationUnitTests
         Assert.Equal("0f8fad5b-d9cb-469f-a165-70867728950e", principal.FindFirstValue(ClaimTypes.NameIdentifier));
         Assert.Equal("Ada", principal.FindFirstValue(ClaimTypes.Name));
         Assert.Equal("ada@example.org", principal.FindFirstValue(ClaimTypes.Email));
+        Assert.True(principal.HasClaim(AmrAuthentication.VerifiedEmailClaim, "true"));
         Assert.DoesNotContain(principal.Claims, claim => claim.Value.Contains("hash-must-not-leak", StringComparison.Ordinal));
+    }
+
+    [Fact]
+    public async Task An_unverified_account_with_the_right_password_requires_verification_and_cannot_get_a_session()
+    {
+        var (service, accounts, _) = CreateService();
+        var user = (await AddAccountAsync(accounts))! with { EmailVerifiedAtUtc = null };
+        accounts.ByEmail[user.Email] = user;
+
+        Assert.Equal(AccountStatus.EmailUnverified, (await service.SignInAsync(user.Email, "a long enough password", CancellationToken.None)).Status);
+        Assert.Throws<InvalidOperationException>(() => AmrAuthentication.CreatePrincipal(user));
+    }
+
+    [Fact]
+    public void Missing_email_configuration_fails_closed()
+    {
+        var sender = new AzureVerificationEmailSender(Microsoft.Extensions.Options.Options.Create(new VerificationEmailOptions()),
+            Microsoft.Extensions.Logging.Abstractions.NullLogger<AzureVerificationEmailSender>.Instance);
+        var exception = Assert.Throws<Amr.Application.Errors.AmrException>(sender.EnsureConfigured);
+        Assert.Equal(Amr.Application.Errors.ErrorCodes.VerificationUnavailable, exception.Code);
+        Assert.Equal(Amr.Application.Errors.ErrorCategory.DependencyUnavailable, exception.Category);
     }
 
     [Fact]

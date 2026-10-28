@@ -45,7 +45,7 @@ public class MigrationTests
         var applied = (await context.Database.GetAppliedMigrationsAsync()).ToList();
         await context.Database.MigrateAsync();
 
-        Assert.Equal(6, applied.Count);
+        Assert.Equal(context.Database.GetMigrations().Count(), applied.Count);
         Assert.EndsWith("_InitialCreate", applied[0], StringComparison.Ordinal);
         Assert.EndsWith("_AddRunOwner", applied[1], StringComparison.Ordinal);
         Assert.EndsWith("_AddUsers", applied[2], StringComparison.Ordinal);
@@ -53,7 +53,7 @@ public class MigrationTests
         Assert.EndsWith("_AddDqnStrategy", applied[4], StringComparison.Ordinal);
         Assert.EndsWith("_AddAnalysisCollections", applied[5], StringComparison.Ordinal);
         Assert.Equal(applied, (await context.Database.GetAppliedMigrationsAsync()).ToList());
-        Assert.Equal(new[] { "__EFMigrationsHistory", "analysis_collections", "experiment_runs", "model_versions", "samples", "step_traces", "strategy_runs", "users" }, await TablesAsync(temp.ConnectionString));
+        Assert.Equal(new[] { "__EFMigrationsHistory", "analysis_collections", "email_verifications", "experiment_runs", "model_versions", "samples", "step_traces", "strategy_runs", "users" }, await TablesAsync(temp.ConnectionString));
         Assert.Empty(await context.Database.GetPendingMigrationsAsync());
         Assert.False(context.Database.HasPendingModelChanges());
     }

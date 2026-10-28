@@ -51,12 +51,12 @@ public class ControllerArchitectureTests
     }
 
     [Fact]
-    public void The_auth_controller_depends_only_on_the_account_service_and_antiforgery()
+    public void The_auth_controller_depends_only_on_authentication_services_and_antiforgery()
     {
         var constructor = Assert.Single(typeof(AuthController).GetConstructors());
 
         Assert.Equal(
-            [typeof(Amr.Api.Authentication.AccountService), typeof(Microsoft.AspNetCore.Antiforgery.IAntiforgery)],
+            [typeof(Amr.Api.Authentication.AccountService), typeof(Amr.Api.Authentication.EmailVerificationService), typeof(Microsoft.AspNetCore.Antiforgery.IAntiforgery)],
             constructor.GetParameters().Select(parameter => parameter.ParameterType));
     }
 

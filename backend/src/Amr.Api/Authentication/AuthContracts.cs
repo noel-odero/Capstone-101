@@ -42,3 +42,20 @@ public sealed record SessionUserDto(string DisplayName, string Email);
 
 /// <summary>The caller's session. The CSRF token is bound to the current identity, so it changes when someone signs in or out.</summary>
 public sealed record SessionDto(bool IsAuthenticated, SessionUserDto? User, string CsrfToken);
+
+public sealed record VerificationRequiredDto(bool VerificationRequired, string ChallengeToken, string Email,
+    DateTimeOffset ExpiresAtUtc, DateTimeOffset ResendAvailableAtUtc);
+
+public class ResendVerificationRequest
+{
+    [Required]
+    [RegularExpression(@"^[A-Za-z0-9_-]{43}$")]
+    public string? ChallengeToken { get; init; }
+}
+
+public sealed class VerifyEmailRequest : ResendVerificationRequest
+{
+    [Required]
+    [RegularExpression(@"^[0-9]{6}$", ErrorMessage = "Enter the six-digit code from your email.")]
+    public string? Code { get; init; }
+}

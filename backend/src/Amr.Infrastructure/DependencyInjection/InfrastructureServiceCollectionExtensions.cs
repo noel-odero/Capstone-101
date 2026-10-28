@@ -52,6 +52,7 @@ public static class InfrastructureServiceCollectionExtensions
         services.AddScoped<IAnalysisCollectionRepository, AnalysisCollectionRepository>();
         services.AddScoped<ISampleRepository, SampleRepository>();
         services.AddScoped<IUserAccounts, UserAccountStore>();
+        services.AddScoped<IEmailVerifications, EmailVerificationStore>();
         services.AddScoped<IDependencyHealthProbe, DatabaseHealthProbe>();
     }
 

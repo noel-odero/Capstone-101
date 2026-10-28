@@ -5,6 +5,7 @@
   </ItemGroup>
   <ItemGroup>
     <PackageReference Include="Asp.Versioning.Mvc" />
+    <PackageReference Include="Azure.Communication.Email" />
     <!-- Design-time only: lets `dotnet ef` use this project as the startup project. -->
     <PackageReference Include="Microsoft.EntityFrameworkCore.Design">
       <PrivateAssets>all</PrivateAssets>

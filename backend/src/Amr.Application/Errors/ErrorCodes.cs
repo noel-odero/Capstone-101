@@ -21,4 +21,8 @@ public static class ErrorCodes
     public const string InvalidCredentials = "invalid_credentials";
     public const string TooManyAttempts = "too_many_attempts";
     public const string EmailAlreadyRegistered = "email_already_registered";
+    public const string InvalidVerificationCode = "invalid_verification_code";
+    public const string VerificationCodeExpired = "verification_code_expired";
+    public const string VerificationRateLimited = "verification_rate_limited";
+    public const string VerificationUnavailable = "verification_unavailable";
 }

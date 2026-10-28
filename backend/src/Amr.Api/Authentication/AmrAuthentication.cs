@@ -4,6 +4,7 @@ using Amr.Api.Errors;
 using Amr.Application.Errors;
 using Amr.Application.Interfaces.Identity;
 using Microsoft.AspNetCore.Authentication.Cookies;
+using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.Extensions.Options;
 
@@ -13,6 +14,7 @@ public static class AmrAuthentication
 {
     public const string CookieScheme = CookieAuthenticationDefaults.AuthenticationScheme;
     public const string RateLimitPolicy = "auth-attempts";
+    public const string VerifiedEmailClaim = "amr.email_verified";
 
     /// <summary>
     /// Cookie sessions for email-and-password accounts. Every endpoint requires a signed-in user unless it opts out explicitly,
@@ -38,6 +40,14 @@ public static class AmrAuthentication
                 cookie.Cookie.SecurePolicy = securePolicy;
                 cookie.Cookie.SameSite = SameSiteMode.Lax;
                 cookie.SlidingExpiration = false;
+                cookie.Events.OnValidatePrincipal = async context =>
+                {
+                    if (!context.Principal!.HasClaim(VerifiedEmailClaim, "true"))
+                    {
+                        context.RejectPrincipal();
+                        await context.HttpContext.SignOutAsync(CookieScheme);
+                    }
+                };
                 cookie.Events.OnRedirectToLogin = context =>
                     WriteProblemAsync(context.HttpContext, StatusCodes.Status401Unauthorized, ErrorCodes.AuthenticationRequired, "Sign in to continue.");
                 cookie.Events.OnRedirectToAccessDenied = context =>
@@ -79,6 +89,9 @@ public static class AmrAuthentication
 
         services.AddSingleton<PasswordService>();
         services.AddScoped<AccountService>();
+        services.AddOptions<VerificationEmailOptions>().Bind(configuration.GetSection("VerificationEmail"));
+        services.AddScoped<IVerificationEmailSender, AzureVerificationEmailSender>();
+        services.AddScoped<EmailVerificationService>();
         services.AddHttpContextAccessor();
         services.AddScoped<ICurrentUser, HttpContextCurrentUser>();
         return services;
@@ -87,10 +100,15 @@ public static class AmrAuthentication
     /// <summary>The cookie carries the user id (the owner key for stored runs), the display name and the email; nothing else.</summary>
     public static ClaimsPrincipal CreatePrincipal(UserAccount user)
     {
+        if (user.EmailVerifiedAtUtc is null)
+        {
+            throw new InvalidOperationException("Email ownership must be verified before starting a session.");
+        }
         var identity = new ClaimsIdentity(CookieScheme, ClaimTypes.Name, ClaimTypes.Role);
         identity.AddClaim(new Claim(ClaimTypes.NameIdentifier, user.Id.ToString("D")));
         identity.AddClaim(new Claim(ClaimTypes.Name, user.DisplayName));
         identity.AddClaim(new Claim(ClaimTypes.Email, user.Email));
+        identity.AddClaim(new Claim(VerifiedEmailClaim, "true"));
         return new ClaimsPrincipal(identity);
     }
 

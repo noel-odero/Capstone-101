@@ -25,6 +25,7 @@ public sealed class AmrDbContext(DbContextOptions<AmrDbContext> options) : DbCon
     public DbSet<StepTrace> StepTraces => Set<StepTrace>();
 
     public DbSet<AppUser> Users => Set<AppUser>();
+    public DbSet<EmailVerification> EmailVerifications => Set<EmailVerification>();
     public DbSet<Sample> Samples => Set<Sample>();
     public DbSet<ResearchCollectionRecord> AnalysisCollections => Set<ResearchCollectionRecord>();
 
@@ -35,6 +36,22 @@ public sealed class AmrDbContext(DbContextOptions<AmrDbContext> options) : DbCon
         ConfigureStrategyRun(modelBuilder);
         ConfigureStepTrace(modelBuilder);
         ConfigureUser(modelBuilder);
+        modelBuilder.Entity<EmailVerification>(entity =>
+        {
+            entity.ToTable("email_verifications", table =>
+            {
+                table.HasCheckConstraint("ck_email_verifications_attempts", "failed_attempts BETWEEN 0 AND 5");
+                table.HasCheckConstraint("ck_email_verifications_sends", "send_count BETWEEN 1 AND 5");
+            });
+            entity.HasKey(value => value.NormalizedEmail);
+            entity.Property(value => value.NormalizedEmail).HasMaxLength(254);
+            entity.Property(value => value.Email).HasMaxLength(254);
+            entity.Property(value => value.DisplayName).HasMaxLength(80);
+            entity.Property(value => value.PasswordHash).HasMaxLength(256);
+            entity.Property(value => value.TicketHash).HasMaxLength(64);
+            entity.Property(value => value.CodeHash).HasMaxLength(64);
+            entity.HasIndex(value => value.TicketHash).IsUnique();
+        });
         modelBuilder.Entity<ResearchCollectionRecord>(entity =>
         {
             entity.ToTable("analysis_collections", table =>

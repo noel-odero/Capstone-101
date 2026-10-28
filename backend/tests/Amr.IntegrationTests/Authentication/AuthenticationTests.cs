@@ -182,6 +182,8 @@ public class AuthenticationTests(AmrApiFactory factory) : IClassFixture<AmrApiFa
     [InlineData("/api/v1/auth/register")]
     [InlineData("/api/v1/auth/sign-in")]
     [InlineData("/api/v1/auth/sign-out")]
+    [InlineData("/api/v1/auth/verify-email")]
+    [InlineData("/api/v1/auth/resend-verification")]
     public async Task Sign_in_register_and_sign_out_need_the_csrf_token_too(string path)
     {
         using var client = BrowserClient(factory);

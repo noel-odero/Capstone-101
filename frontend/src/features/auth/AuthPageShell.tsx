@@ -5,6 +5,7 @@ import { Card } from '@/components/ui/Card'
 import { LoadingState } from '@/components/ui/LoadingState'
 import { LogoMark } from '@/components/layout/Brand'
 import { AccountForm } from './AccountForm'
+import { EmailVerificationForm } from './EmailVerificationForm'
 import { safeReturnTo } from './auth-api'
 import type { AccountMode } from './auth-validation'
 import { useAuth } from './useAuth'
@@ -45,8 +46,17 @@ export function AuthPageShell({ mode }: { mode: AccountMode }) {
     <div className={styles['page']}>
       <Card className={styles['card']} aria-labelledby="account-title">
         <LogoMark size={44} />
-        <h1 id="account-title">{copy.title}</h1>
-        <p className="muted">{copy.lead}</p>
+        <h1 id="account-title">{auth.verification ? 'Verify your email' : copy.title}</h1>
+        <p className="muted">
+          {auth.verification ? (
+            <>
+              Check your inbox for a code at{' '}
+              <strong className={styles['emailAddress']}>{auth.verification.email}</strong>.
+            </>
+          ) : (
+            copy.lead
+          )}
+        </p>
 
         {expired ? (
           <p className={styles['notice']} role="status">
@@ -68,7 +78,21 @@ export function AuthPageShell({ mode }: { mode: AccountMode }) {
             </Button>
           </div>
         ) : null}
-        {auth.status === 'anonymous' ? <AccountForm mode={mode} switchTo={switchTo} /> : null}
+        {auth.status === 'anonymous' ? (
+          auth.verification ? (
+            <EmailVerificationForm />
+          ) : (
+            <AccountForm mode={mode} switchTo={switchTo} />
+          )
+        ) : null}
+        {auth.status === 'anonymous' && auth.verification && mode === 'register' ? (
+          <p className={styles['switch']}>
+            Already have an account?{' '}
+            <Link to={switchTo} onClick={auth.cancelVerification}>
+              Sign in
+            </Link>
+          </p>
+        ) : null}
 
         <p className={styles['hint']}>
           A research prototype, not a clinical tool. <Link to="/privacy">Privacy</Link>

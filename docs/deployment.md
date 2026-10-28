@@ -58,6 +58,21 @@ Reference: https://docs.docker.com/engine/install/ubuntu/
 
 ## 4. Get the deployment source
 
+### Configure verification email before deploying
+
+Signup requires Azure Communication Services Email. Email is submitted over HTTPS, so no SMTP port needs to be opened on the VM.
+
+1. In Azure, create an **Email Communication Services** resource (for example, `stewardlab-email`) in the student subscription and `stewardlab-rg` resource group. Note its Data location/geography.
+2. Open the resource and choose **Add a free Azure subdomain**, or **Provision domains > Add domain > Azure domain**. After provisioning, copy the domain's exact **MailFrom** sender address.
+3. Create a **Communication Services** resource (for example, `stewardlab-communication`) using the same Data location/geography. In **Email > Domains > Connect domain**, connect the provisioned email domain.
+4. Under the Communication Services resource's **Keys**, copy its connection string privately. This is the Communication Services connection string, not a PostgreSQL connection string.
+
+Azure provides the sending domain, so a purchased domain is not required. Email sending has usage charges and provider quotas; check the subscription's displayed pricing. References: [managed domain setup](https://learn.microsoft.com/en-us/azure/communication-services/quickstarts/email/add-azure-managed-domains), [domain connection](https://learn.microsoft.com/en-us/azure/communication-services/quickstarts/email/connect-email-communication-resource).
+
+The settings below must be configured before the updated app is started. Missing email settings fail closed: registration and verification-email delivery return an unavailable response, without activating accounts. There is no production console-code or verification bypass.
+
+### Publish and download the source
+
 Commit and push the deployment changes from the laptop first so they exist in the remote branch. Review the diff before committing; include the Dockerfiles, Compose/Caddy configuration, deployment tests and API hosting changes. Do not commit `.env`, private keys or database backups.
 
 On the server:
@@ -86,6 +101,15 @@ sudo docker compose config --quiet
 ```
 
 The password is a random hexadecimal string, avoiding connection-string and Compose interpolation ambiguity. Keep it unchanged when reusing the database volume. Avoid printing the full resolved Compose configuration because it contains this password.
+
+Edit `.env` privately with `nano .env` and add these settings using the actual values from Azure:
+
+```text
+VERIFICATION_EMAIL_CONNECTION_STRING=endpoint=https://YOUR_RESOURCE.communication.azure.com/;accesskey=YOUR_KEY
+VERIFICATION_EMAIL_SENDER_ADDRESS=YOUR_EXACT_MAILFROM_ADDRESS
+```
+
+Keep the existing `DOMAIN` and `POSTGRES_PASSWORD` lines. Save the file, run `chmod 600 .env`, and validate with `sudo docker compose config --quiet`. Do not share screenshots of these values or commit this file. Local development uses the equivalent API environment variables `VerificationEmail__ConnectionString` and `VerificationEmail__SenderAddress`.
 
 ## 5. Build, migrate and start
 
@@ -119,6 +143,10 @@ curl -fsS https://your-label.southafricanorth.cloudapp.azure.com/api/v1/auth/ses
 ```
 
 Health should report `ready: true`; the second request should return an anonymous session. Open the HTTPS URL, create a demo account, save a synthetic sample, run the three-strategy comparison and reopen it through History. Check the original 3D page and Insights, then refresh a nested route to confirm the SPA fallback works.
+
+During signup, check a real inbox for the six-digit code and verify it before opening the workspace. Codes last ten minutes, allow five failed attempts, and can be replaced once per minute, up to five sends per recipient per hour. The server stores tickets and codes only as hashes; the requesting browser keeps its opaque ticket in session storage to resume after reload. Resend/attempt limits persist in PostgreSQL. A pending signup does not create an active user or overwrite an existing account. Email-provider acceptance is not proof of inbox delivery; use Azure delivery diagnostics if a message does not arrive.
+
+The email-verification migration leaves existing accounts unverified and invalidates their old cookie sessions. Existing researchers sign in with their original password, receive a code, and verify once. Their user IDs, samples and saved analyses remain unchanged. Subsequent sign-ins use email and password; this is ownership verification, not MFA at every login.
 
 Restart the API and confirm the browser remains signed in and saved records remain available:
 

@@ -12,6 +12,14 @@ const signedIn = {
   csrfToken: 'user-token',
 }
 
+const pendingVerification = () => ({
+  verificationRequired: true,
+  challengeToken: 'a'.repeat(43),
+  email: 'ada@example.org',
+  expiresAtUtc: new Date(Date.now() + 600_000).toISOString(),
+  resendAvailableAtUtc: new Date(Date.now() + 60_000).toISOString(),
+})
+
 const problem = (status: number, code: string, detail: string, extra: object = {}) => ({
   status,
   body: { status, code, detail, ...extra },
@@ -43,8 +51,14 @@ async function fillAndSubmit(
 }
 
 describe('email and password authentication', () => {
-  beforeEach(() => setCsrfToken(null))
-  afterEach(() => setCsrfToken(null))
+  beforeEach(() => {
+    setCsrfToken(null)
+    sessionStorage.removeItem('stewardlab.email-verification')
+  })
+  afterEach(() => {
+    setCsrfToken(null)
+    sessionStorage.removeItem('stewardlab.email-verification')
+  })
 
   it('sends a signed-out visitor from the workspace to sign-in and remembers where they were going', async () => {
     mockFetch(routesFor(anonymous))
@@ -161,9 +175,12 @@ describe('email and password authentication', () => {
     expect(api.callsTo('POST /api/v1/auth/sign-in')).toHaveLength(0)
   })
 
-  it('registers with a real address, sends the optional name, and signs the new user in', async () => {
+  it('keeps registration outside the workspace until the email code is verified', async () => {
     const api = mockFetch(
-      routesFor(anonymous, { 'POST /api/v1/auth/register': { status: 201, body: signedIn } }),
+      routesFor(anonymous, {
+        'POST /api/v1/auth/register': { status: 202, body: pendingVerification() },
+        'POST /api/v1/auth/verify-email': { body: signedIn },
+      }),
     )
     const user = userEvent.setup()
     const { router } = renderApp('/auth/register')
@@ -175,7 +192,17 @@ describe('email and password authentication', () => {
       button: 'Create account',
     })
 
+    expect(await screen.findByRole('heading', { name: 'Verify your email' })).toBeInTheDocument()
+    expect(router.state.location.pathname).toBe('/auth/register')
+    expect(screen.getByRole('button', { name: /Resend in/ })).toBeDisabled()
+    await user.type(screen.getByLabelText('Verification code'), '012345')
+    await user.click(screen.getByRole('button', { name: 'Verify email' }))
     await waitFor(() => expect(router.state.location.pathname).toBe('/app'))
+    expect(api.callsTo('POST /api/v1/auth/verify-email')[0]?.body).toEqual({
+      challengeToken: 'a'.repeat(43),
+      code: '012345',
+    })
+    expect(sessionStorage.getItem('stewardlab.email-verification')).toBeNull()
     expect(api.callsTo('POST /api/v1/auth/register')[0]?.body).toEqual({
       email: 'ada.researcher+amr@gmail.com',
       password: 'a long enough password',
@@ -186,7 +213,9 @@ describe('email and password authentication', () => {
 
   it('omits the name when it is left blank', async () => {
     const api = mockFetch(
-      routesFor(anonymous, { 'POST /api/v1/auth/register': { status: 201, body: signedIn } }),
+      routesFor(anonymous, {
+        'POST /api/v1/auth/register': { status: 202, body: pendingVerification() },
+      }),
     )
     const user = userEvent.setup()
     renderApp('/auth/register')
@@ -220,14 +249,10 @@ describe('email and password authentication', () => {
     expect(api.callsTo('POST /api/v1/auth/register')).toHaveLength(0)
   })
 
-  it('shows "already registered" next to the email field and links to sign-in', async () => {
+  it('offers sign-in from pending registration without revealing whether an email already exists', async () => {
     mockFetch(
       routesFor(anonymous, {
-        'POST /api/v1/auth/register': problem(
-          409,
-          'email_already_registered',
-          'An account with this email already exists. Sign in instead.',
-        ),
+        'POST /api/v1/auth/register': { status: 202, body: pendingVerification() },
       }),
     )
     const user = userEvent.setup()
@@ -239,11 +264,67 @@ describe('email and password authentication', () => {
       button: 'Create account',
     })
 
-    expect(
-      await screen.findByText('An account with this email already exists. Sign in instead.'),
-    ).toBeInTheDocument()
-    expect(screen.getByLabelText('Email')).toHaveAttribute('aria-invalid', 'true')
+    expect(await screen.findByRole('heading', { name: 'Verify your email' })).toBeInTheDocument()
     expect(screen.getByText('Already have an account?')).toBeInTheDocument()
+    await user.click(within(screen.getByRole('main')).getByRole('link', { name: 'Sign in' }))
+    expect(await screen.findByRole('heading', { name: 'Sign in' })).toBeInTheDocument()
+    expect(sessionStorage.getItem('stewardlab.email-verification')).toBeNull()
+  })
+
+  it('shows code errors and lets an existing account complete verification after signing in', async () => {
+    mockFetch(
+      routesFor(anonymous, {
+        'POST /api/v1/auth/sign-in': { status: 202, body: pendingVerification() },
+        'POST /api/v1/auth/verify-email': problem(
+          422,
+          'invalid_verification_code',
+          'Invalid code.',
+        ),
+      }),
+    )
+    const user = userEvent.setup()
+    const { router } = renderApp('/auth/sign-in')
+    await fillAndSubmit(user, {
+      email: 'ada@example.org',
+      password: 'a long enough password',
+      button: 'Sign in',
+    })
+    expect(await screen.findByRole('heading', { name: 'Verify your email' })).toBeInTheDocument()
+    await user.type(screen.getByLabelText('Verification code'), '111111')
+    await user.click(screen.getByRole('button', { name: 'Verify email' }))
+    expect(await screen.findByRole('alert')).toHaveTextContent(
+      'The code is incorrect or no longer valid.',
+    )
+    expect(router.state.location.pathname).toBe('/auth/sign-in')
+  })
+
+  it('restores a pending verification on reload and replaces the ticket when resending', async () => {
+    sessionStorage.setItem(
+      'stewardlab.email-verification',
+      JSON.stringify({
+        ...pendingVerification(),
+        resendAvailableAtUtc: new Date(Date.now() - 1000).toISOString(),
+      }),
+    )
+    const api = mockFetch(
+      routesFor(anonymous, {
+        'POST /api/v1/auth/resend-verification': {
+          status: 202,
+          body: { ...pendingVerification(), challengeToken: 'b'.repeat(43) },
+        },
+      }),
+    )
+    const user = userEvent.setup()
+    renderApp('/auth/register')
+    expect(await screen.findByRole('heading', { name: 'Verify your email' })).toBeInTheDocument()
+    await user.click(await screen.findByRole('button', { name: 'Resend code' }))
+    expect(await screen.findByRole('status')).toHaveTextContent('A new code has been sent.')
+    expect(api.callsTo('POST /api/v1/auth/resend-verification')[0]?.body).toEqual({
+      challengeToken: 'a'.repeat(43),
+    })
+    expect(
+      JSON.parse(sessionStorage.getItem('stewardlab.email-verification') ?? '{}').challengeToken,
+    ).toBe('b'.repeat(43))
   })
 
   it('maps field errors from a server validation response onto the fields', async () => {

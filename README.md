@@ -297,7 +297,7 @@ Once the development server is running, open:
 
 **http://localhost:5173**
 
-You can now create an account, sign in, record samples, and begin evaluating antibiotic-selection strategies.
+You can now create an account, verify your email with a six-digit code, sign in, record samples, and begin evaluating antibiotic-selection strategies. Signup requires the Azure email settings described in [Deployment](docs/deployment.md#configure-verification-email-before-deploying), including for local development.
 
 The development command also retains the larger HTTP header limit needed when localhost cookies accumulate.
 

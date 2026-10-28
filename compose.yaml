@@ -13,6 +13,8 @@ x-api-environment: &api-environment
   DataProtection__KeysPath: /var/lib/amr/keys
   ReverseProxy__KnownProxy: 172.30.72.10
   AllowedHosts: ${DOMAIN:?Set DOMAIN in .env}
+  VerificationEmail__ConnectionString: ${VERIFICATION_EMAIL_CONNECTION_STRING:-}
+  VerificationEmail__SenderAddress: ${VERIFICATION_EMAIL_SENDER_ADDRESS:-}
 
 services:
   postgres:

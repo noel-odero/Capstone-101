@@ -133,6 +133,28 @@
   text-align: center;
 }
 
+.codeInput {
+  text-align: center;
+  letter-spacing: 0.45em;
+  font-size: 1.5rem;
+  font-variant-numeric: tabular-nums;
+}
+
+.emailAddress {
+  overflow-wrap: anywhere;
+}
+
+.textButton {
+  border: 0;
+  background: transparent;
+  color: var(--color-text-muted);
+  cursor: pointer;
+  font: inherit;
+  font-size: var(--text-sm);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
 @media (min-width: 960px) and (max-height: 800px) {
   .card {
     padding: 1.5rem;

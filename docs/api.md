@@ -15,12 +15,14 @@ The frontend is organized by feature; `history` contains History and Insights, `
 
 ## Public routes
 
-All paths below are relative to `/api/v1`. Routes require authentication except session, registration, sign-in, health, model metadata and the antibiotic catalogue. Cookie sessions use email/password sign-in; there is no Google OAuth integration. Retrieve the session's antiforgery token and send it in `X-CSRF-TOKEN` for POST requests, including authentication POSTs.
+All paths below are relative to `/api/v1`. Routes require authentication except session, registration, email verification, sign-in, health, model metadata and the antibiotic catalogue. Cookie sessions use email/password sign-in after email ownership has been verified. Retrieve the session's antiforgery token and send it in `X-CSRF-TOKEN` for POST requests, including authentication POSTs.
 
 | Route | Behavior |
 | --- | --- |
 | `GET /auth/session` | Authentication state, current user and CSRF token |
 | `POST /auth/register`, `/auth/sign-in`, `/auth/sign-out` | Account/session management |
+| `POST /auth/verify-email` | Verify `{challengeToken, code}` and start a cookie session |
+| `POST /auth/resend-verification` | Replace a pending code using `{challengeToken}` |
 | `GET /health`, `/health/live` | Dependency readiness / process liveness |
 | `GET /model`, `/antibiotics` | Verified model metadata / canonical action catalogue |
 | `POST /profiles/validate` | Profile eligibility and candidate transition evidence, including valid terminal states |
@@ -34,6 +36,8 @@ All paths below are relative to `/api/v1`. Routes require authentication except 
 | `GET /analyses` | Filtered saved evidence for Analysis Insights |
 | `POST /analyses/compare` | Inspect 2–50 distinct saved analysis UUIDs without rerunning them |
 | `GET /analysis-collections`, `POST /analysis-collections` | List/save account-owned research collections |
+
+Registration returns `202` with `{verificationRequired, challengeToken, email, expiresAtUtc, resendAvailableAtUtc}`, without a session. Existing registered addresses receive the same response shape and are not overwritten. Sign-in returns a session (`200`) for verified accounts or a verification challenge (`202`) after a correct password for an unverified account. Verification requires both the opaque browser ticket and the six-digit emailed code; success returns the session and a new CSRF token. Invalid/expired codes return `422`, resend limits return `429`, and unavailable email delivery returns `503`.
 
 `POST /comparisons` optionally accepts `sampleId`. Ownership and the sample's original profile are checked before execution; the run and link commit together. Samples track pending/analyzed inputs. History archives work already done. Insights compares recorded evidence; Model Explorer is a read-only view of model states and evidence coverage. They do not duplicate sample storage.
 
