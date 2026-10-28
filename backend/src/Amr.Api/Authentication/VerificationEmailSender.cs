@@ -52,7 +52,12 @@ public sealed partial class AzureVerificationEmailSender(IOptions<VerificationEm
         catch (Exception exception) when (exception is RequestFailedException or ArgumentException or InvalidOperationException or FormatException ||
             exception is OperationCanceledException && !cancellationToken.IsCancellationRequested)
         {
-            LogDeliveryFailure(logger, (exception as RequestFailedException)?.Status);
+            var azureFailure = exception as RequestFailedException;
+            var errorCode = azureFailure?.ErrorCode;
+            var safeCode = errorCode is { Length: > 0 and <= 100 } &&
+                errorCode.All(character => char.IsAsciiLetterOrDigit(character) || character is '_' or '-' or '.')
+                ? errorCode : "unavailable";
+            LogDeliveryFailure(logger, azureFailure?.Status, safeCode, exception.GetType().Name);
             throw Unavailable();
         }
     }
@@ -60,6 +65,6 @@ public sealed partial class AzureVerificationEmailSender(IOptions<VerificationEm
     private static AmrException Unavailable() => new(ErrorCategory.DependencyUnavailable, ErrorCodes.VerificationUnavailable,
         "Verification email is temporarily unavailable. Please try again shortly.");
 
-    [LoggerMessage(Level = LogLevel.Warning, Message = "Verification email could not be submitted to Azure. Status: {Status}.")]
-    private static partial void LogDeliveryFailure(ILogger logger, int? status);
+    [LoggerMessage(Level = LogLevel.Warning, Message = "Verification email could not be submitted to Azure. Status: {Status}; code: {ErrorCode}; failure: {FailureType}.")]
+    private static partial void LogDeliveryFailure(ILogger logger, int? status, string errorCode, string failureType);
 }

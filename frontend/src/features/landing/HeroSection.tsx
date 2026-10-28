@@ -10,7 +10,7 @@ export function HeroSection() {
   const signedIn = auth.status === 'authenticated'
   const destination = signedIn
     ? '/app/simulation/new'
-    : '/auth/sign-in?returnTo=%2Fapp%2Fsimulation%2Fnew'
+    : '/auth/sign-in'
   const workspaceDestination = signedIn ? '/app' : '/auth/sign-in?returnTo=%2Fapp'
   return (
     <section className={styles['hero']} aria-labelledby="hero-title">

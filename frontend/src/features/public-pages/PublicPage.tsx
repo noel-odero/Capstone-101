@@ -7,10 +7,14 @@ export function PublicPage({
   title,
   lede,
   children,
+  visual,
+  eyebrow,
 }: {
   title: string
   lede: string
   children: ReactNode
+  visual?: ReactNode
+  eyebrow?: string
 }) {
   useEffect(() => {
     document.title = `${title} \u00b7 ${APP_NAME}`
@@ -19,10 +23,14 @@ export function PublicPage({
   return (
     <ContentContainer>
       <div className={styles['page']}>
-        <article className={styles['article']}>
-          <header className="stack">
-            <h1>{title}</h1>
-            <p className={styles['lede']}>{lede}</p>
+        <article className={`${styles.article} ${visual ? styles.editorial : ''}`}>
+          <header className={visual ? styles.hero : 'stack'}>
+            <div className={visual ? styles.heroCopy : 'stack'}>
+              {eyebrow ? <p className={styles.eyebrow}>{eyebrow}</p> : null}
+              <h1>{title}</h1>
+              <p className={styles['lede']}>{lede}</p>
+            </div>
+            {visual}
           </header>
           {children}
         </article>

@@ -90,6 +90,22 @@ describe('email and password authentication', () => {
     expect((init?.headers as Record<string, string>)['X-CSRF-TOKEN']).toBe('anonymous-token')
   })
 
+  it('opens the home page after signing in from the landing page analysis link', async () => {
+    mockFetch(routesFor(anonymous, { 'POST /api/v1/auth/sign-in': { body: signedIn } }))
+    const user = userEvent.setup()
+    const { router } = renderApp('/')
+
+    await user.click(await screen.findByRole('link', { name: 'Start an Analysis' }))
+    await fillAndSubmit(user, {
+      email: 'ada@example.org',
+      password: 'a long enough password',
+      button: 'Sign in',
+    })
+
+    await waitFor(() => expect(router.state.location.pathname).toBe('/app'))
+    expect(await screen.findByRole('heading', { name: /Research.*Workspace/ })).toBeInTheDocument()
+  })
+
   it('uses the token returned at sign-in for the next state-changing request', async () => {
     const api = mockFetch(
       routesFor(anonymous, {
