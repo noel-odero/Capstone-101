@@ -24,7 +24,7 @@ The following materials provide a more detailed explanation of the work, includi
 
 **[Watch the Product Walkthrough](https://youtu.be/2YR4e5tgVp4)**
 
-The walkthrough demonstrates the main features of StewardLab, explains how the frontend communicates with the backend and scientific service, and shows how researchers can configure and investigate evaluations.
+The walkthrough demonstrates the main features of StewardLab, and shows how researchers can configure and investigate evaluations.
 
 **[Read the Final Technical Report](https://docs.google.com/document/d/12dkIiZMbPTCwuP494iQ0ZfUVn4C5nMtgvuq__3-Om0s/edit?usp=sharing)**
 
@@ -127,7 +127,6 @@ Before starting, make sure the following are installed:
 
 The documented setup uses Windows and PowerShell. Other operating systems may require adjustments to virtual-environment paths, shell commands, and Docker configuration.
 
-A development machine capable of running Docker, PostgreSQL, the Python scientific service, the .NET API, and the React development server is required. The local performance measurements were collected on Windows 11 using an AMD Ryzen 5 PRO 8540U processor and approximately 32 GB RAM. This is the tested environment, not a minimum hardware requirement.
 
 ### Step 1 - Clone the Repository
 
