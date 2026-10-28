@@ -61,6 +61,7 @@ models/
 experiments/runs/
 experiments/results/
 experiments/logs/
+/backups/
 
 # Node / React
 

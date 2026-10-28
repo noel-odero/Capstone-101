@@ -385,6 +385,7 @@ For anyone interested in understanding the implementation or extending the proje
 - **[API and Architecture](docs/api.md)** explains the backend structure, database integration, API contracts, and testing.
 - **[Scientific Model](docs/scientific-model.md)** describes the resistance environment, transition assumptions, reward function, and evaluation metrics.
 - **[Research and Retraining](docs/research.md)** documents scientific data provenance, experimental evaluation, benchmark configuration, and frozen-model selection.
+- **[Azure Deployment](docs/deployment.md)** covers the Ubuntu VM, Docker Compose, HTTPS, migrations and database backups.
 
 These documents provide the technical detail behind the functionality presented in the web application.
 
