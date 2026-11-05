@@ -1,6 +1,7 @@
 import { useState, type FormEvent } from 'react'
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { Link } from 'react-router'
+import { isApiError } from '@/api/api-errors'
 import { ContentContainer } from '@/components/layout/ContentContainer'
 import { PageHeader } from '@/components/layout/PageHeader'
 import { Button } from '@/components/ui/Button'
@@ -24,6 +25,10 @@ export function SamplesPage() {
   const [category, setCategory] = useState<SampleCategory>('all')
   const [notice, setNotice] = useState('')
   const samples = useSamples()
+  const duplicateLabel =
+    samples.data?.some(
+      (sample) => sample.label.trim().toLowerCase() === label.trim().toLowerCase(),
+    ) ?? false
   const antibiotics = useAntibiotics()
   const client = useQueryClient()
   const save = useMutation({
@@ -36,9 +41,11 @@ export function SamplesPage() {
       void client.invalidateQueries({ queryKey: sampleKeys.all })
     },
   })
+  const labelTaken =
+    duplicateLabel || (isApiError(save.error) && save.error.code === 'sample_label_exists')
   const submit = (event: FormEvent) => {
     event.preventDefault()
-    if (!label.trim() || !antibiotics.data || save.isPending) return
+    if (!label.trim() || labelTaken || !antibiotics.data || save.isPending) return
     setNotice('')
     save.mutate({ label: label.trim(), resistanceProfile: profile })
   }
@@ -62,12 +69,20 @@ export function SamplesPage() {
                 required
                 disabled={save.isPending}
                 placeholder="e.g. UTI-024"
+                aria-invalid={labelTaken || undefined}
+                aria-describedby={labelTaken ? 'sample-label-error' : undefined}
                 onChange={(event) => {
                   setLabel(event.target.value)
                   setNotice('')
+                  save.reset()
                 }}
               />
             </label>
+            {labelTaken ? (
+              <p id="sample-label-error" className={styles.labelError} role="alert">
+                A sample with this label already exists. Choose a different label.
+              </p>
+            ) : null}
             <div className={styles.profileCode}>
               <code aria-label="Sample resistance profile">{profileToCode(profile)}</code>
               <span>{countResistant(profile)} / 7 resistant</span>
@@ -97,7 +112,7 @@ export function SamplesPage() {
                 type="submit"
                 variant="dark"
                 loading={save.isPending}
-                disabled={!label.trim() || !antibiotics.data}
+                disabled={!label.trim() || labelTaken || !antibiotics.data}
               >
                 Save sample
               </Button>
@@ -112,7 +127,7 @@ export function SamplesPage() {
                 Reset profile
               </Button>
             </div>
-            {save.isError ? (
+            {save.isError && !labelTaken ? (
               <ErrorState error={save.error} title="Sample could not be saved" />
             ) : null}
             <p className={styles.notice} role="status">

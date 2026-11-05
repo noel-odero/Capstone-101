@@ -10,6 +10,38 @@ namespace Amr.IntegrationTests.Persistence;
 /// <summary>Migrations against real PostgreSQL, each on a pristine database. Migrations are applied only by an explicit call, as an operator would.</summary>
 public class MigrationTests
 {
+    [PostgresFact]
+    public async Task Unique_sample_labels_preserve_existing_duplicates_and_avoid_numbered_label_collisions()
+    {
+        await using var temp = await TempDatabase.CreateAsync();
+        await using var context = temp.CreateContext();
+        await context.GetService<IMigrator>().MigrateAsync("20261028082441_RequireEmailVerification");
+        var owner = "migration-test";
+        var firstId = Guid.NewGuid();
+        var secondId = Guid.NewGuid();
+        var reservedId = Guid.NewGuid();
+        var longLabel = new string('x', 80);
+        await context.Database.ExecuteSqlInterpolatedAsync($"""
+            INSERT INTO samples (id, owner_id, label, initial_profile, added_at_utc) VALUES
+            ({firstId}, {owner}, 'UTI-024', ARRAY[0,0,0,0,0,0,0], '2026-01-01T00:00:00Z'),
+            ({secondId}, {owner}, 'uti-024', ARRAY[1,0,0,0,0,0,0], '2026-01-02T00:00:00Z'),
+            ({reservedId}, {owner}, 'UTI-024 (2)', ARRAY[0,0,0,0,0,0,0], '2026-01-03T00:00:00Z'),
+            ({Guid.NewGuid()}, {owner}, {longLabel}, ARRAY[0,0,0,0,0,0,0], '2026-01-04T00:00:00Z'),
+            ({Guid.NewGuid()}, {owner}, {longLabel}, ARRAY[0,0,0,0,0,0,0], '2026-01-05T00:00:00Z')
+            """);
+
+        await context.Database.MigrateAsync();
+
+        var samples = await context.Samples.ToListAsync();
+        Assert.Equal(5, samples.Count);
+        Assert.Equal(5, samples.Select(sample => sample.NormalizedLabel).Distinct().Count());
+        Assert.Equal("UTI-024", samples.Single(sample => sample.Id == firstId).Label);
+        Assert.Equal("uti-024 (3)", samples.Single(sample => sample.Id == secondId).Label);
+        Assert.Equal("UTI-024 (2)", samples.Single(sample => sample.Id == reservedId).Label);
+        Assert.Equal(new[] { 1, 0, 0, 0, 0, 0, 0 }, samples.Single(sample => sample.Id == secondId).InitialProfile);
+        Assert.All(samples, sample => Assert.InRange(sample.Label.Length, 1, 80));
+    }
+
     private static async Task<List<string>> TablesAsync(string connectionString)
     {
         await using var connection = new NpgsqlConnection(connectionString);

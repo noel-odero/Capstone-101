@@ -115,6 +115,28 @@
   color: var(--color-text-muted);
   margin-top: 0.75rem;
 }
+.labelError {
+  margin-top: 0.5rem;
+  font-size: 0.75rem;
+  color: var(--color-resistant-fg);
+}
+.rowActions {
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+  gap: 0.5rem;
+}
+.deleteConfirmation {
+  grid-column: 1 / -1;
+  padding-top: 0.75rem;
+  border-top: 1px solid var(--color-border);
+  font-size: 0.75rem;
+  color: var(--color-text-muted);
+}
+.deleteConfirmation .formActions {
+  margin-top: 0.5rem;
+  justify-content: flex-end;
+}
 .categories {
   display: flex;
   gap: 0.5rem;

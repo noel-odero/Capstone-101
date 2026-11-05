@@ -10,6 +10,9 @@ public sealed class SampleService(ISampleRepository samples) : ISampleService
     public Task<SampleDto> CreateAsync(CreateSampleRequest request, CancellationToken cancellationToken) =>
         samples.CreateAsync(request, cancellationToken);
 
+    public Task<bool> DeleteAsync(Guid id, CancellationToken cancellationToken) =>
+        samples.DeleteAsync(id, cancellationToken);
+
     public Task<SampleDto?> FindAsync(Guid id, CancellationToken cancellationToken) =>
         samples.FindAsync(id, cancellationToken);
 

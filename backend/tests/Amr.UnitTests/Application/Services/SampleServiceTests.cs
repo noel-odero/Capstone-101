@@ -16,6 +16,7 @@ public class SampleServiceTests
             return Task.FromResult(sample?.Id == id ? sample : null);
         }
         public Task<SampleDto> CreateAsync(CreateSampleRequest request, CancellationToken cancellationToken) => throw new NotSupportedException();
+        public Task<bool> DeleteAsync(Guid id, CancellationToken cancellationToken) => Task.FromResult(sample?.Id == id);
         public Task<IReadOnlyList<SampleDto>> ListAsync(CancellationToken cancellationToken) => throw new NotSupportedException();
     }
 

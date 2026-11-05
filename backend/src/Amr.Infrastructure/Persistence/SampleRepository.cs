@@ -4,6 +4,7 @@ using Amr.Application.Interfaces.Identity;
 using Amr.Application.Interfaces.Persistence;
 using Amr.Infrastructure.Persistence.Entities;
 using Microsoft.EntityFrameworkCore;
+using Npgsql;
 
 namespace Amr.Infrastructure.Persistence;
 
@@ -20,8 +21,34 @@ public sealed class SampleRepository(AmrDbContext db, ICurrentUser currentUser, 
         }
         var sample = new Sample { Id = Guid.NewGuid(), OwnerId = Owner, Label = label, AddedAtUtc = clock.GetUtcNow(), InitialProfile = [.. request.ResistanceProfile] };
         db.Samples.Add(sample);
-        await db.SaveChangesAsync(cancellationToken);
+        try
+        {
+            await db.SaveChangesAsync(cancellationToken);
+        }
+        catch (DbUpdateException exception) when (exception.InnerException is PostgresException
+            { SqlState: PostgresErrorCodes.UniqueViolation, ConstraintName: "ux_samples_owner_normalized_label" })
+        {
+            db.Entry(sample).State = EntityState.Detached;
+            throw new AmrException(ErrorCategory.InvalidRequest, "sample_label_exists", "A sample with this label already exists. Choose a different label.");
+        }
         return new SampleDto(sample.Id, sample.Label, sample.AddedAtUtc, sample.InitialProfile, []);
+    }
+
+    public async Task<bool> DeleteAsync(Guid id, CancellationToken cancellationToken)
+    {
+        var owner = Owner;
+        await using var transaction = await db.Database.BeginTransactionAsync(cancellationToken);
+        // Lock the parent so concurrent analysis inserts finish before unlinking, or wait until deletion commits.
+        var sample = await db.Samples.FromSqlInterpolated(
+            $"SELECT * FROM samples WHERE id = {id} AND owner_id = {owner} FOR UPDATE")
+            .AsNoTracking().SingleOrDefaultAsync(cancellationToken);
+        if (sample is null) return false;
+
+        await db.ExperimentRuns.Where(run => run.SampleId == id && run.OwnerId == owner)
+            .ExecuteUpdateAsync(update => update.SetProperty(run => run.SampleId, (Guid?)null), cancellationToken);
+        await Mine().Where(value => value.Id == id).ExecuteDeleteAsync(cancellationToken);
+        await transaction.CommitAsync(cancellationToken);
+        return true;
     }
 
     public async Task<SampleDto?> FindAsync(Guid id, CancellationToken cancellationToken)

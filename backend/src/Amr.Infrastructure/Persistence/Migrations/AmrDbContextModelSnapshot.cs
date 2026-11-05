@@ -429,6 +429,14 @@ namespace Amr.Infrastructure.Persistence.Migrations
                         .HasColumnType("character varying(80)")
                         .HasColumnName("label");
 
+                    b.Property<string>("NormalizedLabel")
+                        .IsRequired()
+                        .ValueGeneratedOnAddOrUpdate()
+                        .HasMaxLength(80)
+                        .HasColumnType("character varying(80)")
+                        .HasColumnName("normalized_label")
+                        .HasComputedColumnSql("lower(btrim(label))", true);
+
                     b.Property<string>("OwnerId")
                         .IsRequired()
                         .HasMaxLength(200)
@@ -438,6 +446,10 @@ namespace Amr.Infrastructure.Persistence.Migrations
                     b.HasKey("Id");
 
                     b.HasIndex("OwnerId", "AddedAtUtc");
+
+                    b.HasIndex("OwnerId", "NormalizedLabel")
+                        .IsUnique()
+                        .HasDatabaseName("ux_samples_owner_normalized_label");
 
                     b.ToTable("samples", null, t =>
                         {

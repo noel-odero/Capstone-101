@@ -68,6 +68,7 @@ public class AuthenticationTests(AmrApiFactory factory) : IClassFixture<AmrApiFa
     [InlineData("GET", "/api/v1/analysis-collections")]
     [InlineData("POST", "/api/v1/analysis-collections")]
     [InlineData("POST", "/api/v1/analyses/compare")]
+    [InlineData("DELETE", $"/api/v1/samples/{AnyId}")]
     public async Task Anonymous_requests_to_protected_endpoints_are_401_problems(string method, string path)
     {
         using var client = BrowserClient(factory);

@@ -25,4 +25,10 @@ public sealed class SamplesController(ISampleService samples) : ApiControllerBas
         var sample = await samples.CreateAsync(request, cancellationToken);
         return CreatedAtAction(nameof(Get), new { id = sample.Id, version = ApiRoutes.UrlVersion1 }, sample);
     }
+
+    [HttpDelete("{id:guid}")]
+    public async Task<IActionResult> Delete(Guid id, CancellationToken cancellationToken) =>
+        await samples.DeleteAsync(id, cancellationToken)
+            ? NoContent()
+            : NotFoundProblem("sample_not_found", "No sample has this id.");
 }

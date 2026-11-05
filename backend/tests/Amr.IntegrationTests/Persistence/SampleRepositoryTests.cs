@@ -4,11 +4,82 @@ using Amr.Infrastructure.Persistence;
 using Amr.IntegrationTests.Infrastructure;
 using Amr.TestSupport;
 using Microsoft.Extensions.Logging.Abstractions;
+using Microsoft.EntityFrameworkCore;
+using System.Text.Json;
 
 namespace Amr.IntegrationTests.Persistence;
 
 public class SampleRepositoryTests(PostgresDatabaseFixture db) : IClassFixture<PostgresDatabaseFixture>
 {
+    [PostgresFact]
+    public async Task Concurrent_case_and_space_variants_are_rejected_but_other_owners_can_reuse_a_label()
+    {
+        var owner = Guid.NewGuid().ToString();
+        async Task<AmrException?> Create(string label)
+        {
+            await using var context = db.CreateContext();
+            try
+            {
+                await new SampleRepository(context, new FixedCurrentUser(owner), TimeProvider.System)
+                    .CreateAsync(new CreateSampleRequest { Label = label, ResistanceProfile = [0, 0, 0, 0, 0, 0, 0] }, CancellationToken.None);
+                return null;
+            }
+            catch (AmrException exception) { return exception; }
+        }
+
+        var results = await Task.WhenAll(Create("  UTI-024  "), Create("uti-024"));
+        Assert.Single(results, result => result is null);
+        Assert.Equal("sample_label_exists", Assert.Single(results, result => result is not null)!.Code);
+        await using var read = db.CreateContext();
+        Assert.Single(await new SampleRepository(read, new FixedCurrentUser(owner), TimeProvider.System).ListAsync(CancellationToken.None));
+        var other = await new SampleRepository(read, new FixedCurrentUser("other:" + owner), TimeProvider.System)
+            .CreateAsync(new CreateSampleRequest { Label = "UTI-024", ResistanceProfile = [0, 0, 0, 0, 0, 0, 0] }, CancellationToken.None);
+        Assert.Equal("UTI-024", other.Label);
+    }
+
+    [PostgresFact]
+    public async Task Deleting_an_analyzed_sample_preserves_its_comparison_and_all_step_traces()
+    {
+        var owner = Guid.NewGuid().ToString();
+        var comparison = await SampleDtos.Comparison();
+        await using var context = db.CreateContext();
+        var samples = new SampleRepository(context, new FixedCurrentUser(owner), TimeProvider.System);
+        var sample = await samples.CreateAsync(new CreateSampleRequest { Label = "UTI-024", ResistanceProfile = comparison.Ppo!.InitialProfile }, CancellationToken.None);
+        var runs = new RunRepository(context, TimeProvider.System, new FixedCurrentUser(owner), NullLogger<RunRepository>.Instance);
+        var run = comparison with { Id = Guid.NewGuid(), SampleId = sample.Id };
+        await runs.SaveComparisonAsync(run, CancellationToken.None);
+        var before = await runs.FindComparisonAsync(run.Id, CancellationToken.None);
+        var traceCount = await context.StepTraces.CountAsync();
+
+        Assert.True(await samples.DeleteAsync(sample.Id, CancellationToken.None));
+
+        await using var read = db.CreateContext();
+        Assert.Null(await new SampleRepository(read, new FixedCurrentUser(owner), TimeProvider.System).FindAsync(sample.Id, CancellationToken.None));
+        var stored = await new RunRepository(read, TimeProvider.System, new FixedCurrentUser(owner), NullLogger<RunRepository>.Instance).FindComparisonAsync(run.Id, CancellationToken.None);
+        Assert.NotNull(stored);
+        Assert.Null(stored.SampleId);
+        Assert.Equal(JsonSerializer.Serialize(before!.Ppo), JsonSerializer.Serialize(stored.Ppo));
+        Assert.Equal(JsonSerializer.Serialize(before.Baseline), JsonSerializer.Serialize(stored.Baseline));
+        Assert.Equal(JsonSerializer.Serialize(before.Dqn), JsonSerializer.Serialize(stored.Dqn));
+        Assert.Equal(traceCount, await read.StepTraces.CountAsync());
+        await new SampleRepository(read, new FixedCurrentUser(owner), TimeProvider.System)
+            .CreateAsync(new CreateSampleRequest { Label = sample.Label, ResistanceProfile = sample.ResistanceProfile }, CancellationToken.None);
+    }
+
+    [PostgresFact]
+    public async Task Only_the_owner_can_delete_a_sample_and_missing_samples_return_false()
+    {
+        var owner = Guid.NewGuid().ToString();
+        await using var context = db.CreateContext();
+        var samples = new SampleRepository(context, new FixedCurrentUser(owner), TimeProvider.System);
+        var sample = await samples.CreateAsync(new CreateSampleRequest { Label = "Private", ResistanceProfile = [0, 0, 0, 0, 0, 0, 0] }, CancellationToken.None);
+        var other = new SampleRepository(context, new FixedCurrentUser("other:" + owner), TimeProvider.System);
+        Assert.False(await other.DeleteAsync(sample.Id, CancellationToken.None));
+        Assert.NotNull(await samples.FindAsync(sample.Id, CancellationToken.None));
+        Assert.True(await samples.DeleteAsync(sample.Id, CancellationToken.None));
+        Assert.False(await samples.DeleteAsync(sample.Id, CancellationToken.None));
+    }
+
     [PostgresFact]
     public async Task Saved_samples_survive_new_contexts_and_are_private_to_their_owner()
     {

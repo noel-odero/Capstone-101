@@ -31,7 +31,7 @@ export function onUnauthenticated(listener: () => void): () => void {
 }
 
 export interface RequestOptions {
-  method?: 'GET' | 'POST'
+  method?: 'GET' | 'POST' | 'DELETE'
   body?: unknown
   query?: QueryParams
   signal?: AbortSignal | undefined

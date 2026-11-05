@@ -23,3 +23,6 @@ export function getSample(id: string, signal?: AbortSignal) {
 export function saveSample(request: { label: string; resistanceProfile: number[] }) {
   return requestJson('/samples', sampleSchema, { method: 'POST', body: request })
 }
+export function deleteSample(id: string) {
+  return requestJson(`/samples/${encodeURIComponent(id)}`, z.undefined(), { method: 'DELETE' })
+}

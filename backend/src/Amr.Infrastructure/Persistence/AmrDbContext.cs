@@ -77,6 +77,10 @@ public sealed class AmrDbContext(DbContextOptions<AmrDbContext> options) : DbCon
             entity.Property(sample => sample.Id).ValueGeneratedNever();
             entity.Property(sample => sample.OwnerId).HasMaxLength(200).IsRequired();
             entity.Property(sample => sample.Label).HasMaxLength(80).IsRequired();
+            entity.Property(sample => sample.NormalizedLabel).HasMaxLength(80)
+                .HasComputedColumnSql("lower(btrim(label))", stored: true);
+            entity.HasIndex(sample => new { sample.OwnerId, sample.NormalizedLabel })
+                .IsUnique().HasDatabaseName("ux_samples_owner_normalized_label");
             entity.HasAlternateKey(sample => new { sample.Id, sample.OwnerId });
             entity.HasIndex(sample => new { sample.OwnerId, sample.AddedAtUtc });
         });

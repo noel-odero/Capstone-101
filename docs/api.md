@@ -32,7 +32,8 @@ All paths below are relative to `/api/v1`. Routes require authentication except 
 | `GET /recommendations/{simulationId}` | Policy-selected steps from a saved learned-policy run |
 | `GET /simulations/recent` | Paginated archive of simulations and comparisons, newest first |
 | `GET /samples`, `/samples/{id}` | Account-owned labeled profiles, creation dates and linked evaluations |
-| `POST /samples` | Save a labeled profile without executing a policy |
+| `POST /samples` | Save a labeled profile without executing a policy; labels must be unique per account, ignoring case and surrounding spaces |
+| `DELETE /samples/{id}` | Delete an owned sample, preserving saved analyses in History and removing their sample link |
 | `GET /analyses` | Filtered saved evidence for Analysis Insights |
 | `POST /analyses/compare` | Inspect 2–50 distinct saved analysis UUIDs without rerunning them |
 | `GET /analysis-collections`, `POST /analysis-collections` | List/save account-owned research collections |

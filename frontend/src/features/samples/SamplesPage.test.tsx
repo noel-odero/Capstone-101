@@ -1,4 +1,4 @@
-﻿import { screen, waitFor } from '@testing-library/react'
+﻿import { screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { describe, expect, it } from 'vitest'
 import { baseRoutes, mockFetch } from '@/test/mock-api'
@@ -20,6 +20,116 @@ const sample: SavedSample = {
 }
 
 describe('sample workflow', () => {
+  it('rejects an existing label regardless of case and surrounding spaces', async () => {
+    const api = mockFetch(
+      baseRoutes({
+        'GET /api/v1/auth/session': { body: session },
+        'GET /api/v1/samples': { body: [sample] },
+      }),
+    )
+    const user = userEvent.setup()
+    renderApp('/app/samples')
+    await screen.findByRole('heading', { name: sample.label })
+    await user.type(screen.getByLabelText('Sample label'), '  uti-024  ')
+    expect(screen.getByRole('alert')).toHaveTextContent('A sample with this label already exists.')
+    expect(screen.getByRole('button', { name: 'Save sample' })).toBeDisabled()
+    expect(api.callsTo('POST /api/v1/samples')).toHaveLength(0)
+    await user.clear(screen.getByLabelText('Sample label'))
+    await user.type(screen.getByLabelText('Sample label'), 'UTI-025')
+    expect(screen.queryByRole('alert')).not.toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Save sample' })).toBeEnabled()
+  })
+
+  it('shows a duplicate-label error returned by the server when the local library is stale', async () => {
+    mockFetch(
+      baseRoutes({
+        'GET /api/v1/auth/session': { body: session },
+        'POST /api/v1/samples': {
+          status: 422,
+          body: {
+            status: 422,
+            code: 'sample_label_exists',
+            detail: 'A sample with this label already exists.',
+          },
+        },
+      }),
+    )
+    const user = userEvent.setup()
+    renderApp('/app/samples')
+    await user.type(await screen.findByLabelText('Sample label'), sample.label)
+    await user.click(screen.getByRole('button', { name: 'Save sample' }))
+    expect(await screen.findByRole('alert')).toHaveTextContent(
+      'A sample with this label already exists.',
+    )
+    expect(screen.getByLabelText('Sample label')).toHaveValue(sample.label)
+    await user.type(screen.getByLabelText('Sample label'), '-new')
+    expect(screen.queryByRole('alert')).not.toBeInTheDocument()
+  })
+
+  it('requires confirmation before deleting an analyzed sample and refreshes the library', async () => {
+    let saved: SavedSample[] = [
+      {
+        ...sample,
+        runs: [
+          {
+            id: rawFixtures.comparison.id,
+            createdAtUtc: sample.addedAtUtc,
+          },
+        ],
+      },
+    ]
+    const api = mockFetch(
+      baseRoutes({
+        'GET /api/v1/auth/session': { body: session },
+        'GET /api/v1/samples': () => ({ body: saved }),
+        [`DELETE /api/v1/samples/${sample.id}`]: () => {
+          saved = []
+          return { status: 204 }
+        },
+      }),
+    )
+    const user = userEvent.setup()
+    renderApp('/app/samples')
+    await user.click(await screen.findByRole('button', { name: `Delete ${sample.label}` }))
+    const confirmation = screen.getByRole('group', { name: `Delete ${sample.label}?` })
+    expect(confirmation).toHaveTextContent('Saved analyses will stay in Analysis History.')
+    await user.click(within(confirmation).getByRole('button', { name: 'Cancel' }))
+    expect(api.callsTo(`DELETE /api/v1/samples/${sample.id}`)).toHaveLength(0)
+    await user.click(screen.getByRole('button', { name: `Delete ${sample.label}` }))
+    await user.click(screen.getByRole('button', { name: 'Delete sample' }))
+    await waitFor(() =>
+      expect(screen.queryByRole('heading', { name: sample.label })).not.toBeInTheDocument(),
+    )
+    expect(
+      screen
+        .getAllByRole('status')
+        .some((status) => status.textContent?.includes('Sample deleted.')),
+    ).toBe(true)
+    expect(api.callsTo(`DELETE /api/v1/samples/${sample.id}`)).toHaveLength(1)
+  })
+
+  it('retains the sample and shows an error if deletion fails', async () => {
+    mockFetch(
+      baseRoutes({
+        'GET /api/v1/auth/session': { body: session },
+        'GET /api/v1/samples': { body: [sample] },
+        [`DELETE /api/v1/samples/${sample.id}`]: {
+          status: 503,
+          body: {
+            status: 503,
+            detail: 'The database is temporarily unavailable.',
+          },
+        },
+      }),
+    )
+    const user = userEvent.setup()
+    renderApp('/app/samples')
+    await user.click(await screen.findByRole('button', { name: `Delete ${sample.label}` }))
+    await user.click(screen.getByRole('button', { name: 'Delete sample' }))
+    expect(await screen.findByRole('alert')).toHaveTextContent('Sample could not be deleted')
+    expect(screen.getByRole('heading', { name: sample.label })).toBeInTheDocument()
+  })
+
   it('saves profiles without running analyses and resets for the next sample', async () => {
     const saved: SavedSample[] = []
     const api = mockFetch(
@@ -79,8 +189,9 @@ describe('sample workflow', () => {
     )
     expect(api.callsTo('POST /api/v1/comparisons')).toHaveLength(0)
     await user.click(screen.getByRole('button', { name: 'Run Analysis' }))
-    await waitFor(() =>
-      expect(router.state.location.pathname).toBe(`/app/simulation/${created.id}`),
+    await waitFor(
+      () => expect(router.state.location.pathname).toBe(`/app/simulation/${created.id}`),
+      { timeout: 5_000 },
     )
     expect(api.callsTo('POST /api/v1/comparisons')[0]?.body).toEqual({
       sampleId: sample.id,
