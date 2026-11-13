@@ -290,35 +290,82 @@
 }
 .compatibility {
   font-size: var(--text-xs);
-  border-bottom: 1px solid var(--color-border);
-  padding-bottom: 1rem;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  padding: 1rem 1.2rem;
+  background: var(--color-surface);
 }
-.compatibility summary {
-  cursor: pointer;
+.compatibilityIntro {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 0.75rem 1.5rem;
+}
+.compatibilityTitle {
   display: flex;
   align-items: center;
-  flex-wrap: wrap;
   gap: 0.5rem;
+  margin: 0;
+  font-size: var(--text-sm);
   font-weight: 500;
 }
-.compatibility summary > span:last-child {
-  margin-left: auto;
+.compatibilityDescription {
+  margin: 0.35rem 0 0;
   color: var(--color-text-muted);
-  font-weight: 400;
+  line-height: 1.6;
 }
-.compatibility summary > span:last-child::after {
-  content: ' +';
+.compatibilityTags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
 }
-.compatibility[open] summary > span:last-child::after {
-  content: ' −';
+.compatibilityTags > span {
+  padding: 0.3rem 0.55rem;
+  background: var(--color-surface-subtle);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  line-height: 1.4;
 }
-.compatibility p {
+.compatibilityDetails {
+  margin-top: 0.75rem;
+}
+.compatibilityDetails summary {
+  cursor: pointer;
   color: var(--color-text-muted);
-  line-height: 1.7;
-  max-width: 100ch;
+  width: fit-content;
 }
-.compatibility li {
-  margin-bottom: 0.4rem;
+.compatibilityChecks {
+  list-style: none;
+  padding: 0;
+  margin: 0.75rem 0 0;
+}
+.compatibilityChecks li {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 0.5rem 1rem;
+  padding: 0.8rem 0;
+  border-top: 1px solid var(--color-border);
+}
+.compatibilityChecks strong {
+  font-weight: 500;
+}
+.compatibilityChecks p {
+  margin: 0.3rem 0 0;
+  max-width: 70ch;
+  color: var(--color-text-muted);
+  line-height: 1.6;
+}
+.compatibilityChecks li > span,
+.compatibilityNote {
+  color: var(--color-text-muted);
+  line-height: 1.6;
+}
+.compatibilityNote {
+  margin: 0.75rem 0 0;
+  max-width: 85ch;
 }
 .statusDot {
   width: 0.4rem;
@@ -328,6 +375,9 @@
 }
 .statusDot[data-status='compatible'] {
   background: var(--color-susceptible-solid);
+}
+.statusDot[data-status='incompatible'] {
+  background: var(--color-resistant-fg);
 }
 .inlineFilters {
   display: flex;

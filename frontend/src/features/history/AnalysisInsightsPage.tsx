@@ -234,26 +234,134 @@ export function AnalysisInsightsPage() {
 }
 
 function Compatibility({ data }: { data: HistoryComparison }) {
+  const issueText: Record<string, { label: string; detail: string }> = {
+    different_initial_profiles: {
+      label: 'Different starting profiles',
+      detail: 'The analyses started with different resistance patterns.',
+    },
+    different_seeds: {
+      label: 'Different random seeds',
+      detail:
+        'The analyses used different starting numbers for random sampling, so their outcomes may vary.',
+    },
+    environment_changed: {
+      label: 'Different model environments',
+      detail: 'The transition dataset or scenario changed between analyses.',
+    },
+    evaluation_changed: {
+      label: 'Different evaluation rules',
+      detail: 'The number of stages, antibiotic mapping, eligibility rule or reward changed.',
+    },
+    provenance_unknown: {
+      label: 'Missing model information',
+      detail: 'Some saved settings are missing, so matching conditions cannot be confirmed.',
+    },
+    metric_definition_unknown: {
+      label: 'Missing metric definitions',
+      detail: 'Some recorded values have no saved definition.',
+    },
+    metric_definitions_changed: {
+      label: 'Different metric definitions',
+      detail: 'Some values were calculated using different definitions.',
+    },
+    pairing_unverified: {
+      label: 'Unverified strategy comparisons',
+      detail: 'Matching starting conditions were not confirmed for every policy in some analyses.',
+    },
+    ppo_unavailable: {
+      label: 'PPO missing in some analyses',
+      detail: 'Some saved analyses do not include PPO. Missing values are not zero.',
+    },
+    dqn_unavailable: {
+      label: 'DQN missing in some analyses',
+      detail: 'Some saved analyses do not include DQN. Missing values are not zero.',
+    },
+    baseline_unavailable: {
+      label: 'Baseline missing in some analyses',
+      detail: 'Some saved analyses do not include the random baseline.',
+    },
+    checkpoint_unknown: {
+      label: 'Missing model versions',
+      detail: 'The trained model version could not be identified for some results.',
+    },
+    checkpoint_changed: {
+      label: 'Different model versions',
+      detail: 'The analyses used different trained model checkpoints.',
+    },
+    service_version_changed: {
+      label: 'Different service versions',
+      detail: 'The software running the evaluations changed between analyses.',
+    },
+    shared_random_draws: {
+      label: 'Repeated evaluation settings',
+      detail:
+        'Some records reuse the same profile, seeds and settings. They are not independent repeats.',
+    },
+  }
+  const issues = data.compatibility.issues.map((issue) => ({
+    ...issue,
+    ...(issueText[issue.code] ?? { label: 'Other comparison limit', detail: issue.message }),
+  }))
+  const status = data.compatibility.status
+  const title =
+    status === 'incompatible'
+      ? 'Check these comparisons'
+      : status === 'exploratory'
+        ? 'Compare with context'
+        : 'Recorded settings match'
+  const description =
+    status === 'incompatible'
+      ? 'Some settings differ or are missing. Review the details before comparing results.'
+      : status === 'exploratory'
+        ? 'Explore these saved results individually; they do not establish a best policy.'
+        : 'The saved settings match. This is still an exploratory comparison.'
   return (
-    <details className={styles.compatibility}>
-      <summary>
-        <span className={styles.statusDot} data-status={data.compatibility.status} />
-        {data.compatibility.status === 'incompatible'
-          ? 'Settings differ or are unknown'
-          : data.compatibility.status === 'exploratory'
-            ? 'Exploratory evidence'
-            : 'Recorded settings match'}
-        <span>Settings and interpretation</span>
-      </summary>
-      <p>{data.interpretation}</p>
-      <ul>
-        {data.compatibility.issues.map((issue) => (
-          <li key={issue.code + issue.message}>
-            {issue.message} <small>({issue.analysisIds.length} records)</small>
-          </li>
-        ))}
-      </ul>
-    </details>
+    <section className={styles.compatibility} aria-label="Comparison context" data-status={status}>
+      <div className={styles.compatibilityIntro}>
+        <div>
+          <p className={styles.compatibilityTitle}>
+            <span className={styles.statusDot} data-status={status} aria-hidden="true" />
+            {title}
+          </p>
+          <p className={styles.compatibilityDescription}>{description}</p>
+        </div>
+        {issues.length ? (
+          <div
+            className={styles.compatibilityTags}
+            role="group"
+            aria-label="Comparison differences"
+          >
+            {issues.slice(0, 3).map((issue) => (
+              <span key={issue.code + issue.message}>{issue.label}</span>
+            ))}
+            {issues.length > 3 ? <span>+{issues.length - 3} more</span> : null}
+          </div>
+        ) : null}
+      </div>
+      <details className={styles.compatibilityDetails}>
+        <summary>Comparison details</summary>
+        {issues.length ? (
+          <ul className={styles.compatibilityChecks}>
+            {issues.map((issue) => (
+              <li key={issue.code + issue.message}>
+                <div>
+                  <strong>{issue.label}</strong>
+                  <p>{issue.detail}</p>
+                </div>
+                <span>
+                  {issue.analysisIds.length} of {data.analyses.length} analyses
+                </span>
+              </li>
+            ))}
+          </ul>
+        ) : null}
+        <p className={styles.compatibilityNote}>
+          These saved observations are not a controlled experiment and may not be independent. Lower
+          scores do not prove overall policy superiority or clinical effectiveness. No models are
+          rerun here.
+        </p>
+      </details>
+    </section>
   )
 }
 
