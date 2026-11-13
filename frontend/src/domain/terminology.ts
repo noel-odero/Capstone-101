@@ -68,6 +68,7 @@ export function strategyLabel(strategy: StrategyId): string {
 
 export const TERMINATION_LABELS: Readonly<Record<string, string>> = {
   maximum_horizon: 'Reached the maximum horizon',
+  evidence_boundary: 'Stopped: no applicable transition evidence for the remaining actions',
   no_effective_antibiotic: 'No susceptible antibiotic remained',
 }
 

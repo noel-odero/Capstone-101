@@ -28,7 +28,10 @@ export function policyResult(run: SavedAnalysis, policy: StrategyId) {
 export function matchesInvestigation(run: SavedAnalysis, filter: Investigation) {
   if (filter === 'all') return true
   if (filter === 'unsupported')
-    return run.strategies.some((result) => result.metrics.unsupportedStepCount > 0)
+    return run.strategies.some(
+      (result) =>
+        result.metrics.unsupportedStepCount > 0 || result.terminationReason === 'evidence_boundary',
+    )
   if (run.kind !== 'comparison' || run.comparisonVerified !== true) return false
   const ppo = policyResult(run, 'ppo')?.metrics.cumulativeResistanceBurden
   const dqn = policyResult(run, 'dqn')?.metrics.cumulativeResistanceBurden
@@ -63,6 +66,9 @@ export function summarizeEvidence(records: SavedAnalysis[]) {
       run.comparisonVerified && INSIGHT_POLICIES.every((policy) => policyResult(run, policy)),
   )
   const gaps = records.filter((run) => matchesInvestigation(run, 'unsupported'))
+  const incomplete = records.filter((run) =>
+    run.strategies.some((result) => result.terminationReason === 'evidence_boundary'),
+  )
   const ties = records.filter((run) => matchesInvestigation(run, 'agreement'))
   const differentChoices = ties.filter((run) => {
     const ppo = policyResult(run, 'ppo')
@@ -93,5 +99,15 @@ export function summarizeEvidence(records: SavedAnalysis[]) {
       }),
     }))
     .sort((a, b) => Number(b.varying) - Number(a.varying) || b.analyses.length - a.analyses.length)
-  return { totalSteps, unsupported, paired, gaps, ties, differentChoices, baselineLower, profiles }
+  return {
+    totalSteps,
+    unsupported,
+    paired,
+    gaps,
+    incomplete,
+    ties,
+    differentChoices,
+    baselineLower,
+    profiles,
+  }
 }

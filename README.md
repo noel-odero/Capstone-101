@@ -8,7 +8,7 @@ This is the problem I set out to explore through my capstone project.
 
 **StewardLab** is a web-based research platform I developed to investigate how reinforcement learning can support sequential antibiotic-selection decisions. It focuses on *Escherichia coli* (*E. coli*) and uses a computational resistance model to examine how different antibiotic-selection strategies influence resistance over time.
 
-The platform compares two reinforcement-learning algorithms, **Proximal Policy Optimization (PPO)** and **Deep Q-Network (DQN)**, against a baseline that randomly selects from currently susceptible antibiotics.
+The platform compares two reinforcement-learning algorithms, **Proximal Policy Optimization (PPO)** and **Deep Q-Network (DQN)**, against a baseline that randomly selects from currently susceptible antibiotics with applicable transition candidates.
 
 Rather than simply presenting model performance in a notebook, I wanted to create an environment where researchers could interact with the work. With StewardLab, researchers can record resistance profiles, evaluate different strategies, inspect antibiotic sequences and resistance transitions, and revisit previous analyses to identify patterns across experiments.
 
@@ -367,7 +367,7 @@ StewardLab was developed to investigate a research question, and its results sho
 
 The model represents resistance using seven binary indicators and evaluates decisions across a fixed eight-step horizon. Although this makes the problem manageable for reinforcement learning, it does not capture the full complexity of bacterial evolution or clinical treatment.
 
-The transition evidence is also incomplete. Some eligible antibiotic actions have no applicable transition candidates. When this occurs, the environment records an unsupported transition rather than treating the unchanged resistance state as evidence of treatment success.
+The transition evidence is also incomplete. Current policies exclude susceptible actions without applicable transition candidates. If none remain, evaluation stops at an evidence boundary: full-horizon burden is unknown, and a conservative uncertainty cost is kept separate from observed resistance. Earlier saved analyses retain their original susceptible-only rules and unsupported-transition traces. Supported neutral repetition and the absence of selected-drug self-resistance remain limitations.
 
 The environment does not currently account for bacterial population sizes, antibiotic dosage, patient recovery, or other clinical factors that would be necessary for real-world prescribing decisions.
 

@@ -10,7 +10,7 @@ namespace Amr.IntegrationTests;
 /// <summary>Exercises the real Python service through the real typed client. Skipped unless AMR_PYTHON_URL is set.</summary>
 public sealed class LivePythonServiceTests : IDisposable
 {
-    private const string FrozenCheckpointSha256 = "1747b68cb572cc320c7c53ae105dfa9dd6827f689839b35c4f2bcf9520384001";
+    private const string FrozenCheckpointSha256 = "ed3e9fd242000b9467641172d4338dd3e40f15599a695e7f9adf2476fff96f04";
     private readonly AmrApiFactory _factory;
     private readonly IPythonServiceClient _client;
 
@@ -73,7 +73,7 @@ public sealed class LivePythonServiceTests : IDisposable
     }
 
     [LiveFact]
-    public async Task Ppo_and_baseline_simulations_and_a_comparison_round_trip_with_unsupported_transitions_preserved()
+    public async Task Learned_and_baseline_runs_use_only_supported_susceptible_actions()
     {
         var profile = new[] { 0, 1, 0, 0, 0, 0, 0 };
 
@@ -83,7 +83,15 @@ public sealed class LivePythonServiceTests : IDisposable
 
         Assert.Equal(FrozenCheckpointSha256, ppo.Provenance.CheckpointSha256);
         Assert.Equal(8, ppo.Result.Steps.Count);
-        Assert.Contains(ppo.Result.Steps, step => step.TransitionStatus == "unsupported_no_candidate");
+        foreach (var result in new[] { ppo.Result, baseline.Result, comparison.Ppo, comparison.Dqn! })
+        {
+            Assert.All(result.Steps, step =>
+            {
+                Assert.True(step.SelectedDrugSusceptible);
+                Assert.True(step.HasCandidateTransition);
+                Assert.NotEqual("unsupported_no_candidate", step.TransitionStatus);
+            });
+        }
         Assert.Equal("Random Susceptible Baseline", baseline.Result.DisplayLabel);
         Assert.True(comparison.ComparisonContract.Verified);
         Assert.False(comparison.ComparisonContract.TransitionOutcomesGuaranteedIdentical);

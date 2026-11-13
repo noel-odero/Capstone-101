@@ -40,6 +40,39 @@ public class RunRepositoryTests(PostgresDatabaseFixture db) : IClassFixture<Post
     private static async Task<ComparisonDto> NewComparisonAsync() => (await SampleDtos.Comparison()) with { Id = Guid.NewGuid() };
 
     [PostgresFact]
+    public async Task Incomplete_evaluations_preserve_unknown_burden_and_separate_uncertainty_after_reopening()
+    {
+        var run = await NewComparisonAsync();
+        var profile = new[] { 1, 1, 1, 1, 1, 1, 0 };
+        var result = run.Ppo! with
+        {
+            InitialProfile = profile, FinalProfile = profile, TerminationReason = "evidence_boundary",
+            States = [new(0, 0, profile, ["CIPROFLOXACIN", "NITROFURANTOIN", "FOSFOMYCIN", "TRIMETHOPRIM", "GENTAMICIN", "MECILLINAM"], 6, 1, null, null, true)],
+            Steps = [],
+            Metrics = run.Ppo.Metrics with
+            {
+                CumulativeResistanceBurden = null, CumulativeReward = -8, TreatmentSteps = 0,
+                InitialResistantCount = 6, FinalResistantCount = 6, FinalSusceptibleCount = 1,
+                ChangeInSusceptibleCount = 0, ResistanceEmergenceEvents = 0,
+                ResistanceEmergenceRate = null, SusceptibleActionRate = null,
+                UnsupportedStepCount = 0, CumulativeAntibioticExposure = 0,
+            },
+        };
+        run = run with { Ppo = result, Baseline = result with { Strategy = StrategyKind.RandomSusceptibleBaseline, Model = null } };
+        var owner = $"boundary:{Guid.NewGuid():N}";
+        await using (var write = db.CreateContext())
+            await Repository(write, owner).SaveComparisonAsync(run, CancellationToken.None);
+        await using var read = db.CreateContext();
+        var reopened = await Repository(read, owner).FindComparisonAsync(run.Id, CancellationToken.None);
+        Assert.NotNull(reopened);
+        Assert.Null(reopened.Ppo!.Metrics.CumulativeResistanceBurden);
+        Assert.False(reopened.Ppo.EvaluationComplete);
+        Assert.Equal(8, reopened.Ppo.PessimisticScore);
+        Assert.Equal(8, reopened.Ppo.UncertaintyContinuationCost);
+        Assert.Equal(0, reopened.Ppo.ObservedResistanceBurden);
+    }
+
+    [PostgresFact]
     public async Task Research_collections_persist_the_question_and_cannot_include_or_expose_another_users_evidence()
     {
         var owner = $"collections:{Guid.NewGuid():N}";

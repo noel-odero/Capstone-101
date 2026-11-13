@@ -57,7 +57,7 @@ public sealed record PythonStepTrace(
     string? TerminationReason);
 
 public sealed record PythonStrategyMetrics(
-    double CumulativeResistanceBurden,
+    double? CumulativeResistanceBurden,
     double CumulativeReward,
     int TreatmentSteps,
     int InitialResistantCount,

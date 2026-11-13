@@ -27,7 +27,8 @@ public sealed class ComparisonService(IPythonServiceClient python, IRunRepositor
         var comparison = run.ToComparisonDto() with { SampleId = request.SampleId };
         var (ppo, baseline) = (comparison.Ppo!, comparison.Baseline!);
         if (ppo.Strategy != StrategyKind.Ppo || baseline.Strategy != StrategyKind.RandomSusceptibleBaseline
-            || comparison.Dqn is not { Strategy: StrategyKind.Dqn, Model: not null })
+            || comparison.Dqn is not { Strategy: StrategyKind.Dqn, Model: not null }
+            || !new[] { ppo, baseline, comparison.Dqn }.All(result => RunResponseChecks.ConsistentOutcome(result, comparison.Provenance)))
         {
             throw UpstreamErrors.InvalidResponse();
         }

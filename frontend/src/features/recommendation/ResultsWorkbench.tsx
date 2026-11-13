@@ -7,6 +7,7 @@ import {
   buildTrajectorySeries,
   comparePolicyTraces,
   formatMetricValue,
+  displayMetricValue,
   type MetricKey,
 } from '@/domain/metrics'
 import { profileToCode } from '@/domain/profile'
@@ -67,7 +68,7 @@ const validationMetrics = [
 const tabs = ['Overview', 'Trajectory', 'Compare'] as const
 
 function value(result: StrategyResult, key: MetricKey) {
-  const raw = result.metrics[key]
+  const raw = displayMetricValue(result, key)
   if (raw == null) return 'Not available'
   if (key === 'susceptibleActionRate') return `${Math.round(raw * 100)}%`
   if (key === 'finalSusceptibleCount') return `${raw} / 7`
@@ -208,7 +209,10 @@ export function ResultsWorkbench({
       <div className={styles.topline}>
         <span>Research / Results</span>
         <span className={styles.completed}>
-          <FiCheck aria-hidden="true" /> Completed
+          <FiCheck aria-hidden="true" />{' '}
+          {results.some((result) => result.terminationReason === 'evidence_boundary')
+            ? 'Evidence boundary reached'
+            : 'Completed'}
         </span>
       </div>
       <PageHeader
@@ -248,6 +252,12 @@ export function ResultsWorkbench({
         ) : null}
       </div>
       {'baseline' in run ? <ComparisonNotice comparison={run} /> : null}
+      {results.some((result) => result.terminationReason === 'evidence_boundary') ? (
+        <p role="note" className={styles.note}>
+          No supported action remains for part of this evaluation. Trajectories stop at the last
+          modeled state; full-horizon burden and final options are unavailable for those strategies.
+        </p>
+      ) : null}
       <div className={styles.tabs} role="tablist" aria-label="Analysis results">
         {tabs.map((name, index) => (
           <button

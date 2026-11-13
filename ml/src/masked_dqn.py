@@ -39,9 +39,13 @@ def susceptible_mask(observations: torch.Tensor) -> torch.Tensor:
 
 def masked_bootstrap(
     next_q_values: torch.Tensor, next_observations: torch.Tensor, dones: torch.Tensor,
+    *, action_masks: torch.Tensor | None = None,
 ) -> torch.Tensor:
     """Return legal next-state maxima, with exactly zero bootstrap at termination."""
-    mask = susceptible_mask(next_observations)
+    susceptible = susceptible_mask(next_observations)
+    mask = susceptible if action_masks is None else action_masks
+    if mask.shape != susceptible.shape or mask.dtype != torch.bool or (mask & ~susceptible).any():
+        raise ValueError("Action masks must be boolean subsets of susceptible actions.")
     terminal = dones.reshape(-1).bool()
     if next_q_values.shape != mask.shape or terminal.shape != mask.shape[:1]:
         raise ValueError("Q-values, next observations and terminal flags must align.")
@@ -66,10 +70,13 @@ class MaskedDQN(DQN):
         if self.gamma != 1.0:
             raise ValueError("The resistance-burden objective requires gamma=1.0.")
 
+    def _action_masks(self, observations: torch.Tensor) -> torch.Tensor:
+        return susceptible_mask(observations)
+
     def predict(self, observation, state=None, episode_start=None, deterministic=False):
         self.policy.set_training_mode(False)
         observations, vectorized = self.policy.obs_to_tensor(observation)
-        mask = susceptible_mask(observations)
+        mask = self._action_masks(observations)
         if not mask.any(dim=1).all():
             raise ValueError("A terminal observation has no susceptible action.")
         with torch.no_grad():
@@ -89,7 +96,7 @@ class MaskedDQN(DQN):
             raise RuntimeError("Training must reset the environment before sampling.")
         if self.num_timesteps < learning_starts:
             observations, _ = self.policy.obs_to_tensor(self._last_obs)
-            masks = susceptible_mask(observations).cpu().numpy()
+            masks = self._action_masks(observations).cpu().numpy()
             if not masks.any(axis=1).all():
                 raise ValueError("A terminal observation has no susceptible action.")
             actions = np.asarray([np.random.choice(np.flatnonzero(mask)) for mask in masks])
@@ -109,10 +116,11 @@ class MaskedDQN(DQN):
                 next_values = masked_bootstrap(
                     self.q_net_target(replay.next_observations),
                     replay.next_observations, replay.dones,
+                    action_masks=self._action_masks(replay.next_observations),
                 )
                 discounts = replay.discounts if replay.discounts is not None else self.gamma
                 targets = replay.rewards + discounts * next_values
-            mask = susceptible_mask(replay.observations)
+            mask = self._action_masks(replay.observations)
             if not mask.gather(1, replay.actions.long()).all():
                 raise ValueError("Replay contains an infeasible action.")
             current = self.q_net(replay.observations).gather(1, replay.actions.long())

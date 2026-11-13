@@ -71,7 +71,10 @@ public static class MetricCatalogue
 
         return Entries.ToDictionary(
             entry => JsonNamingPolicy.CamelCase.ConvertName(entry.PublicName),
-            entry => new MetricDefinitionDto(pythonDefinitions[entry.PythonKey], entry.Kind, entry.Unit, entry.Aggregation),
+            entry => new MetricDefinitionDto(pythonDefinitions[entry.PythonKey], entry.Kind, entry.Unit,
+                pythonDefinitions["cumulative_reward"].StartsWith("Negative pessimistic score", StringComparison.Ordinal)
+                    && entry.PythonKey is "cumulative_resistance_burden" or "cumulative_reward"
+                    ? pythonDefinitions[entry.PythonKey] : entry.Aggregation),
             StringComparer.Ordinal);
     }
 }

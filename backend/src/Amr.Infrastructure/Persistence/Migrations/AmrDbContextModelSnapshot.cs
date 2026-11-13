@@ -602,7 +602,7 @@ namespace Amr.Infrastructure.Persistence.Migrations
                         .HasColumnType("integer")
                         .HasColumnName("cumulative_antibiotic_exposure");
 
-                    b.Property<double>("CumulativeResistanceBurden")
+                    b.Property<double?>("CumulativeResistanceBurden")
                         .HasColumnType("double precision")
                         .HasColumnName("cumulative_resistance_burden");
 

@@ -8,7 +8,6 @@ import uuid
 
 from ml.src.evaluation_runner import EpisodeResult
 from ml.src.greedy_policy import GreedyPolicy
-from ml.src.matched_policy_evaluation import _episode_burden
 from ml.src.metrics import EpisodeMetrics
 from ml.src.multi_seed_evaluation import MultiSeedResult, run_multi_seed_evaluation
 from ml.src.ppo_inference import NO_CANDIDATE_STATUS, ContractMismatchError, InferenceContext
@@ -18,6 +17,7 @@ from service import __version__
 from service.errors import ComparisonContractError
 from service.runtime import DISCLAIMER, ModelRuntime
 from simulation.resistance_state import ANTIBIOTICS
+from experiments.evidence_environment import EvidenceEnvironment, EvidenceRandomPolicy
 
 STRATEGY_LABELS = {"ppo": "PPO", "dqn": "DQN", "greedy": "Random Susceptible Baseline"}
 _POLICY_IMPLEMENTATION = "service.rollout.FrozenEnginePolicy (wraps ml.src.ppo_inference.FrozenPolicyInferenceEngine)"
@@ -169,7 +169,10 @@ def _strategy_result(
         "states": states,
         "steps": steps,
         "metrics": {
-            "cumulative_resistance_burden": _episode_burden(episode) + 0.0,  # avoids JSON -0.0
+            "cumulative_resistance_burden": None if episode.termination_reason == "evidence_boundary" else (
+                sum(sum(_profile(step.next_observation)) / 7 for step in episode.steps)
+                + (runtime.engine.horizon - len(episode.steps) if all(episode.final_resistance_profile) else 0.0)
+            ),
             "cumulative_reward": metrics.cumulative_reward,
             "treatment_steps": metrics.treatment_steps,
             "initial_resistant_count": sum(initial),
@@ -192,11 +195,13 @@ def _evaluate(
 ) -> tuple[MultiSeedResult, EpisodeResult, EpisodeMetrics]:
     """One episode through the existing runner; each call builds its own environment and policy instances."""
     engine, config = runtime.engine_for(strategy), runtime.config
+    kernel = engine.evidence_kernel
     policy_factory = (
-        (lambda action_space, seed: FrozenEnginePolicy(engine)) if strategy != "greedy" else GreedyPolicy
+        (lambda action_space, seed: FrozenEnginePolicy(engine)) if strategy != "greedy" else
+        (lambda action_space, seed: EvidenceRandomPolicy(kernel, seed)) if kernel is not None else GreedyPolicy
     )
     result = run_multi_seed_evaluation(
-        lambda: make_training_environment(config),
+        lambda: EvidenceEnvironment(kernel) if kernel is not None else make_training_environment(config),
         policy_factory,
         [(environment_seed, policy_seed)],
         initial_states=[profile],
@@ -227,11 +232,23 @@ def _seed(value: int | None) -> tuple[int, str]:
     return (secrets.randbelow(2**31), "service_generated") if value is None else (value, "client")
 
 
-def _envelope() -> dict[str, Any]:
+def _envelope(runtime: ModelRuntime) -> dict[str, Any]:
+    definitions = dict(METRIC_DEFINITIONS)
+    if runtime.engine.evidence_kernel is not None:
+        definitions["cumulative_resistance_burden"] = (
+            "Full-horizon modeled sum of resistant_count_after / 7, including the all-resistant absorbing convention. "
+            "Null if an evidence boundary stops evaluation; uncertainty cost is excluded."
+        )
+        definitions["final_resistant_count"] = "Resistant antibiotics in the last recorded state; not a full-horizon outcome if evaluation is incomplete."
+        definitions["final_susceptible_count"] = "Susceptible antibiotics in the last recorded state; final options are unknown if evaluation is incomplete."
+        definitions["cumulative_reward"] = (
+            "Negative pessimistic score: modeled burden plus the remaining-horizon uncertainty cost at an evidence boundary. "
+            "The uncertainty cost is not a predicted resistance outcome."
+        )
     return {
         "run_id": str(uuid.uuid4()),
         "created_at_utc": datetime.now(timezone.utc).isoformat(),
-        "metric_definitions": METRIC_DEFINITIONS,
+        "metric_definitions": definitions,
         "disclaimer": DISCLAIMER,
     }
 
@@ -257,7 +274,7 @@ def simulate(
         notes = ["policy_seed drives the baseline's uniform tie-breaking among susceptible actions."]
     result, episode, metrics = _evaluate(runtime, strategy, profile, env_seed, internal_policy_seed)
     return {
-        **_envelope(),
+        **_envelope(runtime),
         "kind": "simulation",
         "provenance": _provenance(runtime, result.environment_configuration, strategy),
         "seed_configuration": {
@@ -373,7 +390,7 @@ def compare(
     dqn = _strategy_result(runtime, "dqn", dqn_episode, dqn_metrics, env_seed, None)
     contract = _comparison_contract(runtime, profile, env_seed, ppo_run, greedy_run, ppo, greedy, dqn_run, dqn)
     return {
-        **_envelope(),
+        **_envelope(runtime),
         "kind": "comparison",
         "provenance": _provenance(runtime, ppo_run.environment_configuration),
         "seed_configuration": {

@@ -16,6 +16,7 @@ import {
   ZAxis,
 } from 'recharts'
 import { STRATEGY_COLORS, strategyLabel } from '@/domain/terminology'
+import { displayMetricValue } from '@/domain/metrics'
 import { useAnalysisLabel } from '@/features/samples/useAnalysisLabel'
 import type { SavedAnalysis } from './history-api'
 import { INSIGHT_POLICIES, policyResult, summarizeEvidence } from './insight-data'
@@ -59,7 +60,7 @@ export function InsightCharts({
       ...Object.fromEntries(
         INSIGHT_POLICIES.map((policy) => [
           policy,
-          policyResult(run, policy)?.metrics[metric] ?? null,
+          displayMetricValue(policyResult(run, policy), metric),
         ]),
       ),
     }))
@@ -273,6 +274,12 @@ export function InsightCharts({
             <i style={{ background: 'var(--color-warning-solid)' }} />
             {summary.unsupported} steps lack applicable transition data
           </span>
+          {summary.incomplete.length ? (
+            <span>
+              {summary.incomplete.length} analyses stopped at an evidence boundary; coverage counts
+              recorded steps only.
+            </span>
+          ) : null}
         </div>
       </section>
     </div>

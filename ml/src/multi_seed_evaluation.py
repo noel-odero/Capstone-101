@@ -110,11 +110,11 @@ def _configuration(environment: AntibioticEnvironment) -> dict:
         "scenario_id": model.sampler.scenario_id,
         "occurrence_probability_assumption": model.sampler.occurrence_probability,
         "horizon": environment.episode_termination.max_steps,
-        "reward_specification": episode_step.reward_function.specification.to_dict(),
-        "action_mask_configuration": {
+        "reward_specification": getattr(environment, "research_reward_specification", episode_step.reward_function.specification.to_dict()),
+        "action_mask_configuration": getattr(environment, "research_mask_configuration", {
             "enabled": True,
             "rule": "susceptible_actions_only",
-        },
+        }),
         "observation_low": environment.observation_space.low.tolist(),
         "observation_high": environment.observation_space.high.tolist(),
         "observation_dtype": str(environment.observation_space.dtype),

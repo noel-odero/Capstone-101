@@ -23,24 +23,26 @@ from ml.src.ppo_inference import (
 from ml.src.ppo_training import PPOConfig
 from service import __version__
 from simulation.action_space import ACTION_SPACE_FILE, ActionSpace
+from experiments.evidence_environment import EvidenceRuntimeConfig
 from simulation.resistance_state import ANTIBIOTICS
 
 logger = logging.getLogger("service")
-DQN_MANIFEST_PATH = Path(__file__).resolve().parents[1] / "artifacts/frozen/public-data-v2/dqn/manifest.json"
+DQN_MANIFEST_PATH = Path(__file__).resolve().parents[1] / "artifacts/frozen/evidence-aware-v3/dqn/manifest.json"
 
 DISCLAIMER = (
     "Model-derived research analysis only. It is not clinical advice, a validated treatment recommendation, or a "
     "statement about clinical efficacy."
 )
 INTERPRETATION = (
-    "The action is the frozen policy's choice among simulator-feasible (currently susceptible) antibiotics. "
+    "The action is the frozen policy's choice among currently susceptible antibiotics with applicable transition candidates. "
     "Transition support only says whether the simulator has modeled outcomes for this action in this state; "
     "it does not imply the profile will change or that the drug is clinically effective."
 )
 TRANSITION_STATUS_DEFINITIONS = {
     NO_CANDIDATE_STATUS: (
         "The simulator has no candidate transition for this action in this state and leaves the resistance "
-        "profile unchanged. This is a data gap, not evidence that the antibiotic is effective."
+        "profile unchanged under legacy rules. Current policies exclude this action. Candidate absence can reflect "
+        "missing relationships or state-dependent inapplicability; it is not evidence of effectiveness."
     ),
     CANDIDATES_AVAILABLE_STATUS: (
         "The simulator has at least one modeled transition outcome (cross-resistance, collateral sensitivity "
@@ -57,7 +59,7 @@ class ModelRuntime:
     engine: FrozenPolicyInferenceEngine
     manifest: FrozenCheckpointManifest
     manifest_document: dict[str, Any]
-    config: PPOConfig
+    config: PPOConfig | EvidenceRuntimeConfig
     antibiotics: tuple[dict[str, Any], ...]
     dqn_engine: FrozenPolicyInferenceEngine
 
@@ -104,8 +106,8 @@ class ModelRuntime:
         }
 
     def feasible_actions(self, context: InferenceContext) -> list[dict[str, Any]]:
-        """Susceptible-only rule, identical to the engine's mask; support flags come from the simulator's generator."""
-        state = context.resistance_state
+        """Use the loaded checkpoint's action rule and the generator's state-dependent support flags."""
+        mask = self.engine.action_mask(context)
         return [
             {
                 "action_id": action_id,
@@ -113,7 +115,7 @@ class ModelRuntime:
                 "has_candidate_transition": self.engine.has_candidate_transition(context, action_id),
             }
             for action_id, name in enumerate(ANTIBIOTICS)
-            if state.is_susceptible(name)
+            if mask[action_id]
         ]
 
     def validate_profile(self, resistance_profile: list[int]) -> dict[str, Any]:
@@ -123,6 +125,8 @@ class ModelRuntime:
         susceptible = [name for name in ANTIBIOTICS if name not in resistant]
         is_terminal = not susceptible
         feasible = [] if is_terminal else self.feasible_actions(context)
+        boundary = bool(susceptible) and not feasible
+        is_terminal = is_terminal or boundary
         evidence = [
             {
                 "action_id": action_id,
@@ -149,7 +153,7 @@ class ModelRuntime:
             "feasible_actions": feasible,
             "feasible_action_ids": [item["action_id"] for item in feasible],
             "is_terminal": is_terminal,
-            "terminal_reason": "no_effective_antibiotic" if is_terminal else None,
+            "terminal_reason": "evidence_boundary" if boundary else "no_effective_antibiotic" if is_terminal else None,
             "horizon": self.engine.horizon,
             "transition_evidence": evidence,
             "interaction_data_sha256": self.manifest.interaction_data_sha256,
@@ -211,14 +215,15 @@ def _load_antibiotics() -> tuple[dict[str, Any], ...]:
     )
 
 
-def load_runtime(manifest_path: str | Path = DEFAULT_MANIFEST_PATH) -> ModelRuntime:
+def load_runtime(manifest_path: str | Path = DEFAULT_MANIFEST_PATH, *,
+                 dqn_manifest_path: str | Path = DQN_MANIFEST_PATH) -> ModelRuntime:
     """Verify and load through the existing cached engine; raises the inference layer's own errors."""
     engine = get_frozen_engine(manifest_path)
     manifest = load_manifest(manifest_path)
     with Path(manifest_path).open(encoding="utf-8") as manifest_file:
         document = json.load(manifest_file)
-    dqn_engine = get_frozen_engine(DQN_MANIFEST_PATH)
-    document_dqn = json.loads(DQN_MANIFEST_PATH.read_text(encoding="utf-8"))
+    dqn_engine = get_frozen_engine(dqn_manifest_path)
+    document_dqn = json.loads(Path(dqn_manifest_path).read_text(encoding="utf-8"))
     if document["algorithm"] != "MaskablePPO" or document_dqn["algorithm"] != "MaskedDQN":
         raise ContractMismatchError("The PPO and DQN slots must contain their declared algorithms.")
     for key in ("simulator", "observation", "action_space", "action_masking", "inference"):
@@ -228,7 +233,7 @@ def load_runtime(manifest_path: str | Path = DEFAULT_MANIFEST_PATH) -> ModelRunt
         engine=engine,
         manifest=manifest,
         manifest_document=document,
-        config=PPOConfig(
+        config=EvidenceRuntimeConfig(engine.evidence_kernel) if engine.evidence_kernel is not None else PPOConfig(
             scenario_id=manifest.scenario_id, horizon=manifest.horizon, device=manifest.device,
             interaction_data_path=manifest.interaction_data_path,
         ),

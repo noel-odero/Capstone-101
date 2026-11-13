@@ -156,7 +156,7 @@ def freeze(study: Path, destination: Path, *, workers: int = 3) -> dict:
         "baseline": "Random susceptible-action code and recorded RNG seeds; no learned checkpoint.",
     }
     write_json(destination / "selection.json", selection)
-    template = json.loads((ROOT / "ml/frozen_ppo_manifest.json").read_text(encoding="utf-8"))
+    template = json.loads((ROOT / "artifacts/frozen/public-data-v2/ppo/manifest.json").read_text(encoding="utf-8"))
     for strategy, row in selected.items():
         folder = destination / strategy
         folder.mkdir()

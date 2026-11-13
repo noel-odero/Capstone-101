@@ -82,16 +82,16 @@ public sealed partial class RunRepository(AmrDbContext db, TimeProvider clock, I
             if (query.Sort is "ppo" or "dqn" or "baseline")
             {
                 var strategy = query.Sort switch { "ppo" => StrategyKind.Ppo, "dqn" => StrategyKind.Dqn, _ => StrategyKind.RandomSusceptibleBaseline };
-                ordered = mine.OrderBy(run => !run.StrategyRuns.Any(result => result.Strategy == strategy))
+                ordered = mine.OrderBy(run => !run.StrategyRuns.Any(result => result.Strategy == strategy && result.CumulativeResistanceBurden != null))
                     .ThenBy(run => run.StrategyRuns.Where(result => result.Strategy == strategy).Select(result => (double?)result.CumulativeResistanceBurden).FirstOrDefault())
                     .ThenByDescending(run => run.CreatedAtUtc).ThenByDescending(run => run.Id);
             }
             else if (query.Sort == "disagreement")
             {
-                ordered = mine.OrderByDescending(run => run.StrategyRuns.Any(result => result.Strategy == StrategyKind.Ppo) && run.StrategyRuns.Any(result => result.Strategy == StrategyKind.Dqn))
+                ordered = mine.OrderByDescending(run => run.StrategyRuns.Any(result => result.Strategy == StrategyKind.Ppo && result.CumulativeResistanceBurden != null) && run.StrategyRuns.Any(result => result.Strategy == StrategyKind.Dqn && result.CumulativeResistanceBurden != null))
                     .ThenByDescending(run => Math.Abs(
                         run.StrategyRuns.Where(result => result.Strategy == StrategyKind.Ppo).Select(result => result.CumulativeResistanceBurden).FirstOrDefault() -
-                        run.StrategyRuns.Where(result => result.Strategy == StrategyKind.Dqn).Select(result => result.CumulativeResistanceBurden).FirstOrDefault()))
+                        run.StrategyRuns.Where(result => result.Strategy == StrategyKind.Dqn).Select(result => result.CumulativeResistanceBurden).FirstOrDefault() ?? 0))
                     .ThenByDescending(run => run.CreatedAtUtc).ThenByDescending(run => run.Id);
             }
             else ordered = query.Sort == "oldest" ? mine.OrderBy(run => run.CreatedAtUtc).ThenBy(run => run.Id)

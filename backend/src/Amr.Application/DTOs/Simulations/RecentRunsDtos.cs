@@ -38,7 +38,7 @@ public sealed record RecentRunsQuery : IValidatableObject
 public sealed record StrategySummaryDto(
     StrategyKind Strategy,
     string DisplayLabel,
-    double CumulativeResistanceBurden,
+    double? CumulativeResistanceBurden,
     int FinalResistantCount,
     string TerminationReason);
 

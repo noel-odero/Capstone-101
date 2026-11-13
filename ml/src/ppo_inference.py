@@ -192,6 +192,7 @@ class FrozenPolicyInferenceEngine:
         horizon: int,
         model_id: str,
         checkpoint_sha256: str,
+        evidence_kernel: Any = None,
     ):
         self._policy = policy
         self._candidate_generator = candidate_generator
@@ -199,6 +200,7 @@ class FrozenPolicyInferenceEngine:
         self._termination = EpisodeTermination(max_steps=horizon)
         self.model_id = model_id
         self.checkpoint_sha256 = checkpoint_sha256
+        self.evidence_kernel = evidence_kernel
         # Torch module state is shared across requests, so serialize predictions.
         self._lock = threading.Lock()
 
@@ -208,6 +210,10 @@ class FrozenPolicyInferenceEngine:
 
     def has_candidate_transition(self, context: InferenceContext, action_id: int) -> bool:
         return bool(self.candidate_transitions(context, action_id))
+
+    def action_mask(self, context: InferenceContext) -> np.ndarray:
+        return (_feasibility_mask(context.resistance_state) if self.evidence_kernel is None
+                else self.evidence_kernel.mask(context.resistance_profile))
 
     def candidate_transitions(self, context: InferenceContext, action_id: int) -> tuple[CandidateTransition, ...]:
         """Inspect the verified simulator's candidates without sampling or invoking a policy."""
@@ -229,8 +235,10 @@ class FrozenPolicyInferenceEngine:
             )
             raise TerminalStateError(reason)
 
-        mask = _feasibility_mask(state)
+        mask = self.action_mask(context)
         if not mask.any():
+            if self.evidence_kernel is not None:
+                raise TerminalStateError("evidence_boundary")
             raise EmptyActionMaskError("No feasible action exists for a non-terminal context.")
         feasible_ids = tuple(int(action) for action in np.flatnonzero(mask))
 
@@ -268,6 +276,7 @@ class FrozenCheckpointManifest:
     interaction_data_sha256: str
     interaction_data_path: str | None = None
     algorithm: str = "MaskablePPO"
+    evidence_environment: dict | None = None
 
 
 def load_manifest(manifest_path: str | Path = DEFAULT_MANIFEST_PATH) -> FrozenCheckpointManifest:
@@ -280,7 +289,7 @@ def load_manifest(manifest_path: str | Path = DEFAULT_MANIFEST_PATH) -> FrozenCh
             raise ContractMismatchError(f"Frozen manifest contract violation: {message}")
 
     try:
-        require(manifest["manifest_version"] == 1, "unsupported manifest_version")
+        require(manifest["manifest_version"] in (1, 2), "unsupported manifest_version")
         require(manifest["algorithm"] in ("MaskablePPO", "MaskedDQN"), "algorithm must be MaskablePPO or MaskedDQN")
         require(
             tuple(manifest["simulator"]["action_names"]) == ANTIBIOTICS,
@@ -306,12 +315,13 @@ def load_manifest(manifest_path: str | Path = DEFAULT_MANIFEST_PATH) -> FrozenCh
             manifest["action_space"] == {"type": "Discrete", "n": action_count},
             "action space",
         )
-        require(
-            manifest["action_masking"]["rule"]
-            == PPOConfig().action_mask_configuration["rule"]
-            == "susceptible_actions_only",
-            "action masking rule",
-        )
+        expected_rule = "susceptible_actions_only" if manifest["manifest_version"] == 1 else "susceptible_actions_with_candidate_transitions"
+        require(manifest["action_masking"]["rule"] == expected_rule, "action masking rule")
+        if manifest["manifest_version"] == 2:
+            require(manifest["evidence_environment"]["specification"] == {
+                "variant": "supported", "horizon": manifest["simulator"]["horizon"],
+                "scenario_id": manifest["simulator"]["scenario_id"], "supported_only": True, "repetition_penalty": 0.0,
+            }, "evidence environment specification")
         require(manifest["inference"]["deterministic"] is True, "inference must be deterministic")
         horizon = manifest["simulator"]["horizon"]
         require(_is_integer(horizon) and horizon > 0, "horizon must be a positive integer")
@@ -327,6 +337,7 @@ def load_manifest(manifest_path: str | Path = DEFAULT_MANIFEST_PATH) -> FrozenCh
             interaction_data_sha256=str(manifest["simulator"]["interaction_data_sha256"]).lower(),
             interaction_data_path=manifest["simulator"].get("interaction_data_path"),
             algorithm=manifest["algorithm"],
+            evidence_environment=manifest.get("evidence_environment") if manifest["manifest_version"] == 2 else None,
         )
     except (KeyError, TypeError) as error:
         raise ContractMismatchError(f"Frozen manifest is missing or malformed: {error!r}") from error
@@ -390,6 +401,30 @@ def load_frozen_engine(
     checkpoint_bytes, digest = read_verified_checkpoint(
         manifest.checkpoint_path, manifest.checkpoint_sha256
     )
+
+    if manifest.evidence_environment is not None:
+        from experiments.evidence_environment import EvidenceDQN, EvidenceEnvironment, EvidenceKernel, EvidenceObservationPolicy, EvidenceSpec
+        kernel = EvidenceKernel(EvidenceSpec(**manifest.evidence_environment["specification"]), REPO_ROOT / manifest.interaction_data_path)
+        live = kernel.manifest()
+        # CSV line endings can change between Windows and Linux; semantic data and mask hashes cannot.
+        live["csv_sha256"] = manifest.evidence_environment["csv_sha256"]
+        if live != manifest.evidence_environment or live["interaction_data_sha256"] != manifest.interaction_data_sha256:
+            raise ContractMismatchError("Evidence environment or mask differs from the trained contract.")
+        training = json.loads(manifest.training_config_path.read_text())
+        if training["environment"] != manifest.evidence_environment or training["algorithm"] != ("ppo" if manifest.algorithm == "MaskablePPO" else "dqn"):
+            raise ContractMismatchError("Evidence checkpoint training configuration differs.")
+        model = (_load_model_from_bytes(checkpoint_bytes, manifest.device) if manifest.algorithm == "MaskablePPO"
+                 else EvidenceDQN.load(io.BytesIO(checkpoint_bytes), device=manifest.device))
+        if manifest.algorithm == "MaskedDQN" and not np.array_equal(model.evidence_mask_table, kernel.mask_table):
+            raise ContractMismatchError("DQN checkpoint evidence mask differs.")
+        env = EvidenceEnvironment(kernel)
+        try:
+            if model.action_space != env.action_space or model.observation_space != env.observation_space:
+                raise ContractMismatchError("Evidence checkpoint spaces differ.")
+        finally:
+            env.close()
+        return FrozenPolicyInferenceEngine(policy=EvidenceObservationPolicy(model, kernel), candidate_generator=kernel.generator,
+            horizon=manifest.horizon, model_id=manifest.model_id, checkpoint_sha256=digest, evidence_kernel=kernel)
 
     config = PPOConfig(
         scenario_id=manifest.scenario_id, horizon=manifest.horizon, device=manifest.device,

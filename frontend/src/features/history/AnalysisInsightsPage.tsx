@@ -423,7 +423,7 @@ function InsightsOverview({
               <small>analyses with gaps</small>
             </span>
             <h3>Where is the evidence incomplete?</h3>
-            <p>Trace actions that had no applicable transition data.</p>
+            <p>Inspect unsupported steps or evaluations stopped at an evidence boundary.</p>
             <Button variant="ghost" size="sm" onClick={() => onInvestigate('unsupported')}>
               Inspect transition gaps
             </Button>

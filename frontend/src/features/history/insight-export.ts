@@ -1,5 +1,6 @@
 import { strategyLabel } from '@/domain/terminology'
 import { analysisLabel } from '@/domain/analysis-label'
+import { displayMetricValue } from '@/domain/metrics'
 import type { HistoryComparison, SavedAnalysis } from './history-api'
 
 export function metricsCsv(
@@ -32,6 +33,11 @@ export function metricsCsv(
       'environment_seed',
       'policy_seed',
       'shared_conditions_verified',
+      'termination_reason',
+      'evaluation_complete',
+      'observed_resistance_burden',
+      'pessimistic_score',
+      'uncertainty_continuation_cost',
     ],
   ]
   for (const run of data.analyses)
@@ -44,7 +50,7 @@ export function metricsCsv(
         result.strategy,
         result.metrics.cumulativeResistanceBurden,
         result.metrics.resistanceEmergenceEvents,
-        result.metrics.finalSusceptibleCount,
+        displayMetricValue(result, 'finalSusceptibleCount'),
         result.metrics.unsupportedStepCount,
         result.metrics.treatmentSteps,
         result.model?.modelId ??
@@ -61,6 +67,11 @@ export function metricsCsv(
         result.environmentSeed,
         result.policySeed,
         String(run.comparisonVerified),
+        result.terminationReason,
+        String(result.terminationReason !== 'evidence_boundary'),
+        result.observedResistanceBurden ?? null,
+        result.pessimisticScore ?? null,
+        result.uncertaintyContinuationCost ?? null,
       ])
   return rows.map((row) => row.map(cell).join(',')).join('\r\n')
 }
@@ -94,20 +105,29 @@ ${data.analyses
       run,
     ) => `<section><h2>${text(labelFor(run))}</h2><p>Profile ${text(run.initialProfile.join(''))} · ${text(run.id)} · ${text(run.createdAtUtc)}</p>
 ${table(
-  ['Policy', 'Burden', 'Emergence', 'Remaining options', 'Unsupported steps', 'Recorded steps'],
+  [
+    'Policy',
+    'Burden',
+    'Emergence',
+    'Remaining options',
+    'Unsupported steps',
+    'Recorded steps',
+    'Evaluation',
+  ],
   run.strategies.map((result) => [
     strategyLabel(result.strategy),
     result.metrics.cumulativeResistanceBurden,
     result.metrics.resistanceEmergenceEvents,
-    result.metrics.finalSusceptibleCount,
+    displayMetricValue(result, 'finalSusceptibleCount'),
     result.metrics.unsupportedStepCount,
     result.metrics.treatmentSteps,
+    result.terminationReason === 'evidence_boundary' ? 'Incomplete: evidence boundary' : 'Complete',
   ]),
 )}
 ${run.strategies
   .map(
     (result) =>
-      `<h3>${text(strategyLabel(result.strategy))} · recorded sequence and transitions</h3>${table(
+      `<h3>${text(strategyLabel(result.strategy))} · recorded sequence and transitions</h3>${result.terminationReason === 'evidence_boundary' ? `<p>Evidence boundary: future resistance burden is unknown. Recorded burden ${text(result.observedResistanceBurden)}, uncertainty continuation cost ${text(result.uncertaintyContinuationCost)}, pessimistic objective score ${text(result.pessimisticScore)}. The uncertainty cost is a conservative objective assumption, not a predicted resistance outcome.</p>` : ''}${table(
         [
           'Step',
           'Selected antibiotic',

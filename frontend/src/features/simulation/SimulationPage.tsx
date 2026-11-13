@@ -74,6 +74,9 @@ export function SimulationPage() {
 
   const results = strategyResults(data)
   const noSteps = results.every((result) => result.steps.length === 0)
+  const evidenceBoundary = results.some(
+    (result) => result.terminationReason === 'evidence_boundary',
+  )
 
   return (
     <ContentContainer>
@@ -93,6 +96,12 @@ export function SimulationPage() {
       />
 
       <ComparisonNotice comparison={data} />
+      {evidenceBoundary ? (
+        <p role="note">
+          Evaluation stopped at an evidence boundary. Full-horizon burden and final options are
+          unavailable; the last modeled state is shown.
+        </p>
+      ) : null}
       <SimulationControls
         key={data.id}
         initialProfile={ppo.initialProfile}
@@ -103,7 +112,10 @@ export function SimulationPage() {
         <Card as="div">
           <p role="note">
             <StatusIndicator kind="warning" label="No feasible actions remain" />{' '}
-            {GLOSSARY.noFeasibleActions} No strategy took a step.
+            {evidenceBoundary
+              ? 'No susceptible action has applicable transition evidence.'
+              : GLOSSARY.noFeasibleActions}{' '}
+            No strategy took a step.
           </p>
           <ComparisonMetrics comparison={data} />
         </Card>

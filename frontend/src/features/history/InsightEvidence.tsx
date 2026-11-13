@@ -101,17 +101,17 @@ export function InsightEvidence({
                       className="tabular"
                       style={{ color: result ? STRATEGY_COLORS[policy] : undefined }}
                     >
-                      {result
-                        ? result.metrics.cumulativeResistanceBurden.toFixed(2)
-                        : 'Unavailable'}
+                      {result?.metrics.cumulativeResistanceBurden?.toFixed(2) ?? 'Unavailable'}
                     </td>
                   )
                 })}
                 <td>
                   {run.strategies.map((result) => (
                     <small key={result.strategy}>
-                      {strategyLabel(result.strategy)}: {result.metrics.unsupportedStepCount}/
-                      {result.metrics.treatmentSteps} steps
+                      {strategyLabel(result.strategy)}:{' '}
+                      {result.terminationReason === 'evidence_boundary'
+                        ? 'Evidence boundary · incomplete'
+                        : `${result.metrics.unsupportedStepCount}/${result.metrics.treatmentSteps} steps`}
                     </small>
                   ))}
                 </td>

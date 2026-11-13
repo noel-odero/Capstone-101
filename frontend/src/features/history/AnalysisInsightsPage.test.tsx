@@ -80,6 +80,30 @@ describe('Analysis Insights', () => {
     await import('./AnalysisInsightsPage')
   }, 30_000)
 
+  it('treats an evidence boundary as an investigation gap without inventing a burden tie or victory', () => {
+    const incomplete: SavedAnalysis = {
+      ...second,
+      strategies: second.strategies.map((result) => ({
+        ...result,
+        terminationReason: 'evidence_boundary',
+        steps: [],
+        metrics: {
+          ...result.metrics,
+          cumulativeResistanceBurden: null,
+          unsupportedStepCount: 0,
+          treatmentSteps: 0,
+        },
+      })),
+    }
+    expect(matchesInvestigation(incomplete, 'unsupported')).toBe(true)
+    expect(matchesInvestigation(incomplete, 'agreement')).toBe(false)
+    expect(matchesInvestigation(incomplete, 'policy_failure')).toBe(false)
+    expect(summarizeEvidence([incomplete]).incomplete).toHaveLength(1)
+    expect(evidenceReport({ ...response, analyses: [incomplete] })).toContain(
+      'Incomplete: evidence boundary',
+    )
+  })
+
   it('summarizes differences in plain language and keeps detailed explanations collapsed', async () => {
     mockFetch(
       baseRoutes({
