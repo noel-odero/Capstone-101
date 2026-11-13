@@ -7,15 +7,21 @@ export function PrivacyPage() {
         <h2>What the server stores</h2>
         <ul>
           <li>
-            An account identifier, used to keep your analyses separate from other people&apos;s.
+            Your account identifier, email address, display name, email-verification status and
+            sign-in security records.
           </li>
           <li>
-            Each analysis you run: the initial resistance profile, seeds, and the returned results.
+            Samples you save, including their labels, dates added and initial resistance profiles.
+          </li>
+          <li>
+            Your saved analyses and research collections, including resistance profiles, seeds,
+            evaluation settings and results.
           </li>
         </ul>
         <p>
-          Your name, email address and picture come from Google for display and are kept in your
-          session cookie, not in the database.
+          You sign in with your email address and password. Your password is stored as a salted
+          hash, not as plain text. Verification emails are sent through Azure Communication Services
+          Email.
         </p>
       </section>
       <section>
@@ -41,8 +47,13 @@ export function PrivacyPage() {
       <section>
         <h2>Deleting your data</h2>
         <p>
-          There is no self-service deletion yet. This is a research prototype; ask the project
-          maintainers through the repository to remove your stored analyses.
+          You can delete samples from the Samples page. Deleting a sample removes it from your
+          sample library, but any saved analyses created from it, including their resistance
+          profiles and results, remain in Analysis History.
+        </p>
+        <p>
+          Self-service deletion of saved analyses and accounts is not currently available. Contact
+          the project maintainer to request their removal.
         </p>
       </section>
     </PublicPage>
