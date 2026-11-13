@@ -67,6 +67,7 @@ describe('E. coli Model Explorer', () => {
     const user = userEvent.setup()
     renderApp('/app/profile')
     await screen.findByRole('heading', { name: 'E. coli Model Explorer' })
+    expect(screen.queryByText('Evidence context & model version')).not.toBeInTheDocument()
     expect(screen.getAllByRole('button', { name: /^State [01]{7},/ })).toHaveLength(128)
     expect(new Set(MODEL_STATES.map((state) => state.code)).size).toBe(128)
     expect(screen.queryByRole('switch')).not.toBeInTheDocument()

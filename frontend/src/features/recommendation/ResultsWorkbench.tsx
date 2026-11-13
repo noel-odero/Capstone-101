@@ -11,7 +11,6 @@ import {
 } from '@/domain/metrics'
 import { profileToCode } from '@/domain/profile'
 import {
-  GLOSSARY,
   STRATEGY_NAMES,
   STRATEGY_COLORS,
   strategyLabel,
@@ -391,7 +390,7 @@ export function ResultsWorkbench({
               {baseline
                 ? pairingVerified
                   ? 'Shared starting conditions verified. Lower burden and emergence; more remaining options.'
-                  : 'Inspect the recorded assumptions below.'
+                  : 'Shared starting conditions were not verified for this saved analysis.'
                 : `This saved run contains ${strategyLabel(ppo.strategy)} only. Run a new comparison to evaluate all three strategies.`}
             </p>
             {metricTable(comparisonMetrics, 'Independent evaluation metrics')}
@@ -516,69 +515,6 @@ export function ResultsWorkbench({
           </p>
         )}
       </section>
-      <details className={styles.assumptions}>
-        <summary>Run assumptions and limitations</summary>
-        <p className={styles.note}>
-          The current model does not include selected-drug self-resistance, bacterial clearance,
-          dosing or a stopping decision. Repeated selections and low simulated burden do not
-          establish clinical suitability.
-        </p>
-        <dl className={styles.traceGrid}>
-          <div>
-            <dt>Run ID</dt>
-            <dd>
-              <code>{run.id}</code>
-            </dd>
-          </div>
-          {results
-            .filter((result) => result.strategy !== 'random_susceptible_baseline')
-            .map((result) => {
-              const model =
-                result.model ?? (result.strategy === ppo.strategy ? run.provenance : null)
-              return model ? (
-                <div key={result.strategy}>
-                  <dt>{strategyLabel(result.strategy)} model / checkpoint</dt>
-                  <dd>
-                    {model.modelId}
-                    <br />
-                    <code>{model.checkpointSha256}</code>
-                  </dd>
-                </div>
-              ) : null
-            })}
-          <div>
-            <dt>Scenario</dt>
-            <dd>{run.provenance.scenarioId}</dd>
-          </div>
-          <div>
-            <dt>Environment / policy seeds</dt>
-            <dd>
-              {run.seedConfiguration.environmentSeed} /{' '}
-              {run.seedConfiguration.policySeed ?? 'Not specified'}
-            </dd>
-          </div>
-          <div>
-            <dt>Action mask</dt>
-            <dd>{run.provenance.actionMaskRule}</dd>
-          </div>
-          <div>
-            <dt>Interaction data SHA-256</dt>
-            <dd>
-              <code>{run.provenance.interactionDataSha256}</code>
-            </dd>
-          </div>
-        </dl>
-        <p className={styles.note}>{GLOSSARY.unsupported}</p>
-        <p className={styles.note}>{GLOSSARY.sameSeed}</p>
-        {run.seedConfiguration.notes.map((note) => (
-          <p key={note} className={styles.note}>
-            {note}
-          </p>
-        ))}
-        <p className={styles.note}>
-          {'singleRunCaveat' in run ? run.singleRunCaveat : GLOSSARY.singleRun}
-        </p>
-      </details>
       <p className={styles.footer}>
         {PROTOTYPE_STATEMENT} <Link to="/limitations">Limitations</Link>
       </p>

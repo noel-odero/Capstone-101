@@ -12,7 +12,6 @@ import {
 import { Button, ButtonLink } from '@/components/ui/Button'
 import { buildTrajectorySeries } from '@/domain/metrics'
 import { formatDrugName } from '@/domain/antibiotics'
-import { formatDateTime } from '@/domain/formatters'
 import { useAnalysisLabel } from '@/features/samples/useAnalysisLabel'
 import { STRATEGY_COLORS, strategyLabel } from '@/domain/terminology'
 import type { StepTrace, StrategyId } from '@/domain/types'
@@ -50,9 +49,7 @@ export function AnalysisInspector({ run, onClose }: { run: SavedAnalysis; onClos
       <div className={styles.panelHeading}>
         <div>
           <h2>{name}</h2>
-          <p>
-            {run.provenance.scenarioId} · {run.provenance.horizon} steps
-          </p>
+          <p>{run.provenance.horizon}-step evaluation</p>
         </div>
         <Button variant="ghost" size="sm" onClick={onClose}>
           Close details
@@ -183,82 +180,6 @@ export function AnalysisInspector({ run, onClose }: { run: SavedAnalysis; onClos
           </p>
         </div>
       ) : null}
-      <details className={styles.provenance}>
-        <summary>Recorded settings and provenance</summary>
-        <dl className={styles.traceValues}>
-          <div>
-            <dt>Analysis ID</dt>
-            <dd>
-              <code>{run.id}</code>
-            </dd>
-          </div>
-          <div>
-            <dt>Recorded at</dt>
-            <dd>{formatDateTime(run.createdAtUtc)}</dd>
-          </div>
-          <div>
-            <dt>Environment / policy seed</dt>
-            <dd>
-              {run.seedConfiguration.environmentSeed} /{' '}
-              {run.seedConfiguration.policySeed ?? 'Not used'}
-            </dd>
-          </div>
-          <div>
-            <dt>Pairing verification</dt>
-            <dd>
-              {run.comparisonVerified === true ? 'Shared conditions verified' : 'Not verified'}
-            </dd>
-          </div>
-          <div>
-            <dt>Transition dataset SHA-256</dt>
-            <dd>
-              <code>{run.provenance.interactionDataSha256 || 'Unknown'}</code>
-            </dd>
-          </div>
-          {run.strategies
-            .filter((result) => result.strategy !== 'random_susceptible_baseline')
-            .map((result) => {
-              const identity =
-                result.model ??
-                (run.provenance.algorithm ===
-                (result.strategy === 'ppo' ? 'MaskablePPO' : 'MaskedDQN')
-                  ? run.provenance
-                  : null)
-              return (
-                <div key={result.strategy}>
-                  <dt>{strategyLabel(result.strategy)} checkpoint</dt>
-                  <dd>
-                    {identity?.modelId ?? 'Unknown'}
-                    <br />
-                    <code>{identity?.checkpointSha256 ?? 'Unknown'}</code>
-                  </dd>
-                </div>
-              )
-            })}
-          <div>
-            <dt>Action order / mask</dt>
-            <dd>
-              {run.provenance.antibioticOrder.join(', ')}
-              <br />
-              {run.provenance.actionMaskRule}
-            </dd>
-          </div>
-          <div>
-            <dt>Service version</dt>
-            <dd>{run.provenance.serviceVersion || 'Unknown'}</dd>
-          </div>
-        </dl>
-        <details>
-          <summary>Reward and metric definitions</summary>
-          <pre>
-            {JSON.stringify(
-              { reward: run.provenance.rewardSpecification, metrics: run.metricDefinitions },
-              null,
-              2,
-            )}
-          </pre>
-        </details>
-      </details>
       <div className={styles.detailLinks}>
         {run.kind === 'comparison' ? (
           <ButtonLink variant="secondary" size="sm" to={`/app/simulation/${run.id}`}>

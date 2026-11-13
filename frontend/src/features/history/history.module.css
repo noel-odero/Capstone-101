@@ -160,26 +160,11 @@
   margin: 0;
   overflow-wrap: anywhere;
 }
-.provenance {
-  padding: 1.25rem;
-  font-size: var(--text-sm);
-}
-.provenance summary {
-  cursor: pointer;
-}
-.provenance .traceValues {
-  margin-block: 1rem;
-}
-.provenance pre {
-  white-space: pre-wrap;
-  overflow-wrap: anywhere;
-  font-size: var(--text-xs);
-}
 .detailLinks {
   display: flex;
   flex-wrap: wrap;
   gap: 0.6rem;
-  padding: 0 1.25rem 1.25rem;
+  padding: 1.25rem;
 }
 @media (max-width: 740px) {
   .inspectorGrid,
@@ -187,8 +172,7 @@
     grid-template-columns: minmax(0, 1fr);
   }
   .panelHeading,
-  .trace,
-  .provenance {
+  .trace {
     padding: 1rem;
   }
 }

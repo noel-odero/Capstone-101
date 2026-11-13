@@ -56,6 +56,7 @@ export function TransitionEvidence({
           </span>
         ) : null}
       </div>
+      <p className={styles.note}>CS: collateral sensitivity · XR: cross-resistance.</p>
       {data.isTerminal ? (
         <p className={styles.terminal}>
           All antibiotics are resistant. No action is eligible from this terminal state.
@@ -159,23 +160,6 @@ export function TransitionEvidence({
         Eligibility means susceptible in this state. Candidate support means a modeled outcome
         exists; it does not establish efficacy or guarantee a resistance change.
       </p>
-      <details className={styles.explainer}>
-        <summary>Evidence context & model version</summary>
-        <p>
-          Bits follow the antibiotic row order: 0 = susceptible, 1 = resistant. CS restores target
-          susceptibility; XR makes a susceptible target resistant. Source IDs refer to the evidence
-          registry. Relationships are modeled possibilities, not measured transition probabilities
-          or explanations of policy decisions.
-        </p>
-        <dl>
-          <dt>Scenario</dt>
-          <dd>{data.scenarioId ?? 'Not recorded'}</dd>
-          <dt>Interaction data SHA-256</dt>
-          <dd>
-            <code>{data.interactionDataSha256 ?? 'Not recorded'}</code>
-          </dd>
-        </dl>
-      </details>
     </>
   )
 }

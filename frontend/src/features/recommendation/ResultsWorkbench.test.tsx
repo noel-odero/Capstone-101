@@ -28,6 +28,8 @@ describe('saved analysis results', () => {
       />,
     )
     expect(screen.getByRole('heading', { name: 'Analysis Results' })).toBeInTheDocument()
+    expect(screen.queryByText('Run assumptions and limitations')).not.toBeInTheDocument()
+    expect(screen.queryByText(run.provenance.interactionDataSha256)).not.toBeInTheDocument()
     expect(screen.getByText(/Findings are model-derived/)).toBeInTheDocument()
     expect(screen.queryByText(/Simulation output only/)).not.toBeInTheDocument()
     expect(screen.getByText('PPO + DQN · same sequence')).toBeInTheDocument()

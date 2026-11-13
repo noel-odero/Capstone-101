@@ -152,8 +152,8 @@ describe('Analysis Insights', () => {
       'href',
       `/app/recommendations/comparison/${secondId}`,
     )
-    await user.click(screen.getByText('Recorded settings and provenance'))
-    expect(screen.getByText(secondId)).toBeVisible()
+    expect(screen.queryByText('Recorded settings and provenance')).not.toBeInTheDocument()
+    expect(screen.queryByText('Reward and metric definitions')).not.toBeInTheDocument()
   })
 
   it('numbers the complete sample history chronologically and uses dates for unlinked records', () => {
@@ -317,6 +317,9 @@ describe('Analysis Insights', () => {
     expect(report).not.toContain('<script>bad()')
     expect(report).toContain('&lt;script&gt;')
     expect(report).toContain(first.provenance.interactionDataSha256)
+    expect(report).toContain(first.provenance.checkpointSha256)
+    expect(report).toContain('metricDefinitions')
+    expect(report).toContain(String(first.seedConfiguration.environmentSeed))
     expect(report).toContain('No applicable data')
     expect(metricsCsv(response).split('\r\n')).toHaveLength(6)
     expect(metricsCsv(response)).toContain(firstId)
