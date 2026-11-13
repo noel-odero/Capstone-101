@@ -104,51 +104,6 @@ describe('Analysis Insights', () => {
     )
   })
 
-  it('summarizes differences in plain language and keeps detailed explanations collapsed', async () => {
-    mockFetch(
-      baseRoutes({
-        'GET /api/v1/auth/session': { body: session },
-        'POST /api/v1/analyses/compare': {
-          body: {
-            ...response,
-            compatibility: {
-              status: 'exploratory',
-              issues: [
-                {
-                  code: 'different_initial_profiles',
-                  severity: 'exploratory',
-                  message: 'Long technical profile explanation.',
-                  analysisIds: [firstId, secondId],
-                },
-                {
-                  code: 'different_seeds',
-                  severity: 'exploratory',
-                  message: 'Long technical seed explanation.',
-                  analysisIds: [firstId, secondId],
-                },
-              ],
-            },
-          },
-        },
-      }),
-    )
-    const user = userEvent.setup()
-    renderApp(`/app/insights?ids=${firstId},${secondId}&tab=evidence`)
-    const context = await screen.findByRole('region', { name: 'Comparison context' })
-    expect(within(context).getByText('Compare with context')).toBeVisible()
-    const differences = within(context).getByRole('group', { name: 'Comparison differences' })
-    expect(within(differences).getByText('Different starting profiles')).toBeVisible()
-    expect(within(differences).getByText('Different random seeds')).toBeVisible()
-    const detail = within(context).getByText(
-      'The analyses started with different resistance patterns.',
-    )
-    expect(detail).not.toBeVisible()
-    await user.click(within(context).getByText('Comparison details'))
-    expect(detail).toBeVisible()
-    expect(within(context).getAllByText('2 of 2 analyses')).toHaveLength(2)
-    expect(context).not.toHaveTextContent(response.interpretation)
-  })
-
   it('uses sample-linked names in evidence and details while preserving the original analysis link', async () => {
     const sampleId = '08f2732d-6b79-44ed-9fbd-79fd472804ae'
     mockFetch(
@@ -237,7 +192,7 @@ describe('Analysis Insights', () => {
     expect(api.callsTo('POST /api/v1/simulations')).toHaveLength(0)
   })
 
-  it('shows missing DQN separately from zero, comparison limits, and recorded traces', async () => {
+  it('shows missing DQN separately from zero and keeps recorded traces available', async () => {
     mockFetch(
       baseRoutes({
         'GET /api/v1/auth/session': { body: session },
@@ -255,10 +210,6 @@ describe('Analysis Insights', () => {
     if (!missingRow || !completeRow) throw new Error('Expected two saved analyses')
     expect(within(missingRow).getAllByText('Unavailable')).toHaveLength(1)
     expect(within(completeRow).getByText('0.00')).toBeInTheDocument()
-    await user.click(screen.getByText('Comparison details'))
-    expect(
-      screen.getByText('Some saved analyses do not include DQN. Missing values are not zero.'),
-    ).toBeVisible()
     await user.click(screen.getByRole('button', { name: `Inspect ${analysisLabel(first)}` }))
     expect(screen.getByRole('heading', { name: 'Recorded action sequences' })).toBeInTheDocument()
     expect(screen.getByRole('link', { name: 'Open 3D evaluation' })).toHaveAttribute(
@@ -343,6 +294,7 @@ describe('Analysis Insights', () => {
     expect(report).toContain(first.provenance.interactionDataSha256)
     expect(report).toContain(first.provenance.checkpointSha256)
     expect(report).toContain('metricDefinitions')
+    for (const issue of response.compatibility.issues) expect(report).toContain(issue.message)
     expect(report).toContain(String(first.seedConfiguration.environmentSeed))
     expect(report).toContain('No applicable data')
     expect(metricsCsv(response).split('\r\n')).toHaveLength(6)

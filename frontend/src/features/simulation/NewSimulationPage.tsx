@@ -1,4 +1,4 @@
-import { useId, useState, type FormEvent } from 'react'
+import { useState, type FormEvent } from 'react'
 import { Link, useNavigate, useSearchParams } from 'react-router'
 import { isApiError } from '@/api/api-errors'
 import { ContentContainer } from '@/components/layout/ContentContainer'
@@ -17,7 +17,6 @@ import {
   profileToCode,
   toggleAntibiotic,
 } from '@/domain/profile'
-import { parseSeedInput } from '@/domain/seeds'
 import { GLOSSARY, PAGE_TITLES } from '@/domain/terminology'
 import type { CreateComparisonRequest } from '@/domain/types'
 import { useAntibiotics } from '@/hooks/useAntibiotics'
@@ -28,34 +27,28 @@ import type { SavedSample } from '@/features/samples/sample-api'
 import styles from './simulation.module.css'
 import setup from './setup.module.css'
 
-/** Configure a shared starting profile and optional seeds for all three strategies. */
+/** Configure a shared starting profile for all three strategies. */
 function SimulationForm({ sample }: { sample?: SavedSample }) {
   const [params] = useSearchParams()
   const navigate = useNavigate()
-  const environmentSeedId = useId()
-  const policySeedId = useId()
   const [profile, setProfile] = useState(
     () =>
       sample?.resistanceProfile ??
       parseProfileCode(params.get('profile')) ??
       allSusceptibleProfile(),
   )
-  const [environmentSeedText, setEnvironmentSeedText] = useState('')
-  const [policySeedText, setPolicySeedText] = useState('')
   const [reviewing, setReviewing] = useState(false)
 
   const antibiotics = useAntibiotics()
   const model = useModelMetadata()
   const create = useCreateComparison()
 
-  const environmentSeed = parseSeedInput(environmentSeedText)
-  const policySeed = parseSeedInput(policySeedText)
   const terminal = isAllResistant(profile)
-  const blocked = terminal || !environmentSeed.ok || !policySeed.ok || !antibiotics.data
+  const blocked = terminal || !antibiotics.data
 
   const submit = (event: FormEvent) => {
     event.preventDefault()
-    if (blocked || create.isPending || !environmentSeed.ok || !policySeed.ok) {
+    if (blocked || create.isPending) {
       return
     }
     if (!reviewing) {
@@ -65,8 +58,6 @@ function SimulationForm({ sample }: { sample?: SavedSample }) {
     const request: CreateComparisonRequest = {
       ...(sample ? { sampleId: sample.id } : {}),
       resistanceProfile: profile,
-      ...(environmentSeed.value === undefined ? {} : { environmentSeed: environmentSeed.value }),
-      ...(policySeed.value === undefined ? {} : { policySeed: policySeed.value }),
     }
     create.mutate(request, {
       onSuccess: (comparison) => void navigate(`/app/simulation/${comparison.id}`),
@@ -205,60 +196,11 @@ function SimulationForm({ sample }: { sample?: SavedSample }) {
                   <strong>{model.data ? `${model.data.horizon} steps` : '8 steps'}</strong>
                 </span>
               </div>
-
-              <details>
-                <summary>Seeds (optional)</summary>
-                <div className={styles['seeds']} style={{ marginTop: 'var(--space-3)' }}>
-                  <div className={styles['field']}>
-                    <label className={styles['fieldTitle']} htmlFor={environmentSeedId}>
-                      Environment seed
-                    </label>
-                    <input
-                      id={environmentSeedId}
-                      className={styles['input']}
-                      value={environmentSeedText}
-                      inputMode="numeric"
-                      placeholder="Generated for you"
-                      autoComplete="off"
-                      aria-invalid={!environmentSeed.ok}
-                      onChange={(event) => setEnvironmentSeedText(event.target.value)}
-                    />
-                    {!environmentSeed.ok ? (
-                      <span className={styles['error']}>{environmentSeed.message}</span>
-                    ) : null}
-                  </div>
-                  <div className={styles['field']}>
-                    <label className={styles['fieldTitle']} htmlFor={policySeedId}>
-                      Baseline policy seed
-                    </label>
-                    <input
-                      id={policySeedId}
-                      className={styles['input']}
-                      value={policySeedText}
-                      inputMode="numeric"
-                      placeholder="Generated for you"
-                      autoComplete="off"
-                      aria-invalid={!policySeed.ok}
-                      onChange={(event) => setPolicySeedText(event.target.value)}
-                    />
-                    {!policySeed.ok ? (
-                      <span className={styles['error']}>{policySeed.message}</span>
-                    ) : null}
-                  </div>
-                </div>
-                <p className={styles['hint']} style={{ marginTop: 'var(--space-2)' }}>
-                  {GLOSSARY.sameSeed}
-                </p>
-              </details>
             </fieldset>
 
             <div className="row">
               <Button type="submit" variant="dark" loading={create.isPending} disabled={blocked}>
-                {create.isPending
-                  ? 'Evaluating'
-                  : reviewing
-                    ? 'Run Analysis'
-                    : 'Review Analysis'}
+                {create.isPending ? 'Evaluating' : reviewing ? 'Run Analysis' : 'Review Analysis'}
               </Button>
               {reviewing ? (
                 <Button
