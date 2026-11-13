@@ -94,6 +94,7 @@ if "$frontend_only"; then
 else
   # Build before interrupting the API. A failed migration needs manual review.
   docker compose --parallel 1 build
+  docker compose run --rm --no-deps -T model python -c 'from service.runtime import load_runtime; load_runtime(); print("Model startup check passed.")' </dev/null
   bash deploy/backup.sh
   docker compose stop api
   docker compose --profile tools run --rm migrate

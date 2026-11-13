@@ -16,6 +16,8 @@ COPY simulation/ ./simulation/
 COPY experiments/evidence_environment.py ./experiments/evidence_environment.py
 COPY data/ ./data/
 COPY artifacts/frozen/evidence-aware-v3/ ./artifacts/frozen/evidence-aware-v3/
+# Git checkouts made under the updater's private umask can contain 0600 files.
+RUN chmod -R a=rX /app
 USER 10001:10001
 EXPOSE 8000
 CMD ["python", "-m", "uvicorn", "service.main:app", "--host", "0.0.0.0", "--port", "8000", "--workers", "1"]

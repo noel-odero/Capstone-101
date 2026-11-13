@@ -190,7 +190,7 @@ git pull --ff-only
 sudo bash deploy/install-auto-update.sh
 ```
 
-The first successful deployment establishes the saved release SHA. Later changes limited to the frontend, Caddy, or documentation rebuild only `web`. Other updates build the stack, back up PostgreSQL, pause the API, apply migrations, and restart the services. Healthy container checks and the public HTTPS readiness endpoint must pass before a release is recorded. Persistent volumes and the server's private `.env` remain in place.
+The first successful deployment establishes the saved release SHA. Later changes limited to the frontend, Caddy, or documentation rebuild only `web`. Other updates build the stack, verify that the model image can load both frozen checkpoints, back up PostgreSQL, pause the API, apply migrations, and restart the services. The model image normalizes its application-file permissions so its non-root user can read code and checkpoints even when the server checkout used a private umask. Healthy container checks and the public HTTPS readiness endpoint must pass before a release is recorded. Persistent volumes and the server's private `.env` remain in place.
 
 ```bash
 sudo journalctl -u stewardlab-autodeploy.service -n 60 --no-pager
