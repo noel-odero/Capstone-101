@@ -29,7 +29,7 @@ public sealed class StrategyRun
     /// <summary>State snapshots (state 0 is the initial profile) as a JSON array; they are fully determined by the steps but returned as the service produced them.</summary>
     public required string StatesJson { get; set; }
 
-    public double CumulativeResistanceBurden { get; set; }
+    public double? CumulativeResistanceBurden { get; set; }
 
     public double CumulativeReward { get; set; }
 

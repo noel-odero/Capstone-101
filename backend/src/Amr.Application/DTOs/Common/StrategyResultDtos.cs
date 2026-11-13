@@ -50,10 +50,10 @@ public sealed record StepTraceDto(
     bool IsTerminalAfter,
     string? TerminationReason);
 
-/// <param name="CumulativeResistanceBurden">Negative of the simulator's cumulative reward. A simulated quantity, not a clinical outcome.</param>
+/// <param name="CumulativeResistanceBurden">Full-horizon modeled burden; null if evaluation stops at an evidence boundary.</param>
 /// <param name="SusceptibleActionRate">Share of steps whose drug was susceptible in the simulator. Not clinical efficacy.</param>
 public sealed record StrategyMetricsDto(
-    double CumulativeResistanceBurden,
+    double? CumulativeResistanceBurden,
     double CumulativeReward,
     int TreatmentSteps,
     int InitialResistantCount,
@@ -80,6 +80,12 @@ public sealed record StrategyResultDto(
     StrategyMetricsDto Metrics)
 {
     public PolicyModelDto? Model { get; init; }
+    public bool EvaluationComplete => TerminationReason != "evidence_boundary";
+    public double PessimisticScore => -Metrics.CumulativeReward;
+    public double? ObservedResistanceBurden => EvaluationComplete
+        ? Metrics.CumulativeResistanceBurden
+        : States.Skip(1).Sum(state => state.ResistantCount / 7.0);
+    public double? UncertaintyContinuationCost => EvaluationComplete ? 0 : PessimisticScore - ObservedResistanceBurden;
 }
 
 public sealed record PolicyModelDto(string ModelId, string Algorithm, string CheckpointSha256);

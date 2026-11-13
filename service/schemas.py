@@ -221,7 +221,7 @@ class StepTrace(BaseModel):
 
 
 class StrategyMetrics(BaseModel):
-    cumulative_resistance_burden: float
+    cumulative_resistance_burden: float | None
     cumulative_reward: float
     treatment_steps: int
     initial_resistant_count: int

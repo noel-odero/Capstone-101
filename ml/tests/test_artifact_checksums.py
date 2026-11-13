@@ -108,7 +108,7 @@ def test_committed_artifacts_verify_on_this_checkout():
 
 def test_frozen_checkpoint_checksum_matches_the_frozen_manifest():
     manifest = json.loads((REPO_ROOT / "ml" / "frozen_ppo_manifest.json").read_text(encoding="utf-8"))
-    sums = REPO_ROOT / "artifacts/frozen/public-data-v2/SHA256SUMS.txt"
+    sums = DEFAULT_SUMS_PATH
     relative = (REPO_ROOT / manifest["checkpoint"]["path"]).relative_to(sums.parent).as_posix()
     recorded = {path: digest for digest, path in parse_sums(sums.read_text(encoding="utf-8-sig"))}
 

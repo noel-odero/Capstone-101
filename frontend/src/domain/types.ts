@@ -184,7 +184,7 @@ export const stepTraceSchema = z.object({
 })
 
 export const strategyMetricsSchema = z.object({
-  cumulativeResistanceBurden: z.number(),
+  cumulativeResistanceBurden: z.number().nullable(),
   cumulativeReward: z.number(),
   treatmentSteps: z.number().int(),
   initialResistantCount: z.number().int(),
@@ -199,6 +199,10 @@ export const strategyMetricsSchema = z.object({
 })
 
 export const strategyResultSchema = z.object({
+  evaluationComplete: z.boolean().optional(),
+  pessimisticScore: z.number().optional(),
+  observedResistanceBurden: z.number().nullish(),
+  uncertaintyContinuationCost: z.number().nullish(),
   strategy: strategyIdSchema,
   model: policyModelSchema.nullish(),
   displayLabel: z.string(),
@@ -269,7 +273,7 @@ export const comparisonSchema = z.object({
 export const strategySummarySchema = z.object({
   strategy: strategyIdSchema,
   displayLabel: z.string(),
-  cumulativeResistanceBurden: z.number(),
+  cumulativeResistanceBurden: z.number().nullable(),
   finalResistantCount: z.number().int(),
   terminationReason: z.string(),
 })

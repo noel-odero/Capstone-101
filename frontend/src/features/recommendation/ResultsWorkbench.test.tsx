@@ -15,6 +15,44 @@ const baselineResult = strategyResultSchema.parse(run.baseline)
 const antibiotics = buildCatalogue(antibioticCatalogueSchema.parse(antibioticsJson))
 
 describe('saved analysis results', () => {
+  it('shows an evidence boundary without displaying a zero burden or projected final options', async () => {
+    const stopped = strategyResultSchema.parse({
+      ...ppoResult,
+      terminationReason: 'evidence_boundary',
+      steps: [],
+      states: [ppoResult.states[0]],
+      metrics: {
+        ...ppoResult.metrics,
+        cumulativeResistanceBurden: null,
+        cumulativeReward: -8,
+        treatmentSteps: 0,
+      },
+    })
+    render(
+      <ResultsWorkbench
+        run={{ ...run, ppo: stopped, baseline: null }}
+        ppo={stopped}
+        baseline={null}
+        antibiotics={antibiotics}
+        comparisonId={run.id}
+      />,
+    )
+    expect(screen.getByText('Evidence boundary reached')).toBeInTheDocument()
+    expect(
+      screen.getByText(/full-horizon burden and final options are unavailable/i),
+    ).toBeInTheDocument()
+    await userEvent.click(screen.getByRole('tab', { name: 'Compare' }))
+    const table = screen.getByRole('table', { name: 'Independent evaluation metrics' })
+    const burden = within(table)
+      .getByRole('rowheader', { name: /Cumulative resistance burden/ })
+      .closest('tr')
+    const options = within(table)
+      .getByRole('rowheader', { name: /Remaining options/ })
+      .closest('tr')
+    if (!burden || !options) throw new Error('Expected comparison metric rows')
+    expect(within(burden).getByRole('cell')).toHaveTextContent('Not available')
+    expect(within(options).getByRole('cell')).toHaveTextContent('Not available')
+  })
   it('shows all three orders and lets each learned policy be inspected and compared', async () => {
     const user = userEvent.setup()
     const dqn = strategyResultSchema.parse({ ...ppoResult, strategy: 'dqn', displayLabel: 'DQN' })

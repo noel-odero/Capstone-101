@@ -10,6 +10,7 @@ from ml.src.ppo_inference import NO_CANDIDATE_STATUS, InferenceContext
 from ml.src.ppo_training import load_ppo_model, make_training_environment
 from service import rollout
 from simulation.resistance_state import ANTIBIOTICS
+from experiments.evidence_environment import EvidenceEnvironment, EvidenceObservationPolicy, EvidenceRandomPolicy
 
 PROFILES = [(0,) * 7, (1, 0, 0, 1, 0, 0, 1), (0, 1, 0, 1, 0, 1, 0), (0, 0, 0, 0, 1, 0, 0), (1, 1, 1, 1, 1, 1, 0)]
 ALL_NONTERMINAL = [profile for profile in product((0, 1), repeat=7) if not all(profile)]
@@ -26,7 +27,7 @@ def simulate(runtime, strategy, profile, environment_seed, policy_seed=None):
 
 
 def direct_episode(runtime, policy_factory, profile, environment_seed, policy_seed):
-    environment = make_training_environment(runtime.config)
+    environment = EvidenceEnvironment(runtime.engine.evidence_kernel)
     try:
         return run_evaluation(
             environment,
@@ -55,7 +56,7 @@ def test_learned_adapter_matches_direct_engine_inference_at_every_step(runtime, 
 @pytest.mark.parametrize("profile", PROFILES)
 def test_ppo_adapter_matches_path_loaded_policy_through_the_existing_evaluator(runtime, profile):
     model = load_ppo_model(runtime.manifest.checkpoint_path, device="cpu")
-    factory = lambda action_space, seed: MaskablePPOObservationPolicy(action_space, model, seed)
+    factory = lambda action_space, seed: EvidenceObservationPolicy(model, runtime.engine.evidence_kernel)
 
     expected = direct_episode(runtime, factory, profile, 100001, 0)
     result = simulate(runtime, "ppo", profile, environment_seed=100001)
@@ -69,7 +70,7 @@ def test_ppo_adapter_matches_path_loaded_policy_through_the_existing_evaluator(r
 
 @pytest.mark.parametrize(("profile", "environment_seed", "policy_seed"), [(PROFILES[0], 7, 3), (PROFILES[2], 100002, 900001), (PROFILES[3], 5, 5)])
 def test_greedy_adapter_matches_existing_evaluator_with_matching_seeds(runtime, profile, environment_seed, policy_seed):
-    expected = direct_episode(runtime, GreedyPolicy, profile, environment_seed, policy_seed)
+    expected = direct_episode(runtime, lambda space, seed: EvidenceRandomPolicy(runtime.engine.evidence_kernel, seed), profile, environment_seed, policy_seed)
 
     result = simulate(runtime, "greedy", profile, environment_seed, policy_seed)
 
@@ -106,7 +107,7 @@ def test_trace_is_internally_consistent(runtime, strategy):
         assert step["antibiotic"] == ANTIBIOTICS[step["action_id"]]
         assert before[step["action_id"]] == 0 and step["selected_drug_susceptible"] is True
         assert step["action_id"] in [item["action_id"] for item in step["feasible_actions"]]
-        assert [item["action_id"] for item in step["feasible_actions"]] == [i for i, v in enumerate(before) if v == 0]
+        assert [item["action_id"] for item in step["feasible_actions"]] == list(runtime.engine.evidence_kernel.actions(tuple(before)))
         assert step["newly_resistant_antibiotics"] == [n for n, b, a in zip(ANTIBIOTICS, before, after) if (b, a) == (0, 1)]
         assert step["newly_susceptible_antibiotics"] == [n for n, b, a in zip(ANTIBIOTICS, before, after) if (b, a) == (1, 0)]
         assert step["resistant_count_after"] == sum(after) and step["susceptible_count_after"] == 7 - sum(after)
@@ -118,21 +119,14 @@ def test_trace_is_internally_consistent(runtime, strategy):
     assert states[-1]["is_terminal"] is True and all(not s["is_terminal"] for s in states[:-1])
 
 
-def test_unsupported_steps_leave_the_profile_unchanged_without_inventing_outcomes(runtime):
-    unsupported = []
-    for seed in range(6):
-        for strategy in ("ppo", "greedy"):
-            for step in simulate(runtime, strategy, PROFILES[0], seed, seed)["steps"]:
-                if step["transition_status"] == NO_CANDIDATE_STATUS:
-                    unsupported.append(step)
-
-    assert unsupported
-    for step in unsupported:
-        assert step["has_candidate_transition"] is False and step["candidate_transitions"] == []
-        assert step["selected_outcome"] is None and step["selected_target_drug"] is None and step["source_ids"] == []
-        assert step["selected_candidate_probability"] is None and step["no_transition_probability"] is None
-        assert step["resistance_profile_after"] == step["resistance_profile_before"]
-        assert step["newly_resistant_antibiotics"] == step["newly_susceptible_antibiotics"] == []
+def test_evidence_boundary_is_not_a_zero_burden_success(runtime):
+    for strategy in ("ppo", "dqn", "greedy"):
+        result = simulate(runtime, strategy, (1, 1, 1, 1, 1, 1, 0), 31, 7)
+        assert result["steps"] == []
+        assert result["termination_reason"] == "evidence_boundary"
+        assert result["metrics"]["cumulative_resistance_burden"] is None
+        assert result["metrics"]["cumulative_reward"] == -8
+        assert result["states"][0]["resistance_profile"] == [1, 1, 1, 1, 1, 1, 0]
 
 
 def test_supported_transitions_report_outcome_target_sources_and_profile_diff(runtime):
@@ -152,13 +146,17 @@ def test_supported_transitions_report_outcome_target_sources_and_profile_diff(ru
         assert step["newly_susceptible_antibiotics"] == [step["selected_target_drug"]] and step["source_ids"]
 
 
-def test_every_nonterminal_profile_runs_the_full_horizon_for_both_strategies(runtime):
+def test_every_nonterminal_profile_uses_supported_actions_or_reports_its_boundary(runtime):
     for profile in ALL_NONTERMINAL:
-        for strategy in ("ppo", "greedy"):
+        for strategy in ("ppo", "dqn", "greedy"):
             result = simulate(runtime, strategy, profile, 100001, 900001)
-            assert len(result["steps"]) == runtime.engine.horizon == 8
-            assert result["termination_reason"] == "maximum_horizon"
-            assert result["states"][-1]["treatment_step"] == 8
+            assert all(s["has_candidate_transition"] and s["transition_status"] != NO_CANDIDATE_STATUS for s in result["steps"])
+            if result["termination_reason"] == "evidence_boundary":
+                assert result["metrics"]["cumulative_resistance_burden"] is None
+                assert len(result["steps"]) < 8
+            else:
+                assert len(result["steps"]) == runtime.engine.horizon == 8
+                assert result["termination_reason"] == "maximum_horizon"
 
 
 def test_burden_equals_negated_reward_sum_from_the_simulator(runtime):

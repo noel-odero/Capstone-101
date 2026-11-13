@@ -138,13 +138,15 @@ def run_evaluation(
         episode = environment.episode
         if episode is None:
             raise RuntimeError("Environment reset did not initialize an episode.")
-        terminated = environment.episode_termination.is_terminated(episode)
+        terminated = environment.episode_termination.is_terminated(episode) or bool(reset_info.get("evidence_boundary"))
         truncated = False
         terminal_reward_adjustment = (
             -float(horizon)
             if terminated and all(value == 1 for value in initial_state.resistance)
             else 0.0
         )
+        if reset_info.get("evidence_boundary"):
+            terminal_reward_adjustment = -environment.kernel.spec.boundary_cost(horizon)
         steps = []
         policy = policy_factory(environment.action_space, seed=episode_policy_seed)
         if not callable(getattr(policy, "select_action", None)):
@@ -171,7 +173,9 @@ def run_evaluation(
         if episode is None:
             raise RuntimeError("Environment lost its episode state.")
         if terminated:
-            if all(value == 1 for value in episode.resistance_state.resistance):
+            if reset_info.get("evidence_boundary") or (steps and steps[-1].info.get("evidence_boundary")):
+                reason = "evidence_boundary"
+            elif all(value == 1 for value in episode.resistance_state.resistance):
                 reason = "no_effective_antibiotic"
             elif episode.treatment_step >= horizon:
                 reason = "maximum_horizon"
@@ -198,6 +202,6 @@ def run_evaluation(
     return EvaluationResult(
         scenario_id=scenario_id,
         horizon=horizon,
-        reward_specification=reward_specification,
+        reward_specification=getattr(environment, "research_reward_specification", reward_specification),
         episodes=tuple(episodes),
     )

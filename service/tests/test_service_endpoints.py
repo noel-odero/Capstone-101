@@ -24,7 +24,7 @@ def test_health_reports_real_model_readiness(client):
     assert response.status_code == 200
     body = response.json()
     assert body["status"] == "ok" and body["model_ready"] is True
-    assert body["model_id"] == "ppo_public_v2_seed_19000"
+    assert body["model_id"] == "ppo_evidence_v3_seed_11000"
     assert body["checkpoint_sha256"] == EXPECTED_CHECKPOINT_SHA256
     assert response.headers["X-Request-ID"]
 
@@ -41,7 +41,7 @@ def test_model_metadata_comes_from_manifest_and_engine(client, runtime):
     assert (body["scenario_id"], body["horizon"]) == ("REF_UNIFORM_SUPPORTED", 8)
     assert body["antibiotic_order"] == list(ANTIBIOTICS)
     assert body["observation"] == manifest["observation"]
-    assert body["action_masking"] == {"rule": "susceptible_actions_only"}
+    assert body["action_masking"] == {"rule": "susceptible_actions_with_candidate_transitions"}
     assert "unsupported_no_candidate" in body["transition_status_definitions"]
     assert all(not path.startswith(("/", "\\")) and ":" not in path for path in body["provenance_files"].values())
     assert "not clinical advice" in body["disclaimer"].lower()
@@ -60,10 +60,10 @@ def test_validate_all_susceptible_profile(client):
     body = client.post("/internal/profiles/validate", json={"resistance_profile": [0] * 7}).json()
 
     assert body["valid"] is True and body["is_terminal"] is False
-    assert body["feasible_action_ids"] == list(range(7))
+    assert body["feasible_action_ids"] == [0, 1, 3, 4, 5, 6]
     assert body["susceptible_option_count"] == 7 and body["resistant_antibiotics"] == []
     support = {item["antibiotic"]: item["has_candidate_transition"] for item in body["feasible_actions"]}
-    assert {name for name, supported in support.items() if not supported} == UNSUPPORTED
+    assert all(support.values())
 
 
 def test_validate_all_resistant_profile_is_a_valid_terminal_result(client):
@@ -111,7 +111,7 @@ def test_validate_mixed_profile_names_and_feasibility(client):
 
     assert body["resistant_antibiotics"] == ["CIPROFLOXACIN", "FOSFOMYCIN", "MECILLINAM"]
     assert body["susceptible_antibiotics"] == ["NITROFURANTOIN", "TRIMETHOPRIM", "GENTAMICIN", "CEFTAZIDIME"]
-    assert body["feasible_action_ids"] == [1, 3, 4, 6]
+    assert body["feasible_action_ids"] == [1, 3, 4]
     assert body["susceptible_option_count"] == 4
 
 
@@ -151,7 +151,7 @@ def test_recommend_matches_direct_engine_inference(client, runtime):
     assert [item["antibiotic"] for item in body["feasible_actions"]] == list(direct.feasible_antibiotics)
     assert body["transition_status"] == direct.transition_status
     assert body["has_candidate_transition"] == direct.has_candidate_transition
-    assert body["model_id"] == "ppo_public_v2_seed_19000" and body["checkpoint_sha256"] == EXPECTED_CHECKPOINT_SHA256
+    assert body["model_id"] == "ppo_evidence_v3_seed_11000" and body["checkpoint_sha256"] == EXPECTED_CHECKPOINT_SHA256
     assert (body["last_action_id"], body["last_action_antibiotic"], body["treatment_step"]) == (1, "NITROFURANTOIN", 2)
     assert "clinically effective" in body["interpretation"]
 
@@ -214,7 +214,7 @@ def test_simulate_returns_complete_run(client, strategy):
     body = response.json()
     assert response.status_code == 200 and body["kind"] == "simulation"
     assert body["run_id"] and body["created_at_utc"]
-    expected = ("3afac9221dd29662708ba37f9a32326f389feb15efc31151706f738c0fd8c72d"
+    expected = ("5c8b43417907803dbbf8ede76a5a387d418997f631118f829761df26f9e00892"
                 if strategy == "dqn" else EXPECTED_CHECKPOINT_SHA256)
     assert body["provenance"]["checkpoint_sha256"] == expected
     assert body["provenance"]["scenario_id"] == "REF_UNIFORM_SUPPORTED" and body["provenance"]["horizon"] == 8
@@ -241,7 +241,7 @@ def test_simulate_labels_and_seed_semantics(client):
     assert ppo["seed_configuration"]["policy_seed"] is None
     assert ppo["seed_configuration"]["policy_seed_source"] == "not_applicable"
     assert greedy["result"]["display_label"] == "Random Susceptible Baseline"
-    assert greedy["result"]["implementation"] == "ml.src.greedy_policy.GreedyPolicy"
+    assert greedy["result"]["implementation"] == "experiments.evidence_environment.EvidenceRandomPolicy"
     assert greedy["seed_configuration"]["policy_seed"] == 9
 
 
@@ -295,7 +295,7 @@ def test_compare_returns_all_three_complete_strategy_results(client):
         result = body[key]
         assert result["strategy"] == key and result["display_label"] == label
         if key != "greedy":
-            assert result["model"]["model_id"] == ("ppo_public_v2_seed_19000" if key == "ppo" else "dqn_public_v2_seed_15000")
+            assert result["model"]["model_id"] == ("ppo_evidence_v3_seed_11000" if key == "ppo" else "dqn_evidence_v3_seed_15000")
         assert result["initial_profile"] == [0, 0, 1, 0, 0, 0, 0]
         assert len(result["steps"]) == 8 and len(result["states"]) == 9
         assert result["environment_seed"] == 21

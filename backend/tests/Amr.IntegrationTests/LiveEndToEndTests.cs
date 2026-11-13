@@ -102,32 +102,39 @@ public sealed class LiveEndToEndTests : IAsyncLifetime, IDisposable
     }
 
     [LiveDatabaseFact]
-    public async Task The_checked_in_fixtures_still_carry_the_live_metric_definitions_and_metric_names()
+    public async Task Archived_fixtures_keep_the_metric_names_while_current_definitions_explain_uncertainty()
     {
         var live = (await _python.SimulateAsync(new PythonSimulateRequest([0, 1, 0, 0, 0, 0, 0], "ppo", 100001, null), CancellationToken.None)).MetricDefinitions;
         var fixture = JsonNode.Parse(PythonFixtures.Read("simulate_200_ppo"))!["metric_definitions"]!.AsObject().ToDictionary(pair => pair.Key, pair => pair.Value!.GetValue<string>());
 
-        Assert.Equal(live.OrderBy(pair => pair.Key, StringComparer.Ordinal), fixture.OrderBy(pair => pair.Key, StringComparer.Ordinal));
+        Assert.Equal(live.Keys.Order(StringComparer.Ordinal), fixture.Keys.Order(StringComparer.Ordinal));
+        Assert.Contains("Null if an evidence boundary", live["cumulative_resistance_burden"]);
+        Assert.StartsWith("Negative pessimistic score", live["cumulative_reward"]);
+        Assert.NotEqual(fixture["cumulative_reward"], live["cumulative_reward"]);
     }
 
     [LiveDatabaseFact]
-    public async Task A_live_susceptible_drug_without_transition_data_is_unsupported_not_effective_through_storage()
+    public async Task A_live_evidence_boundary_preserves_unknown_burden_and_separate_uncertainty_through_storage()
     {
-        var created = await (await _client.PostJsonAsync("/api/v1/simulations", """{"resistanceProfile":[0,1,0,0,0,0,0],"strategy":"ppo","environmentSeed":100001}""")).ReadJsonAsync();
+        var response = await _client.PostJsonAsync("/api/v1/comparisons", """{"resistanceProfile":[1,1,1,1,1,1,0],"environmentSeed":100001}""");
+        Assert.Equal(HttpStatusCode.Created, response.StatusCode);
+        var created = await response.ReadJsonAsync();
         var id = created.GetProperty("id").GetGuid();
 
-        var fetched = await (await _client.GetAsync($"/api/v1/simulations/{id}")).ReadJsonAsync();
+        var fetched = await (await _client.GetAsync($"/api/v1/comparisons/{id}")).ReadJsonAsync();
+        Assert.True(JsonNode.DeepEquals(JsonNode.Parse(created.GetRawText()), JsonNode.Parse(fetched.GetRawText())));
 
-        var steps = fetched.GetProperty("result").GetProperty("steps").EnumerateArray().ToList();
-        var unsupported = steps.Where(step => step.GetProperty("transitionStatus").GetString() == "unsupported_no_candidate").ToList();
-        Assert.NotEmpty(unsupported);
-        Assert.All(unsupported, step =>
+        foreach (var name in new[] { "ppo", "dqn", "baseline" })
         {
-            Assert.True(step.GetProperty("selectedDrugSusceptible").GetBoolean());
-            Assert.False(step.GetProperty("hasCandidateTransition").GetBoolean());
-            Assert.Equal(JsonValueKind.Null, step.GetProperty("selectedOutcome").ValueKind);
-        });
-        Assert.Equal(unsupported.Count, fetched.GetProperty("result").GetProperty("metrics").GetProperty("unsupportedStepCount").GetInt32());
+            var result = fetched.GetProperty(name);
+            Assert.Equal("evidence_boundary", result.GetProperty("terminationReason").GetString());
+            Assert.Empty(result.GetProperty("steps").EnumerateArray());
+            Assert.Equal(JsonValueKind.Null, result.GetProperty("metrics").GetProperty("cumulativeResistanceBurden").ValueKind);
+            Assert.False(result.GetProperty("evaluationComplete").GetBoolean());
+            Assert.Equal(0, result.GetProperty("observedResistanceBurden").GetDouble());
+            Assert.Equal(8, result.GetProperty("uncertaintyContinuationCost").GetDouble());
+            Assert.Equal(8, result.GetProperty("pessimisticScore").GetDouble());
+        }
     }
 
     [LiveDatabaseFact]
@@ -141,8 +148,8 @@ public sealed class LiveEndToEndTests : IAsyncLifetime, IDisposable
         var body = await comparison.ReadJsonAsync();
         Assert.True(body.GetProperty("contract").GetProperty("verified").GetBoolean());
         Assert.Equal("dqn", body.GetProperty("dqn").GetProperty("strategy").GetString());
-        Assert.Equal("dqn_public_v2_seed_15000", body.GetProperty("dqn").GetProperty("model").GetProperty("modelId").GetString());
-        Assert.Equal("ppo_public_v2_seed_19000", body.GetProperty("ppo").GetProperty("model").GetProperty("modelId").GetString());
+        Assert.Equal("dqn_evidence_v3_seed_15000", body.GetProperty("dqn").GetProperty("model").GetProperty("modelId").GetString());
+        Assert.Equal("ppo_evidence_v3_seed_11000", body.GetProperty("ppo").GetProperty("model").GetProperty("modelId").GetString());
         var fetched = await (await _client.GetAsync(comparison.Headers.Location)).ReadJsonAsync();
         Assert.True(JsonNode.DeepEquals(JsonNode.Parse(body.GetRawText()), JsonNode.Parse(fetched.GetRawText())));
         var recent = await (await _client.GetAsync("/api/v1/simulations/recent")).ReadJsonAsync();

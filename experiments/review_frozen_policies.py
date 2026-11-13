@@ -1,4 +1,4 @@
-"""Enumerate the frozen simulator to audit policy quality, ties and structural limitations."""
+"""Audit the archived public-data-v2 policies under their original susceptible-only rules."""
 from __future__ import annotations
 
 import argparse
@@ -100,7 +100,8 @@ def review(output: Path) -> dict:
     if output.exists() and any(output.iterdir()):
         raise FileExistsError("Review output directory must be empty.")
     torch.set_num_threads(1)
-    runtime = load_runtime()
+    release = ROOT / "artifacts/frozen/public-data-v2"
+    runtime = load_runtime(release / "ppo/manifest.json", dqn_manifest_path=release / "dqn/manifest.json")
     environment = make_training_environment(runtime.config)
     try:
         generator = environment.episode_progression.episode_step.transition_model.candidate_generator

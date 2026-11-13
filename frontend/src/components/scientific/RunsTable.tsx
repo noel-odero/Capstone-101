@@ -94,6 +94,11 @@ export function RunsTable({ runs, caption, selection }: RunsTableProps) {
                 ) : null}
                 <th scope="row" title={run.id}>
                   {labelFor(run)}
+                  {run.strategies.some(
+                    (result) => result.terminationReason === 'evidence_boundary',
+                  ) ? (
+                    <small className="muted"> · Evidence boundary</small>
+                  ) : null}
                 </th>
                 <td>{formatDateTime(run.createdAtUtc)}</td>
                 <td className={styles['code']}>

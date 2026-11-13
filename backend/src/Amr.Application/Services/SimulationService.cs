@@ -26,7 +26,8 @@ public sealed class SimulationService(IPythonServiceClient python, IRunRepositor
 
         var simulation = run.ToSimulationDto();
         var result = simulation.Result!;
-        if (result.Strategy != request.Strategy || !RunResponseChecks.Answers(request, result.InitialProfile, result.EnvironmentSeed))
+        if (result.Strategy != request.Strategy || !RunResponseChecks.Answers(request, result.InitialProfile, result.EnvironmentSeed)
+            || !RunResponseChecks.ConsistentOutcome(result, simulation.Provenance))
         {
             throw UpstreamErrors.InvalidResponse();
         }

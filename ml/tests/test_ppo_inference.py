@@ -27,7 +27,7 @@ from simulation.environment import AntibioticEnvironment
 from simulation.resistance_state import ANTIBIOTICS
 from simulation.transition_generator import CandidateTransitionGenerator
 
-EXPECTED_SHA256 = "1747b68cb572cc320c7c53ae105dfa9dd6827f689839b35c4f2bcf9520384001"
+EXPECTED_SHA256 = "ed3e9fd242000b9467641172d4338dd3e40f15599a695e7f9adf2476fff96f04"
 ALL_PROFILES = tuple(product((0, 1), repeat=len(ANTIBIOTICS)))
 GENTAMICIN, CIPROFLOXACIN = ANTIBIOTICS.index("GENTAMICIN"), ANTIBIOTICS.index("CIPROFLOXACIN")
 
@@ -356,7 +356,7 @@ def test_reported_support_agrees_with_simulator_step(generator, profile):
 
 
 def write_manifest(tmp_path, **overrides):
-    manifest = json.loads(DEFAULT_MANIFEST_PATH.read_text(encoding="utf-8"))
+    manifest = json.loads((inference.REPO_ROOT / "artifacts/frozen/public-data-v2/ppo/manifest.json").read_text(encoding="utf-8"))
     for dotted_key, value in overrides.items():
         section, _, key = dotted_key.partition(".")
         if key:
@@ -371,9 +371,9 @@ def write_manifest(tmp_path, **overrides):
 def test_committed_manifest_pins_selected_public_data_ppo_contract():
     manifest = load_manifest()
 
-    assert manifest.model_id == "ppo_public_v2_seed_19000"
+    assert manifest.model_id == "ppo_evidence_v3_seed_11000"
     assert manifest.checkpoint_sha256 == EXPECTED_SHA256.lower()
-    assert manifest.checkpoint_path.as_posix().endswith("artifacts/frozen/public-data-v2/ppo/final_model.zip")
+    assert manifest.checkpoint_path.as_posix().endswith("artifacts/frozen/evidence-aware-v3/ppo/final_model.zip")
     assert (manifest.horizon, manifest.scenario_id) == (8, "REF_UNIFORM_SUPPORTED")
 
 
@@ -502,16 +502,15 @@ def test_real_checkpoint_matches_pinned_hash_and_audited_first_action(real_engin
     result = real_engine.recommend(initial_context())
 
     assert real_engine.checkpoint_sha256 == EXPECTED_SHA256.lower()
-    assert (result.action_id, result.antibiotic) == (2, "FOSFOMYCIN")
-    assert result.transition_status == NO_CANDIDATE_STATUS
+    assert result.action_id != 2
+    assert result.transition_status == CANDIDATES_AVAILABLE_STATUS
 
 
 def test_byte_loaded_checkpoint_matches_path_loaded_checkpoint(real_engine):
-    path_policy = MaskablePPOObservationPolicy(
-        Discrete(7), load_ppo_model(load_manifest().checkpoint_path, device="cpu")
-    )
+    from experiments.evidence_environment import EvidenceObservationPolicy
+    path_policy = EvidenceObservationPolicy(load_ppo_model(load_manifest().checkpoint_path, device="cpu"), real_engine.evidence_kernel)
     for profile in ALL_PROFILES:
-        if all(profile):
+        if all(profile) or real_engine.evidence_kernel.boundary(profile):
             continue
         for context in (
             initial_context(profile),

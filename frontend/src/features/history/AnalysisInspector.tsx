@@ -55,6 +55,12 @@ export function AnalysisInspector({ run, onClose }: { run: SavedAnalysis; onClos
           Close details
         </Button>
       </div>
+      {run.strategies.some((result) => result.terminationReason === 'evidence_boundary') ? (
+        <p role="note" className={styles.footnote}>
+          An evidence boundary stopped this evaluation. Only recorded states are shown; full-horizon
+          burden and final options are unavailable for incomplete strategies.
+        </p>
+      ) : null}
       <div className={styles.inspectorGrid}>
         <div>
           <h3>Resistance trajectory</h3>

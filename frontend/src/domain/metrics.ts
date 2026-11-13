@@ -60,8 +60,22 @@ export function buildMetricRows(results: readonly StrategyResult[]): MetricRow[]
   return COMPARISON_METRIC_KEYS.map((key) => ({
     key,
     label: METRIC_LABELS[key],
-    values: results.map((result) => result.metrics[key]),
+    values: results.map((result) => displayMetricValue(result, key)),
   }))
+}
+
+export function displayMetricValue(
+  result: StrategyResult | undefined,
+  key: MetricKey,
+): number | null {
+  if (!result) return null
+  if (
+    result.terminationReason === 'evidence_boundary' &&
+    ['finalResistantCount', 'finalSusceptibleCount', 'changeInSusceptibleCount'].includes(key)
+  ) {
+    return null
+  }
+  return result.metrics[key]
 }
 
 export type TrajectoryField = 'resistantCount' | 'susceptibleCount'
