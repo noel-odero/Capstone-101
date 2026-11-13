@@ -16,6 +16,7 @@ import { strategyResults } from '@/domain/runs'
 import { useAntibiotics } from '@/hooks/useAntibiotics'
 import { useComparison } from '@/hooks/useComparison'
 import { useSample } from '@/features/samples/useSamples'
+import { useAnalysisLabel } from '@/features/samples/useAnalysisLabel'
 import { StatePanel } from './StatePanel'
 import { TrajectoryChart } from './TrajectoryChart'
 import { SimulationControls } from './SimulationControls'
@@ -26,6 +27,7 @@ export function SimulationPage() {
   const { comparisonId } = useParams()
   const comparison = useComparison(comparisonId)
   const sample = useSample(comparison.data?.sampleId)
+  const labelFor = useAnalysisLabel()
   const antibiotics = useAntibiotics()
   const [selectedStep, setSelectedStep] = useState(0)
 
@@ -79,11 +81,14 @@ export function SimulationPage() {
         title={PAGE_TITLES.trajectory}
         subtitle="Inspect model-derived resistance changes across antibiotic strategies."
         action={
-          sample.data ? (
-            <ButtonLink to="/app/samples" variant="secondary" size="sm">
-              Sample: {sample.data.label}
-            </ButtonLink>
-          ) : undefined
+          <ButtonLink
+            to={sample.data ? '/app/samples' : '/app/history'}
+            variant="secondary"
+            size="sm"
+            className={styles['analysisLabel']}
+          >
+            {labelFor(data)}
+          </ButtonLink>
         }
       />
 

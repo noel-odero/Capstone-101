@@ -3,7 +3,7 @@ import { baseRoutes, mockFetch } from '@/test/mock-api'
 import { renderApp } from '@/test/test-utils'
 import { screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
-import { describe, expect, it } from 'vitest'
+import { beforeAll, describe, expect, it } from 'vitest'
 
 const session = {
   isAuthenticated: true,
@@ -17,6 +17,10 @@ const created = {
 }
 
 describe('Strategy Evaluation page', () => {
+  beforeAll(async () => {
+    await import('./SimulationPage')
+  }, 30_000)
+
   it('sends the chosen profile once and opens the 3D analysis page', async () => {
     const api = mockFetch(
       baseRoutes({
@@ -34,7 +38,9 @@ describe('Strategy Evaluation page', () => {
     await waitFor(() =>
       expect(router.state.location.pathname).toBe(`/app/simulation/${created.id}`),
     )
-    expect(await screen.findByRole('heading', { name: 'Resistance Trajectory' })).toBeInTheDocument()
+    expect(
+      await screen.findByRole('heading', { name: 'Resistance Trajectory' }),
+    ).toBeInTheDocument()
     expect(screen.getByRole('heading', { name: 'Urinary Tract' })).toBeInTheDocument()
     const metrics = screen.getByRole('table', { name: 'Strategy evaluation metrics' })
     for (const name of ['PPO', 'DQN', 'Random baseline']) {

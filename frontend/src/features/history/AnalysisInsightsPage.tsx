@@ -7,6 +7,7 @@ import { Button, ButtonLink } from '@/components/ui/Button'
 import { EmptyState } from '@/components/ui/EmptyState'
 import { ErrorState } from '@/components/ui/ErrorState'
 import { LoadingState } from '@/components/ui/LoadingState'
+import { useAnalysisLabel } from '@/features/samples/useAnalysisLabel'
 import { AnalysisInspector } from './AnalysisInspector'
 import { InsightCharts } from './InsightCharts'
 import { InsightCollections } from './InsightCollections'
@@ -380,6 +381,7 @@ function ExportMenu({
   data: HistoryComparison
   collection: AnalysisCollection | undefined
 }) {
+  const labelFor = useAnalysisLabel()
   return (
     <details className={styles.exportMenu}>
       <summary>
@@ -391,7 +393,7 @@ function ExportMenu({
           type="button"
           onClick={() =>
             downloadEvidence(
-              evidenceReport(data, collection?.name, collection?.question ?? ''),
+              evidenceReport(data, collection?.name, collection?.question ?? '', labelFor),
               'analysis-insights-report.html',
               'text/html;charset=utf-8',
             )
@@ -403,7 +405,7 @@ function ExportMenu({
           type="button"
           onClick={() =>
             downloadEvidence(
-              metricsCsv(data),
+              metricsCsv(data, labelFor),
               'analysis-insights-metrics.csv',
               'text/csv;charset=utf-8',
             )
@@ -419,6 +421,9 @@ function ExportMenu({
                 {
                   exportedAtUtc: new Date().toISOString(),
                   collection: collection ?? null,
+                  analysisLabels: Object.fromEntries(
+                    data.analyses.map((run) => [run.id, labelFor(run)]),
+                  ),
                   ...data,
                 },
                 null,

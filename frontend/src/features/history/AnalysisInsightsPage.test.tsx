@@ -2,6 +2,7 @@ import { screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { describe, expect, it } from 'vitest'
 import { fixtures } from '@/test/fixtures/api-fixtures'
+import { analysisLabel, buildAnalysisLabels } from '@/domain/analysis-label'
 import { baseRoutes, mockFetch } from '@/test/mock-api'
 import { renderApp } from '@/test/test-utils'
 import { validSelection, type HistoryComparison, type SavedAnalysis } from './history-api'
@@ -34,6 +35,7 @@ const first: SavedAnalysis = {
 const second: SavedAnalysis = {
   ...first,
   id: secondId,
+  createdAtUtc: new Date(new Date(first.createdAtUtc).getTime() + 60_000).toISOString(),
   strategies: [
     ...first.strategies,
     { ...ppo, strategy: 'dqn', metrics: { ...ppo.metrics, cumulativeResistanceBurden: 0 } },
@@ -74,6 +76,49 @@ function summary(record: SavedAnalysis) {
 }
 
 describe('Analysis Insights', () => {
+  it('uses sample-linked names in evidence and details while preserving the original analysis link', async () => {
+    const sampleId = '08f2732d-6b79-44ed-9fbd-79fd472804ae'
+    mockFetch(
+      baseRoutes({
+        'GET /api/v1/auth/session': { body: session },
+        'GET /api/v1/samples': {
+          body: [
+            {
+              id: sampleId,
+              label: 'UTI-024',
+              addedAtUtc: first.createdAtUtc,
+              resistanceProfile: first.initialProfile,
+              runs: [second, first].map(({ id, createdAtUtc }) => ({ id, createdAtUtc })),
+            },
+          ],
+        },
+        'POST /api/v1/analyses/compare': { body: response },
+      }),
+    )
+    const user = userEvent.setup()
+    renderApp(`/app/insights?ids=${firstId},${secondId}&tab=evidence`)
+    await user.click(await screen.findByRole('button', { name: 'Inspect UTI-024 · Analysis 2' }))
+    expect(screen.getByRole('heading', { name: 'UTI-024 · Analysis 2' })).toBeInTheDocument()
+    expect(screen.getByRole('link', { name: 'Open Analysis Results' })).toHaveAttribute(
+      'href',
+      `/app/recommendations/comparison/${secondId}`,
+    )
+    await user.click(screen.getByText('Recorded settings and provenance'))
+    expect(screen.getByText(secondId)).toBeVisible()
+  })
+
+  it('numbers the complete sample history chronologically and uses dates for unlinked records', () => {
+    const runs = [second, first].map(({ id, createdAtUtc }) => ({ id, createdAtUtc }))
+    const labels = buildAnalysisLabels([{ label: 'UTI-024', runs }])
+    expect(analysisLabel(first, labels)).toBe('UTI-024 · Analysis 1')
+    expect(analysisLabel(second, labels)).toBe('UTI-024 · Analysis 2')
+    expect(runs[0]?.id).toBe(secondId)
+    const unlinked = { ...first, id: 'unlinked' }
+    expect(analysisLabel(unlinked, labels)).toBe(analysisLabel(unlinked))
+    expect(analysisLabel(unlinked)).toContain('Analysis · ')
+    expect(analysisLabel(unlinked)).not.toContain(unlinked.id)
+  })
+
   it('retains selection across pages and filters, and reads saved records without running a policy', async () => {
     const api = mockFetch(
       baseRoutes({
@@ -95,9 +140,13 @@ describe('Analysis Insights', () => {
     const user = userEvent.setup()
     renderApp('/app/insights?ids=&tab=evidence')
     await user.click(await screen.findByRole('button', { name: 'Choose analyses for insights' }))
-    await user.click(await screen.findByRole('checkbox', { name: `Select analysis ${firstId}` }))
+    await user.click(
+      await screen.findByRole('checkbox', { name: `Select ${analysisLabel(first)}` }),
+    )
     await user.click(screen.getByRole('button', { name: 'Next' }))
-    await user.click(await screen.findByRole('checkbox', { name: `Select analysis ${secondId}` }))
+    await user.click(
+      await screen.findByRole('checkbox', { name: `Select ${analysisLabel(second)}` }),
+    )
     await user.type(screen.getByLabelText('Exact profile'), '0100000')
     await user.selectOptions(screen.getByLabelText('Initially resistant'), '1')
     await user.click(screen.getByRole('button', { name: 'Apply filters' }))
@@ -135,7 +184,7 @@ describe('Analysis Insights', () => {
     expect(within(completeRow).getByText('0.00')).toBeInTheDocument()
     await user.click(screen.getByText('Exploratory evidence'))
     expect(screen.getByText(/DQN is unavailable in older records/)).toBeVisible()
-    await user.click(screen.getByRole('button', { name: `Inspect analysis ${firstId}` }))
+    await user.click(screen.getByRole('button', { name: `Inspect ${analysisLabel(first)}` }))
     expect(screen.getByRole('heading', { name: 'Recorded action sequences' })).toBeInTheDocument()
     expect(screen.getByRole('link', { name: 'Open 3D evaluation' })).toHaveAttribute(
       'href',
@@ -220,6 +269,10 @@ describe('Analysis Insights', () => {
     expect(report).toContain('No applicable data')
     expect(metricsCsv(response).split('\r\n')).toHaveLength(6)
     expect(metricsCsv(response)).toContain(firstId)
+    const labelFor = () => 'UTI-024 · Analysis 1'
+    expect(metricsCsv(response, labelFor)).toContain('"analysis_label"')
+    expect(metricsCsv(response, labelFor)).toContain(labelFor())
+    expect(evidenceReport(response, undefined, '', labelFor)).toContain(`<h2>${labelFor()}</h2>`)
   })
 
   it('saves a research question to an account-backed collection and reopens its exact selection', async () => {

@@ -12,7 +12,8 @@ import {
 import { Button, ButtonLink } from '@/components/ui/Button'
 import { buildTrajectorySeries } from '@/domain/metrics'
 import { formatDrugName } from '@/domain/antibiotics'
-import { shortId } from '@/domain/formatters'
+import { formatDateTime } from '@/domain/formatters'
+import { useAnalysisLabel } from '@/features/samples/useAnalysisLabel'
 import { STRATEGY_COLORS, strategyLabel } from '@/domain/terminology'
 import type { StepTrace, StrategyId } from '@/domain/types'
 import type { SavedAnalysis } from './history-api'
@@ -32,6 +33,8 @@ function transitionLabel(trace: StepTrace, compact = false) {
 }
 
 export function AnalysisInspector({ run, onClose }: { run: SavedAnalysis; onClose: () => void }) {
+  const labelFor = useAnalysisLabel()
+  const name = labelFor(run)
   const panel = useRef<HTMLElement>(null)
   useEffect(() => {
     panel.current?.focus({ preventScroll: true })
@@ -43,15 +46,10 @@ export function AnalysisInspector({ run, onClose }: { run: SavedAnalysis; onClos
   const trace = active?.steps.find((item) => item.treatmentStepAfter === step)
   const resultsPath = `/app/recommendations/${run.kind === 'comparison' ? 'comparison' : 'simulation'}/${run.id}`
   return (
-    <section
-      ref={panel}
-      tabIndex={-1}
-      className={styles.panel}
-      aria-label={`Details for analysis ${shortId(run.id)}`}
-    >
+    <section ref={panel} tabIndex={-1} className={styles.panel} aria-label={`Details for ${name}`}>
       <div className={styles.panelHeading}>
         <div>
-          <h2>Analysis {shortId(run.id)}</h2>
+          <h2>{name}</h2>
           <p>
             {run.provenance.scenarioId} · {run.provenance.horizon} steps
           </p>
@@ -188,6 +186,16 @@ export function AnalysisInspector({ run, onClose }: { run: SavedAnalysis; onClos
       <details className={styles.provenance}>
         <summary>Recorded settings and provenance</summary>
         <dl className={styles.traceValues}>
+          <div>
+            <dt>Analysis ID</dt>
+            <dd>
+              <code>{run.id}</code>
+            </dd>
+          </div>
+          <div>
+            <dt>Recorded at</dt>
+            <dd>{formatDateTime(run.createdAtUtc)}</dd>
+          </div>
           <div>
             <dt>Environment / policy seed</dt>
             <dd>

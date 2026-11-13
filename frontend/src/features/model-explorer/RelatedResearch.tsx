@@ -6,12 +6,14 @@ import { LoadingState } from '@/components/ui/LoadingState'
 import { formatDateTime } from '@/domain/formatters'
 import { strategyLabel } from '@/domain/terminology'
 import { useSamples } from '@/features/samples/useSamples'
+import { useAnalysisLabel } from '@/features/samples/useAnalysisLabel'
 import { useAnalysisHistory } from '@/features/history/history-api'
 import styles from './model-explorer.module.css'
 
 export function RelatedResearch({ code }: { code: string }) {
   const [page, setPage] = useState(1)
   const samples = useSamples()
+  const labelFor = useAnalysisLabel()
   const analyses = useAnalysisHistory(new URLSearchParams({ profile: code, page: String(page) }))
   const matching = samples.data?.filter((sample) => sample.resistanceProfile.join('') === code)
   return (
@@ -63,9 +65,7 @@ export function RelatedResearch({ code }: { code: string }) {
               <ul className={styles.researchList}>
                 {analyses.data.items.map((run) => (
                   <li key={run.id}>
-                    <Link to={`/app/recommendations/${run.kind}/${run.id}`}>
-                      {formatDateTime(run.createdAtUtc)}
-                    </Link>
+                    <Link to={`/app/recommendations/${run.kind}/${run.id}`}>{labelFor(run)}</Link>
                     <span>
                       {run.strategies
                         .map((strategy) => strategyLabel(strategy.strategy))

@@ -21,6 +21,7 @@ import {
 } from '@/domain/terminology'
 import type { Comparison, Simulation, StrategyId, StrategyResult } from '@/domain/types'
 import { useSample } from '@/features/samples/useSamples'
+import { useAnalysisLabel } from '@/features/samples/useAnalysisLabel'
 import { useId, useState } from 'react'
 import { FiArrowRight, FiCheck, FiLayers } from 'react-icons/fi'
 import { Link } from 'react-router'
@@ -91,6 +92,7 @@ export function ResultsWorkbench({
   const [strategy, setStrategy] = useState<StrategyId>(ppo.strategy)
   const [step, setStep] = useStepParam()
   const sample = useSample('sampleId' in run ? run.sampleId : undefined)
+  const labelFor = useAnalysisLabel()
   const id = useId()
   const dqn = 'dqn' in run ? run.dqn : null
   const results = [ppo, ...(dqn ? [dqn] : []), ...(baseline ? [baseline] : [])]
@@ -220,7 +222,11 @@ export function ResultsWorkbench({
         }
       />
       <div className={styles.context}>
-        {sample.data ? <Link to="/app/samples">Sample: {sample.data.label}</Link> : null}
+        {sample.data ? (
+          <Link to="/app/samples">{labelFor(run)}</Link>
+        ) : (
+          <span>{labelFor(run)}</span>
+        )}
         <span>
           Starting profile <code>{initial}</code>
         </span>

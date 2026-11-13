@@ -88,17 +88,7 @@ export function HistoryPage() {
               {runs.data.items.length === 0 ? (
                 <p style={{ padding: 'var(--space-4)' }}>No analyses on this page.</p>
               ) : (
-                <RunsTable
-                  runs={runs.data.items}
-                  caption="Your analyses, newest first"
-                  sampleLabels={
-                    new Map(
-                      samples.data?.flatMap((sample) =>
-                        sample.runs.map((run) => [run.id, sample.label] as const),
-                      ) ?? [],
-                    )
-                  }
-                />
+                <RunsTable runs={runs.data.items} caption="Your analyses, newest first" />
               )}
               <Pager data={runs.data} onPage={(next) => setParams({ page: String(next) })} />
             </Card>

@@ -358,6 +358,13 @@
 }
 .evidenceTable tbody th {
   font-weight: 400;
+  max-width: 24rem;
+  overflow-wrap: anywhere;
+}
+.evidenceTable tbody th > strong {
+  display: block;
+  margin-bottom: 0.5rem;
+  font-weight: 500;
 }
 .evidenceTable small {
   display: block;

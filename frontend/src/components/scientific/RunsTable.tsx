@@ -1,6 +1,7 @@
 import { Link } from 'react-router'
 import { Button } from '@/components/ui/Button'
-import { formatDateTime, shortId } from '@/domain/formatters'
+import { formatDateTime } from '@/domain/formatters'
+import { useAnalysisLabel } from '@/features/samples/useAnalysisLabel'
 import { profileToCode } from '@/domain/profile'
 import { runDetailPath } from '@/domain/runs'
 import { STRATEGY_NAMES } from '@/domain/terminology'
@@ -19,7 +20,6 @@ function burdenOf(run: RunSummary, strategy: StrategyId): string {
 export interface RunsTableProps {
   runs: readonly RunSummary[]
   caption: string
-  sampleLabels?: ReadonlyMap<string, string>
   selection?: {
     ids: readonly string[]
     disabled: boolean
@@ -28,7 +28,8 @@ export interface RunsTableProps {
 }
 
 /** Stored runs: when, from which profile, the resistance burden of each strategy, and a link to open it. */
-export function RunsTable({ runs, caption, sampleLabels, selection }: RunsTableProps) {
+export function RunsTable({ runs, caption, selection }: RunsTableProps) {
+  const labelFor = useAnalysisLabel()
   const allSelected = runs.length > 0 && runs.every((run) => selection?.ids.includes(run.id))
   const toggle = (ids: string[]) => {
     if (!selection) return
@@ -84,7 +85,7 @@ export function RunsTable({ runs, caption, sampleLabels, selection }: RunsTableP
                   <td>
                     <input
                       type="checkbox"
-                      aria-label={`Select analysis ${run.id}`}
+                      aria-label={`Select ${labelFor(run)}`}
                       checked={selection.ids.includes(run.id)}
                       disabled={selection.disabled}
                       onChange={() => toggle([run.id])}
@@ -92,11 +93,7 @@ export function RunsTable({ runs, caption, sampleLabels, selection }: RunsTableP
                   </td>
                 ) : null}
                 <th scope="row" title={run.id}>
-                  {sampleLabels?.get(run.id) ??
-                    (run.kind === 'comparison'
-                      ? 'Strategy comparison'
-                      : 'Single-strategy analysis')}{' '}
-                  <span className="muted">{shortId(run.id)}</span>
+                  {labelFor(run)}
                 </th>
                 <td>{formatDateTime(run.createdAtUtc)}</td>
                 <td className={styles['code']}>

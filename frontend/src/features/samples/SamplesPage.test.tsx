@@ -1,6 +1,6 @@
 ﻿import { screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
-import { describe, expect, it } from 'vitest'
+import { beforeAll, describe, expect, it } from 'vitest'
 import { baseRoutes, mockFetch } from '@/test/mock-api'
 import { renderApp } from '@/test/test-utils'
 import { rawFixtures } from '@/test/fixtures/api-fixtures'
@@ -20,6 +20,10 @@ const sample: SavedSample = {
 }
 
 describe('sample workflow', () => {
+  beforeAll(async () => {
+    await import('../simulation/SimulationPage')
+  }, 30_000)
+
   it('rejects an existing label regardless of case and surrounding spaces', async () => {
     const api = mockFetch(
       baseRoutes({

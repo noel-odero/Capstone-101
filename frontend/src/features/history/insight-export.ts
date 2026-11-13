@@ -1,7 +1,11 @@
 import { strategyLabel } from '@/domain/terminology'
-import type { HistoryComparison } from './history-api'
+import { analysisLabel } from '@/domain/analysis-label'
+import type { HistoryComparison, SavedAnalysis } from './history-api'
 
-export function metricsCsv(data: HistoryComparison): string {
+export function metricsCsv(
+  data: HistoryComparison,
+  labelFor: (run: SavedAnalysis) => string = analysisLabel,
+): string {
   const cell = (value: string | number | null) => {
     if (value == null) return ''
     const text =
@@ -11,6 +15,7 @@ export function metricsCsv(data: HistoryComparison): string {
   const rows: (string | number | null)[][] = [
     [
       'analysis_id',
+      'analysis_label',
       'created_at_utc',
       'initial_profile',
       'strategy',
@@ -33,6 +38,7 @@ export function metricsCsv(data: HistoryComparison): string {
     for (const result of run.strategies)
       rows.push([
         run.id,
+        labelFor(run),
         run.createdAtUtc,
         run.initialProfile.join(''),
         result.strategy,
@@ -72,6 +78,7 @@ export function evidenceReport(
   data: HistoryComparison,
   title = 'Analysis Insights',
   question = '',
+  labelFor: (run: SavedAnalysis) => string = analysisLabel,
 ): string {
   const text = escapeHtml
   const table = (headings: string[], rows: unknown[][]) =>
@@ -85,7 +92,7 @@ ${data.analyses
   .map(
     (
       run,
-    ) => `<section><h2>Profile ${text(run.initialProfile.join(''))}</h2><p>${text(run.id)} · ${text(run.createdAtUtc)}</p>
+    ) => `<section><h2>${text(labelFor(run))}</h2><p>Profile ${text(run.initialProfile.join(''))} · ${text(run.id)} · ${text(run.createdAtUtc)}</p>
 ${table(
   ['Policy', 'Burden', 'Emergence', 'Remaining options', 'Unsupported steps', 'Recorded steps'],
   run.strategies.map((result) => [

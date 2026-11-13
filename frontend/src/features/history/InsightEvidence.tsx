@@ -1,5 +1,6 @@
 import { Button } from '@/components/ui/Button'
-import { formatDateTime, shortId } from '@/domain/formatters'
+import { formatDateTime } from '@/domain/formatters'
+import { useAnalysisLabel } from '@/features/samples/useAnalysisLabel'
 import { STRATEGY_COLORS, strategyLabel } from '@/domain/terminology'
 import type { SavedAnalysis } from './history-api'
 import { ProfileIndicators } from './ProfileIndicators'
@@ -27,6 +28,7 @@ export function InsightEvidence({
   onProfile: (profile: string) => void
   onInspect: (id: string) => void
 }) {
+  const labelFor = useAnalysisLabel()
   const visible = records.filter(
     (run) =>
       matchesInvestigation(run, filter) && (!profile || run.initialProfile.join('') === profile),
@@ -72,7 +74,7 @@ export function InsightEvidence({
           <caption className="visually-hidden">Selected research evidence</caption>
           <thead>
             <tr>
-              <th>Initial profile / analysis</th>
+              <th>Sample / analysis / initial profile</th>
               {INSIGHT_POLICIES.map((policy) => (
                 <th key={policy}>{strategyLabel(policy)}</th>
               ))}
@@ -84,13 +86,12 @@ export function InsightEvidence({
             {visible.map((run) => (
               <tr key={run.id}>
                 <th scope="row">
+                  <strong>{labelFor(run)}</strong>
                   <ProfileIndicators
                     profile={run.initialProfile}
                     order={run.provenance.antibioticOrder}
                   />
-                  <small>
-                    {shortId(run.id)} · {formatDateTime(run.createdAtUtc)}
-                  </small>
+                  <small>{formatDateTime(run.createdAtUtc)}</small>
                 </th>
                 {INSIGHT_POLICIES.map((policy) => {
                   const result = policyResult(run, policy)
@@ -118,7 +119,7 @@ export function InsightEvidence({
                   <Button
                     variant="secondary"
                     size="sm"
-                    aria-label={`Inspect analysis ${run.id}`}
+                    aria-label={`Inspect ${labelFor(run)}`}
                     onClick={() => onInspect(run.id)}
                   >
                     Inspect

@@ -4,6 +4,11 @@
   gap: var(--space-6);
   max-width: 44rem;
 }
+.analysisLabel {
+  max-width: 100%;
+  white-space: normal;
+  overflow-wrap: anywhere;
+}
 
 .field {
   display: flex;

@@ -16,7 +16,7 @@ import {
   ZAxis,
 } from 'recharts'
 import { STRATEGY_COLORS, strategyLabel } from '@/domain/terminology'
-import { shortId } from '@/domain/formatters'
+import { useAnalysisLabel } from '@/features/samples/useAnalysisLabel'
 import type { SavedAnalysis } from './history-api'
 import { INSIGHT_POLICIES, policyResult, summarizeEvidence } from './insight-data'
 import styles from './insights.module.css'
@@ -43,6 +43,7 @@ export function InsightCharts({
   records: SavedAnalysis[]
   onInspect: (id: string) => void
 }) {
+  const labelFor = useAnalysisLabel()
   const [view, setView] = useState<'records' | 'resistance'>('records')
   const [metric, setMetric] = useState<InsightMetric>('cumulativeResistanceBurden')
   const summary = summarizeEvidence(records)
@@ -51,7 +52,7 @@ export function InsightCharts({
     .map((run, index) => ({
       id: run.id,
       order: index + 1,
-      label: shortId(run.id),
+      label: labelFor(run),
       date: new Date(run.createdAtUtc).toLocaleDateString(),
       profile: run.initialProfile.join(''),
       initialResistance: run.initialProfile.reduce<number>((sum, state) => sum + state, 0),
@@ -147,7 +148,11 @@ export function InsightCharts({
                     isAnimationActive={false}
                     strokeDasharray={policy === 'dqn' ? '5 3' : undefined}
                     dot={(props) => {
-                      const point = props as { cx?: number; cy?: number; payload?: { id?: string } }
+                      const point = props as {
+                        cx?: number
+                        cy?: number
+                        payload?: { id?: string; label?: string }
+                      }
                       const id = point.payload?.id
                       if (
                         typeof point.cx !== 'number' ||
@@ -164,7 +169,7 @@ export function InsightCharts({
                           fill={STRATEGY_COLORS[policy]}
                           tabIndex={0}
                           role="button"
-                          aria-label={`Inspect ${strategyLabel(policy)} point ${id ?? ''}`}
+                          aria-label={`Inspect ${strategyLabel(policy)} point ${point.payload?.label ?? ''}`}
                           onClick={() => {
                             if (id) onInspect(id)
                           }}
